@@ -7,7 +7,6 @@ dist: trusty
 
 compiler:
   - gcc
-  - clang
 
 addons:
   apt:
@@ -17,7 +16,8 @@ addons:
       - cmake
 
 script:
-  - export CXX=gcc-7
+  - export CC=gcc-7
+  - export CXX=g++-7
   - mkdir build
   - cd build
   - cmake .. && make
