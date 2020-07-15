@@ -102,7 +102,7 @@ cs MAT_TEMP         = "/partition_{}/{}.mat";
 cs CONFIG_GRP       = "config";
 cs REPART_GRP       = "minimRepart";
 
-cs KILLALL          = "killall km_part kbf_superk kbf_counter kbf_merger &> /dev/null";
+cs KILLALL          = "killall km_part km_superk km_count km_merge &> /dev/null";
 
   class Env
 {
