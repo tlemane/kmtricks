@@ -202,10 +202,16 @@ int Merger<K, C>::init()
       _headers[i][_hsize-1] = '\0';
     }
 
-    readb(i);
-    _hc[i]->khash_set = true;
+    if ( !readb(i) )
+    {
+      _hc[i]->khash_set = false;
+      gzclose(_st[i]->f);
+      delete[] _st[i]->buf;
+    }
+    else
+      _hc[i]->khash_set = true;
 
-    if ( (!_m_k_set) || _hc[i]->khash < m_khash)
+    if ( ( (!_m_k_set) || _hc[i]->khash < m_khash) && _hc[i]->khash_set)
     {
       m_khash = _nm_khash = _hc[i]->khash;
       _m_k_set = true;
