@@ -17,7 +17,7 @@ kmtricks is a **set of independent modules** designed for kmer counting given a 
 
 Compared to a usual pipeline as the one used by `HowDeSBT` using `JellyFish` for generating a bloom filter per input read set, `kmtricks` is 1.6 times faster.
 
-![perf_kmtricks_674](<https://github.com/tlemane/kmtricks/blob/master/doc/perf_kmtricks_674.png> =250x)
+<img src="https://github.com/tlemane/kmtricks/blob/master/doc/perf_kmtricks_674.png" width="300">
 
 Test realised with 674 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
 
