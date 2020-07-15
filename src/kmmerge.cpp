@@ -131,7 +131,7 @@ void KmMerge::merge_to_bf_pa()
 void KmMerge::transpose()
 {
   string path_mat = e->STORE_MATRIX + fmt::format(BF_NT_TEMP, _id, _id);
-  uint n = _upper_hash - _lower_hash;
+  uint n = _upper_hash - _lower_hash + 1;
   uint m = NMOD8(NBYTE(_m->nb_files));
   BitMatrix *mat = new BitMatrix(path_mat, n, m, true);
   BitMatrix *trp = mat->transpose();

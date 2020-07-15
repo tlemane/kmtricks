@@ -136,6 +136,7 @@ BitMatrix::BitMatrix(string file, size_t n, size_t m, bool lendian)
   : _fpath(file), _n(n/8), _m(m), _nb(n), _mb(m*8), _le(lendian)
 {
   check8();
+  matrix = new uchar[_nb*_m]();
   ifstream fin(_fpath, ios::in | ios::binary);
   if (!fin)
     throw runtime_error("Unable to open : " + _fpath);
