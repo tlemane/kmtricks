@@ -3,7 +3,7 @@ os:
 
 language: cpp
 
-dist: trusty
+dist: bionic
 
 compiler:
   - gcc
