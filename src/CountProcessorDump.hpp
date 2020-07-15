@@ -54,7 +54,7 @@ public:
     sprintf(_b, "%03d", _partId);
     strcat(_head, _b);
     _part_file.rdbuf()->pubsetbuf(_buffer, 8192);
-    _part_file.open(_out_part, std::ios::app | std::ios::binary);
+    _part_file.open(_out_part, std::ios::out | std::ios::binary);
     if (!_part_file)
     {
       cout << "Unable to open " + _out_part << endl;
@@ -110,6 +110,7 @@ public:
   {
     CountNumber kmer_count = count[0];
     _hk = kmer.getVal();
+    cout << to_string(_hk) << " : " << to_string(kmer_count) << endl;
     if (kmer_count >= _min_abundance)
     {
       //_hcount = kmer_count >= 0xFF ? 0xFF : (uint8_t)kmer_count;

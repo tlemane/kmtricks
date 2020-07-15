@@ -101,10 +101,11 @@ void KmMerge::merge_to_bf_pa()
   fout.open(opath, ios::binary);
   uchar* empty = new uchar[_m->vlen];
   uint64_t current_hash = _lower_hash;
-  while (!_m->end)
+
+  while(!_m->end)
   {
     _m->next();
-    while (_m->m_khash > current_hash)
+    while(_m->m_khash > current_hash)
     {
       fout.write((char*)empty, _m->vlen);
       current_hash++;
@@ -113,10 +114,11 @@ void KmMerge::merge_to_bf_pa()
     if (_m->keep)
     {
       fout.write((char*)_m->_bit_vector, _m->vlen);
-      current_hash = _m->m_khash;
+      current_hash = _m->m_khash+1;
     }
   }
-  while (current_hash < _upper_hash)
+
+  while (current_hash <= _upper_hash)
   {
     fout.write((char*)empty, _m->vlen);
     current_hash++;
