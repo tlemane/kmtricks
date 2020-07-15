@@ -1,4 +1,7 @@
 # kmtricks
+[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
+
+[![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master)](https://travis-ci.com/github/tlemane/kmtricks)
 
 ## kmtrics IOs
 
@@ -25,3 +28,30 @@ List of IDs available [here](tests/kmtricks/experiment_list_674.txt).
 
 
 
+## kmtrics modules
+
+### Reads to partitioned super kmers
+
+TODO
+
+### Super kmers to counted elements 
+
+TODO
+
+(element = kmer or has value)
+
+### Merging counted kmers 
+
+TODO
+
+### Transpose matrix
+
+TODO
+
+## INSTALL
+
+TODO
+
+## Tests
+
+TODO
