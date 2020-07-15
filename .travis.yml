@@ -1,0 +1,23 @@
+os:
+  - linux
+
+language: cpp
+
+dist: trusty
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - g++-7
+      - cmake
+
+script:
+  - export CXX=gcc-7
+  - mkdir build
+  - cd build
+  - cmake .. && make
