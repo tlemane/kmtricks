@@ -13,12 +13,17 @@ int main(int argc, char* argv[])
     }
   mat->set_bit(1,0,0);
   BitMatrix* trp = mat->transpose();
+  BitMatrix* trp2 = trp->transpose();
 
-  mat->print_bytes();
-  trp->print_bytes();
+  for (int i=0; i<nb*m; i++)
+    assert(mat->matrix[i] == trp2->matrix[i]);
 
   mat->print_bits();
   trp->print_bits();
 
-  trp->dump("test_trp.mat");
+  delete mat;
+  delete trp;
+  delete trp2;
+
+
 }
