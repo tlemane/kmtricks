@@ -33,3 +33,11 @@
 
 /build/
 /bin/
+/toys/
+.idea/
+cmake-build-debug/
+libs/snippets/bitmatrix_ex
+libs/snippets/merger_ex
+run.sh
+run_init/
+
