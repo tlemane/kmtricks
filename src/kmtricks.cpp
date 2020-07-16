@@ -182,7 +182,7 @@ void Kmtricks::init()
 {
   _nb_procs = _nb_cores;
 
-  char buffer[256];
+  char *buffer = new char[1024];
 
 #if __APPLE__
   uint32_t size;
@@ -217,7 +217,9 @@ void Kmtricks::init()
   const size_t span = KMER_DEFAULT_SPAN;
   
   IBank* bank = Bank::open(in);
+  LOCAL(bank);
   Storage *_config_storage = StorageFactory(STORAGE_FILE).create(e->STORE_CONFIG, true, false);
+  LOCAL(_config_storage);
   ConfigurationAlgorithm<span> configA (bank, getInput());
   configA.execute();
   Configuration _config = configA.getConfiguration();
@@ -232,7 +234,7 @@ void Kmtricks::init()
   for (int i=0; i<_nb_partitions; i++)
   {
     _hash_windows.emplace_back(i*window_size, ((i+1)*window_size)-1);
-  }  
+  }
 }
 
 void Kmtricks::execute()
@@ -265,6 +267,7 @@ void Kmtricks::execute()
 
   end:
     _f_log.close();
+    delete e;
     cout << endl;
 }
 
