@@ -8,6 +8,7 @@ dist: bionic
 
 compiler:
   - gcc
+  - clang
 
 addons:
   apt:
