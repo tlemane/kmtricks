@@ -1,8 +1,9 @@
 # kmtricks
 [![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
 
-[![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master)](https://travis-ci.com/github/tlemane/kmtricks)
-
+|                                                              linux                                                             |                                                               osx                                                              |
+|:------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------:|
+| [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=1)](https://travis-ci.com/github/tlemane/kmtricks) | [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=4)](https://travis-ci.com/github/tlemane/kmtricks) |
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
 ## kmtrics IOs
