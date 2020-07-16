@@ -2,8 +2,8 @@
 
 int main(int argc, char* argv[])
 {
-  int nb = 16; // nb line in bits
-  int m = 1;   // nb cols in bytes
+  int nb = 32; // nb line in bits
+  int m = 8;   // nb cols in bytes
   BitMatrix* mat = new BitMatrix(nb, m, true);
 
   for (int i=0; i<nb; i++)
@@ -25,5 +25,5 @@ int main(int argc, char* argv[])
   delete trp;
   delete trp2;
 
-
+  return 0;
 }

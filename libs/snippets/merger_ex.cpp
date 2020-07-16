@@ -9,7 +9,9 @@ int main(int argc, char* argv[])
     typedef selectC<255>::type  CType;           // Max count
 
     string fof = argv[1];
-    Merger<KType, CType> m(fof, 1, 1, 0, true); // fof, min abundance, min recurrence, header size (0 for headerless file)
+    int amin = atoi(argv[2]);
+    int rmin = atoi(argv[3]);
+    Merger<KType, CType> m(fof, amin, rmin, 0, true); // fof, min abundance, min recurrence, header size (0 for headerless file)
     while(!m.end)
     {
       m.next();
