@@ -45,3 +45,5 @@ do
     diff ./res/matrices/partition_${i}/trp_bf${i}.mat ./run_test/storage/matrix/partition_${i}/trp_bf${i}.mat
     check_exit_code
 done
+
+rm -rf ./run_test

@@ -30,6 +30,11 @@ ExternalProject_Add(FMT
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
         INSTALL_COMMAND "")
 
+ExternalProject_Add(sdsl
+        PREFIX sdsl
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/sdsl-lite
+        INSTALL_COMMAND "")
+
 add_definitions(${FLAGS})
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/src)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/fmt/include)
@@ -47,32 +52,45 @@ link_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/${GATB_BUILD_LIB})
 #
 install(DIRECTORY DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-#
+
 set (LIBS gatbcore fmt z pthread)
-#
+set (DEPS gatb FMT sdsl)
+
 add_executable(kmtricks src/kmtricks.cpp)
-add_dependencies(kmtricks gatb FMT)
+add_dependencies(kmtricks ${DEPS})
 target_link_libraries(kmtricks ${LIBS})
-target_include_directories(kmtricks PUBLIC gatb)
 #
 add_executable(km_part src/kmpart.cpp)
-add_dependencies(km_part gatb FMT)
+add_dependencies(km_part ${DEPS})
 target_link_libraries(km_part ${LIBS})
-target_include_directories(km_part PUBLIC gatb)
 #
 add_executable(km_superk src/kmsuperk.cpp)
-add_dependencies(km_superk gatb FMT)
+add_dependencies(km_superk ${DEPS})
 target_link_libraries(km_superk ${LIBS})
-target_include_directories(km_superk PUBLIC gatb)
 #
 add_executable(km_count src/kmcount.cpp)
-add_dependencies(km_count gatb FMT)
+add_dependencies(km_count ${DEPS})
 target_link_libraries(km_count ${LIBS})
-target_include_directories(km_count PUBLIC gatb)
 #
 add_executable(km_merge src/kmmerge.cpp)
-add_dependencies(km_merge gatb FMT)
+add_dependencies(km_merge ${DEPS})
 target_link_libraries(km_merge ${LIBS})
-target_include_directories(km_merge PUBLIC gatb)
 
+enable_testing()
 
+add_executable(bitmatrix_ex libs/snippets/bitmatrix_ex.cpp)
+set_target_properties(bitmatrix_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
+
+add_executable(merger_ex libs/snippets/merger_ex.cpp)
+set_target_properties(merger_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
+target_link_libraries(merger_ex z)
+
+add_test(
+        NAME lib_test
+        COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/; ./run_test.sh"
+)
+
+add_test(
+        NAME kmtricks_test
+        COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/kmtricks/; ./run_test.sh"
+)
