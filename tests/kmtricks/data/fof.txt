@@ -1,0 +1,2 @@
+data/1.fasta
+data/2.fasta
