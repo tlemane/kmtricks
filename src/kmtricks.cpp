@@ -369,25 +369,29 @@ void Kmtricks::km_merger()
   
   size_t* jobs = new size_t(0);
   FBasedSync _merge_sync = FBasedSync(parts, e->SYNCHRO_M, END_TEMP_M, jobs, max_cj, _progress, e, !_keep_tmp);
+
+  string line;
+  ifstream fof(_fof_path);
+  char cop[256];
   for (size_t i=0; i<_nb_partitions; i++)
   {
     string part_dir = e->STORE_KMERS + fmt::format(PART_DIR, i);
-    string fof = part_dir + "/partition" + to_string(i) + ".fof";
-    vector<string> partition_paths = System::file().listdir(part_dir);
-    ofstream out_fof(fof, ios::out);
-    for (auto& path: partition_paths)
+    string path = part_dir + "/partition" + to_string(i) + ".fof";
+    ofstream copyfof(path);
+    while( getline(fof, line) )
     {
-      if ( (path.size()>2) && path.find("fof") == string::npos)
-      {
-        out_fof << e->STORE_KMERS + fmt::format(PART_DIR, i) + "/" + path + "\n";
-      }
+      strcpy(cop, line.c_str());
+      string file = basename(cop);
+      copyfof << part_dir + "/" + file + ".kmer" << "\n";
     }
-    out_fof.flush();
-    out_fof.close();
+    copyfof.close();
+    fof.clear();
+    fof.seekg(0, ios::beg);
+
     string command = fmt::format(MERGER_CMD,
       "",
       e->MERGER_BIN,  // kbf_merger
-      fof,            // -file
+      path,            // -file
       e->DIR,         // -run-dir
       get<0>(_hash_windows[i]),      // -min-hash
       get<1>(_hash_windows[i]),      // -max-hash
@@ -405,6 +409,7 @@ void Kmtricks::km_merger()
   }
   _merge_sync.wait_end();
 
+  fof.close();
   delete jobs;
 }
 
