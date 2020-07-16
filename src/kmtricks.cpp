@@ -241,19 +241,22 @@ void Kmtricks::execute()
 
 void Kmtricks::km_part()
 {
-  string command = fmt::format(PARTITIONER_CMD,
-    "",
-    e->PARTITIONER_BIN, // partitioner
-    _fof_path,          // -file
-    _k_size,            // -kmer-size
-    _nb_procs,          // -nb-procs
-    e->DIR,             // -run-dir
-    e->SYNCHRO_P,       // -dir-synchro
-    e->LOG_PARTITIONER  // &> partitioner.log
-  );
-  _f_log << command << endl;
-  std::system(command.c_str());
-  wait_end_signal(e->SYNCHRO_P + END_TEMP_P);
+  if (!System::file().doesExist(e->STORE + "/partition_storage_gatb/minimRepart.minimRepart"))
+  {
+    string command = fmt::format(PARTITIONER_CMD,
+                                 "",
+                                 e->PARTITIONER_BIN, // partitioner
+                                 _fof_path,          // -file
+                                 _k_size,            // -kmer-size
+                                 _nb_procs,          // -nb-procs
+                                 e->DIR,             // -run-dir
+                                 e->SYNCHRO_P,       // -dir-synchro
+                                 e->LOG_PARTITIONER  // &> partitioner.log
+    );
+    _f_log << command << endl;
+    std::system(command.c_str());
+    wait_end_signal(e->SYNCHRO_P + END_TEMP_P);
+  }
 }
 
 void Kmtricks::km_superk()
