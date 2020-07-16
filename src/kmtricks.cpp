@@ -29,7 +29,7 @@
 
 void wait_end_signal(string sign)
 {
-  const struct timespec t[] {{0, 500000000L}};
+  const struct timespec t[] {{0, 1000000L}};
   while (!System::file().doesExist(sign))
   {
     nanosleep(t, nullptr);
@@ -68,6 +68,7 @@ Kmtricks::Kmtricks()
     "run until step N. 1:partitioner, 2:superk, 3:count, 4:merge", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_ONLY,
     "run only step N. 1:partitioner, 2:superk, 3:count, 4:merger", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_KEEP_TMP, "keep all files", false, "0"));
 
   IOptionsParser* mParser = new OptionsParser ("kmer count, advanced performance tweaks");
 
@@ -82,8 +83,8 @@ Kmtricks::Kmtricks()
   
   IOptionsParser* oParser = new OptionsParser("output configuration");
 
-  oParser->push_back(new OptionOneParam(STR_COUNT_SIZE,
-    "size of count: 8, 16, 32 bits", false, "8"));
+  //oParser->push_back(new OptionOneParam(STR_COUNT_SIZE,
+  //  "size of count: 8, 16, 32 bits", false, "8"));
   oParser->push_back(new OptionOneParam(STR_HASHER,
     "hash function: [sabuhash || xor]", false, "xor"));
   oParser->push_back(new OptionOneParam(STR_MAX_HASH,
@@ -100,7 +101,7 @@ Kmtricks::Kmtricks()
   oParser->push_back(new OptionOneParam(STR_SPLIT,
     "split matrix in indvidual files: [sdsl || howde], (only with -matrix-fmt 4)\n\n"
     "                           sdsl: dump bit vector files with sdsl:bit_vector compatibility\n"
-    "                           howde: dump bit vector files with HowDeSBT compatibility", true));
+    "                           howde: dump bit vector files with HowDeSBT compatibility", false, "0"));
   getParser()->push_back(oParser);
 }
 
@@ -122,7 +123,9 @@ void Kmtricks::parse_args()
 
   _upto             = getInput()->getInt(STR_UP_TO);
   _only             = getInput()->getInt(STR_ONLY);
-  _nb_partitions    = getInput()->getInt("-nb-parts");
+  _nb_partitions    = getInput()->getInt(STR_NB_PARTS);
+
+  _keep_tmp         = getInput()->getInt(STR_KEEP_TMP);
 
   getInput()->add(1, STR_MAX_DISK, "0"); 
   getInput()->add(1, STR_STORAGE_TYPE, "file");
@@ -260,7 +263,7 @@ void Kmtricks::km_superk()
   size_t max_cj = min(_nb_procs, (_max_memory/rmemSk));
 
   _progress = new ProgressSynchro(
-    createIteratorListener (_bank_paths.size()*_nb_partitions, "km_superk"), System::thread().newSynchronizer());
+    createIteratorListener (_bank_paths.size(), "km_superk"), System::thread().newSynchronizer());
 
   size_t* jobs = new size_t(0);
   FBasedSync _superk_sync = FBasedSync(_bank_paths, e->SYNCHRO_S, END_TEMP_S, jobs, max_cj, _progress, e, 0);
@@ -315,7 +318,8 @@ void Kmtricks::km_count()
   //uint rmemCt = *max_element(vmem.begin(), vmem.end()) + 50;
   size_t max_cj = _nb_procs;//min(_nb_procs, (_max_memory/rmemCt));
   FBasedSync _count_sync = FBasedSync(count_jobs, e->SYNCHRO_C, END_TEMP_C, jobs, max_cj, _progress, e, 0);
-  
+
+  uint keep_superk = _keep_tmp ? 1 : 0;
   uint curr = 0;
   for (size_t i=0; i<_bank_paths.size(); i++)
   {
@@ -333,6 +337,7 @@ void Kmtricks::km_count()
         1,                              // -nb-cores
         n,                              // -part-id
         _hasher,                        // -hasher
+        keep_superk,                      // -keep-tmp
         fmt::format(e->LOG_COUNTER, i, n)  // &> counter.log
       );
       _f_log << command << endl;
@@ -360,7 +365,7 @@ void Kmtricks::km_merger()
     parts.push_back(to_string(p));
   
   size_t* jobs = new size_t(0);
-  FBasedSync _merge_sync = FBasedSync(parts, e->SYNCHRO_M, END_TEMP_M, jobs, max_cj, _progress, e, 0);
+  FBasedSync _merge_sync = FBasedSync(parts, e->SYNCHRO_M, END_TEMP_M, jobs, max_cj, _progress, e, !_keep_tmp);
   for (size_t i=0; i<_nb_partitions; i++)
   {
     string part_dir = e->STORE_KMERS + fmt::format(PART_DIR, i);
@@ -374,7 +379,8 @@ void Kmtricks::km_merger()
         out_fof << e->STORE_KMERS + fmt::format(PART_DIR, i) + "/" + path + "\n";
       }
     }
-
+    out_fof.flush();
+    out_fof.close();
     string command = fmt::format(MERGER_CMD,
       "",
       e->MERGER_BIN,  // kbf_merger

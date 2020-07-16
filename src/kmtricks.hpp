@@ -64,6 +64,7 @@ private:
   uint             _mode;
 
   uint             _only, _upto;
+  bool             _keep_tmp;
   
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
   

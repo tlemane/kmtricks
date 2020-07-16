@@ -43,6 +43,7 @@ void KmMerge::merge_to_pa_matrix()
       fout.write((char*)_m->_bit_vector, _m->vlen);
     }
   }
+  fout.close();
   string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
   IFile *sync_file = System::file().newFile(end_sign, "w");
   sync_file->flush();
@@ -66,6 +67,7 @@ void KmMerge::merge_to_bin()
       }
     }
   }
+  fout.close();
   string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
   IFile *sync_file = System::file().newFile(end_sign, "w");
   sync_file->flush();
@@ -88,6 +90,7 @@ void KmMerge::merge_to_ascii()
       fout << "\n";
     }
   }
+  fout.close();
   string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
   IFile *sync_file = System::file().newFile(end_sign, "w");
   sync_file->flush();
@@ -99,7 +102,7 @@ void KmMerge::merge_to_bf_pa()
   ofstream fout;
   string opath = e->STORE_MATRIX + fmt::format(BF_NT_TEMP, _id, _id);
   fout.open(opath, ios::binary);
-  uchar* empty = new uchar[_m->vlen];
+  uchar* empty = new uchar[_m->vlen]();
   uint64_t current_hash = _lower_hash;
 
   while(!_m->end)
@@ -123,7 +126,7 @@ void KmMerge::merge_to_bf_pa()
     fout.write((char*)empty, _m->vlen);
     current_hash++;
   }
-
+  fout.close();
   string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
   IFile *sync_file = System::file().newFile(end_sign, "w");
   sync_file->flush();
@@ -142,8 +145,10 @@ void KmMerge::transpose()
   delete mat;
   delete trp;
 }
+
 void KmMerge::execute()
 {
+
   parse_args();
   size_t hsize = getInput()->getInt(STR_HSIZE);
   bool setbv = _mode > 1;

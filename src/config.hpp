@@ -63,10 +63,12 @@ cs STR_COUNT_SIZE   = "-count-size";
 cs STR_HASHER       = "-hasher";
 cs STR_HASH_SEED    = "-hash-seed";
 cs STR_MAT_FMT      = "-matrix-fmt";
+cs STR_NB_PARTS     = "-nb-parts";
 cs STR_SPLIT        = "-split";
 cs STR_UP_TO        = "-until";
 cs STR_ONLY         = "-only";
 cs STR_HSIZE        = "-hsize";
+cs STR_KEEP_TMP     = "-keep-tmp";
 
 // commands
 cs PARTITIONER_CMD  = 
@@ -74,7 +76,7 @@ cs PARTITIONER_CMD  =
 cs SUPERK_CMD       = 
   "{} {} -file {} -run-dir {} -kmer-size {} -dir-synchro {} -nb-cores {} &> {} &";
 cs COUNTER_CMD      = 
-  "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} &> {} &";
+  "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} &> {} &";
 cs MERGER_CMD       = 
   "{} {} -file {} -run-dir {} -min-hash {} -max-hash {} -part-id {} -abundance-min {} -recurrence-min {} -mode {} &> {} &";
 

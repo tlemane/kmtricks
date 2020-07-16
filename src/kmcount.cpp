@@ -45,6 +45,7 @@ struct Functor
     string _run_dir = props->getStr(STR_RUN_DIR);
     uint   hash_mode = props->getInt(STR_MODE);
     uint   nbCores = props->getInt(STR_NB_CORES);
+    bool   keep_tmp = props->getInt(STR_KEEP_TMP);
     
     Env *e = new Env(_run_dir, "");
     Storage *_config_storage = StorageFactory(STORAGE_FILE).load(e->STORE_CONFIG);
@@ -139,8 +140,9 @@ struct Functor
     string end_sign = e->SYNCHRO_C + fmt::format(END_TEMP_C, sign);
     IFile *sync_file = System::file().newFile(end_sign, "w");
     sync_file->flush();
-    
-    System::file().remove(e->STORE_SUPERK + "/" + prefix + ".superk" + "/superKparts." + to_string(part_id));
+
+    if (!keep_tmp)
+      System::file().remove(e->STORE_SUPERK + "/" + prefix + ".superk" + "/superKparts." + to_string(part_id));
     pool.free_all();
     _superKstorage->closeFiles();
     _progress->finish();
@@ -172,6 +174,8 @@ KmCount::KmCount() : Tool("km_count")
     "part id", true));
   getParser()->push_back(new OptionOneParam(STR_HASHER,
     "hash function: [sabuhash || xor]", false, "None"));
+  getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
+    "keep superkmers files", false, "0"));
 }
 
 void KmCount::execute()
