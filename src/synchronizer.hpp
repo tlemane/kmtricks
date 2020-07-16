@@ -1,6 +1,22 @@
-#ifndef _SYNCHRONIZER_HPP_
-#define _SYNCHRONIZER_HPP_
+/*****************************************************************************
+ *   kmtricks
+ *   Authors: T. Lemane
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************************/
 
+#pragma once
 #include <libgen.h>
 
 #include "config.hpp"
@@ -8,151 +24,6 @@
 #include <fmt/format.h>
 #include <csignal>
 #include <unistd.h>
-
-typedef string    cmd_t;
-typedef string    kbf_t;
-typedef string    sync_t;
-typedef uint32_t  rmem_t;
-
-typedef map<cmd_t, tuple<sync_t, rmem_t>>Commands;
-typedef map<pid_t, tuple<kbf_t, sync_t>> pids_t;
-typedef tuple<cmd_t, sync_t, rmem_t> job_t;
-
-//class FBasedSync2
-//{
-//public:
-//  FBasedSync2(
-//    Commands &cmds,
-//    Env      *env,
-//    size_t   max_cores,
-//    size_t   max_mem,
-//    IteratorListener* progress
-//    );
-//  void execute();
-//
-//private:
-//  void check();
-//  tuple<cmd_t, sync_t, rmem_t> find();
-//  void wait_ressource();
-//  void execj(job_t &j);
-//
-//private:
-//  Commands _cmds;
-//  Env      *_e;
-//  size_t   _max_cores;
-//  size_t   _max_mem;
-//  size_t   _av_cores;
-//  size_t   _av_mem;
-//  size_t    _nb_cmds;
-//  pids_t   _current;
-//  pids_t   _finish;
-//  size_t   av_jobs;
-//  IteratorListener* _progress;
-//};
-//
-//tuple<cmd_t, sync_t, rmem_t> FBasedSync2::find()
-//{
-//  job_t job = make_tuple("", "", 0);
-//  for ( auto &cmd: _cmds )
-//  {
-//    rmem_t rmem = get<1>(cmd.second);
-//    if ( rmem < _av_mem )
-//    {
-//      sync_t tmp_sync = get<0>(cmd.second);
-//      _cmds.erase(cmd.first);
-//      job = make_tuple(cmd.first, tmp_sync, rmem);
-//      break;
-//    }
-//  }
-//  if (get<2>(job))
-//    _cmds.erase(get<0>(job));
-//  return job;
-//}
-//
-//FBasedSync2::FBasedSync2(Commands &cmds, Env *env, size_t max_cores, size_t max_mem, IteratorListener* progress)
-//  : _cmds(cmds), _e(env), _max_cores(max_cores), _max_mem(max_mem), _progress(progress)
-//{
-//  _av_cores = _max_cores;
-//  _av_mem   = _max_mem;
-//  _nb_cmds  = _cmds.size();
-//}
-//
-//void FBasedSync2::wait_ressource()
-//{
-//
-//}
-//
-//void FBasedSync2::execj(job_t &j)
-//{
-//  av_jobs--;
-//  pid_t fpid = fork();
-//  if (fpid == 0)
-//  {
-//    pid_t cpid = getpid();
-//    _current[cpid] = make_tuple("", get<1>(j));
-//    execv("A", get<0>(j).c_str());
-//  }
-//  else
-//  {
-//    _av_mem += get<2>(j);
-//  }
-//}
-//void FBasedSync2::execute()
-//{
-//  size_t max_concurrent = min(_max_mem/mem_p_j, _max_cores);
-//  av_jobs = max_concurrent;
-//  size_t _nb_run = 0;
-//  while (_nb_cmds != _nb_run)
-//  {
-//    if (!av_jobs)
-//      wait_ressource();
-//    else
-//      job_t new_job = find();
-//  }
-//  if (av_jobs)
-//  {
-//    job_t new_j = find();
-//  }
-//  for (auto& cmd: _cmds)
-//  {
-//    cmd_t   curr_command = cmd.first;
-//    sync_t  curr_fsync = get<0>(cmd.second);
-//    rmem_t  rmem       = get<1>(cmd.second);
-//    if (av_jobs > 0)
-//    {
-//      pid_t fpid = fork();
-//      if (fpid == 0)
-//      {
-//        pid_t cpid = getpid();
-//        _current[cpid] = make_tuple("kbf_couter", curr_fsync);
-//      }
-//      else {} //
-//    }
-//    else
-//    {
-//
-//    }
-//  }
-//}
-//
-//void FBasedSync2::check()
-//{
-//  for (auto& child: _current)
-//  {
-//    pid_t cpid = child.first;
-//    kbf_t  kbf_bin = get<0>(child.second);
-//    sync_t fsync = get<1>(child.second);
-//
-//    if (0 != kill(cpid, 0))
-//      if (!System::file().doesExist(fsync))
-//      {
-//        cout << "Process " << fsync << " stopped before sending its end signal" << endl;
-//        std::system(fmt::format("killall {}", kbf_bin).c_str());
-//        cout << "Execution halted" << endl;
-//        exit(EXIT_FAILURE);
-//      }
-//  }
-//}
 
 class FBasedSync
 {
@@ -305,4 +176,3 @@ void FBasedSync::write_end_signal(string& pref, string& synchro_dir)
   delete sync_file;
 }
 
-#endif // _SYNCHRONIZER_HPP_

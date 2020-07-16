@@ -1,19 +1,49 @@
-#include "kmmerge.hpp"
+/*****************************************************************************
+ *   kmtricks
+ *   Authors: T. Lemane
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************************/
+
+#include "km_merge_within_partition.hpp"
+
+const static map<string, int> output_format {
+  {"ascii", 0},
+  {"bin", 1},
+  {"pa", 2},
+  {"bf", 3},
+  {"bf_trp", 4}
+};
 
 KmMerge::KmMerge() : Tool("km_merge")
 {
-  setParser(new OptionsParser("Kmtricks sub-program: merger"));
+  setParser(new OptionsParser("km_merge_within_partition"));
 
-  getParser()->push_back(new OptionOneParam(STR_URI_FILE, "fof file", true));
-  getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "run directory", true));
-  getParser()->push_back(new OptionOneParam(STR_MIN_HASH, "lower bound hash", true));
-  getParser()->push_back(new OptionOneParam(STR_MAX_HASH, "upper bound hash", true));
+  IOptionsParser *hParser = new OptionsParser("hash mode, -mode <bf | bf_trp>");
+  hParser->push_back(new OptionOneParam(STR_MIN_HASH, "lower bound hash", true));
+  hParser->push_back(new OptionOneParam(STR_MAX_HASH, "upper bound hash", true));
+
+  getParser()->push_back(new OptionOneParam(STR_URI_FILE, "fof that contains path of partitions, one per line", true));
+  getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_PART_ID, "partition id", true));
-  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min", true));
-  getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min", true));
-  getParser()->push_back(new OptionOneParam(STR_MODE, "output format: [0, 1, 2, 3, 4], see kmtricks help"));
-  getParser()->push_back(new OptionOneParam(STR_HSIZE, "header size in byte", false, "12"));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "nb cores", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min to keep a k-mer", true));
+  getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min to keep a k-mer", true));
+  getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
+  getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "12"));
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
+
+  getParser()->push_back(hParser);
 }
 
 void KmMerge::parse_args()
@@ -25,7 +55,7 @@ void KmMerge::parse_args()
   _lower_hash     = getInput()->getInt(STR_MIN_HASH);
   _upper_hash     = getInput()->getInt(STR_MAX_HASH);
   _id             = getInput()->getInt(STR_PART_ID);
-  _mode           = getInput()->getInt(STR_MODE);
+  _mode           = output_format.at(getInput()->getStr(STR_MODE));
   e = new Env(_run_dir, "");
 }
 

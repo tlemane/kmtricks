@@ -28,7 +28,7 @@ void signal_callback(int signum);
 class Kmtricks : public Tool
 {
 public:
-    Kmtricks();
+    Kmtricks(bool env);
 private:
   void parse_args();
   void init();
@@ -61,11 +61,13 @@ private:
   string           _hasher;
   uint64_t         _min_hash, _max_hash;
   uint             _mat_fmt;
+  string           _mat_str;
   uint             _mode;
 
   uint             _only, _upto;
   bool             _keep_tmp;
-  
+  bool             _build_runtime;
+
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
   
 

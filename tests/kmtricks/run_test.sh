@@ -15,7 +15,7 @@ kmersize=20
 
 mkdir -p run_test/storage
 cp -r ./data/partition_storage_gatb ./run_test/storage
-${binary} -file ${fof} -run-dir ./run_test -kmer-size ${kmersize} -matrix-fmt 0 -nb-cores 1 -nb-parts ${nbpart} -max-memory 1000 -keep-tmp 1 -abundance-min 1 -recurrence-min 1
+${binary} -file ${fof} -run-dir ./run_test -kmer-size ${kmersize} -matrix-fmt ascii -nb-cores 2 -nb-parts ${nbpart} -max-memory 1000 -keep-tmp 1 -abundance-min 1 -recurrence-min 1
 
 #check superkmers partitions
 echo -ne "Superkmers partitions ..."
@@ -52,4 +52,4 @@ do
 done
 echo -e "\rMerge ... ok"
 
-rm -rf ./run_test
+#rm -rf ./run_test

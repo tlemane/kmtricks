@@ -60,21 +60,21 @@ add_executable(kmtricks src/kmtricks.cpp)
 add_dependencies(kmtricks ${DEPS})
 target_link_libraries(kmtricks ${LIBS})
 #
-add_executable(km_part src/kmpart.cpp)
-add_dependencies(km_part ${DEPS})
-target_link_libraries(km_part ${LIBS})
+add_executable(km_minim_repart src/km_minim_repart.cpp)
+add_dependencies(km_minim_repart ${DEPS})
+target_link_libraries(km_minim_repart ${LIBS})
 #
-add_executable(km_superk src/kmsuperk.cpp)
-add_dependencies(km_superk ${DEPS})
-target_link_libraries(km_superk ${LIBS})
+add_executable(km_reads_to_superk src/km_reads_to_superk.cpp)
+add_dependencies(km_reads_to_superk ${DEPS})
+target_link_libraries(km_reads_to_superk ${LIBS})
 #
-add_executable(km_count src/kmcount.cpp)
-add_dependencies(km_count ${DEPS})
-target_link_libraries(km_count ${LIBS})
+add_executable(km_superk_to_kmer_count src/km_superk_to_kmer_count.cpp)
+add_dependencies(km_superk_to_kmer_count ${DEPS})
+target_link_libraries(km_superk_to_kmer_count ${LIBS})
 #
-add_executable(km_merge src/kmmerge.cpp)
-add_dependencies(km_merge ${DEPS})
-target_link_libraries(km_merge ${LIBS})
+add_executable(km_merge_within_partition src/km_merge_within_partition.cpp)
+add_dependencies(km_merge_within_partition ${DEPS})
+target_link_libraries(km_merge_within_partition ${LIBS})
 
 enable_testing()
 

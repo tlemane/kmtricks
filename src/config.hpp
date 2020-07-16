@@ -72,9 +72,9 @@ cs STR_KEEP_TMP     = "-keep-tmp";
 
 // commands
 cs PARTITIONER_CMD  = 
-  "{} {} -file {} -kmer-size {} -nb-cores {} -run-dir {} -dir-synchro {} &> {} &";
+  "{} {} -file {} -kmer-size {} -nb-cores {} -run-dir {} &> {} &";
 cs SUPERK_CMD       = 
-  "{} {} -file {} -run-dir {} -kmer-size {} -dir-synchro {} -nb-cores {} &> {} &";
+  "{} {} -file {} -run-dir {} -kmer-size {} -nb-cores {} &> {} &";
 cs COUNTER_CMD      = 
   "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} &> {} &";
 cs MERGER_CMD       = 
@@ -95,7 +95,7 @@ cs PART_TEMP_K_F    = "/{}.kmers";
 
 cs PA_TEMP          = "/partition_{}/pa_matrix{}.mat";
 cs BF_NT_TEMP       = "/partition_{}/no_trp_bf{}.mat";
-cs BF_T_TEMP       = "/partition_{}/trp_bf{}.mat";
+cs BF_T_TEMP        = "/partition_{}/trp_bf{}.mat";
 cs AS_TEMP          = "/partition_{}/ascii_matrix{}.mat";
 cs CO_TEMP          = "/partition_{}/count_matrix{}.mat";
 
@@ -104,7 +104,8 @@ cs MAT_TEMP         = "/partition_{}/{}.mat";
 cs CONFIG_GRP       = "config";
 cs REPART_GRP       = "minimRepart";
 
-cs KILLALL          = "killall km_part km_superk km_count km_merge &> /dev/null";
+cs RM               = "rm {}/* &> /dev/null";
+cs KILLALL          = "killall km_minim_repart km_superk_to_kmer km_reads_to_superk km_merge_within_partition &> /dev/null";
 
   class Env
 {
@@ -155,6 +156,7 @@ public:
   string LOG_COUNTER;
   string LOG_MERGER;
   string LOG_CMD;
+
 };
 
 Env::Env(string main_dir, string binaries_dir)
@@ -165,10 +167,10 @@ Env::Env(string main_dir, string binaries_dir)
   STORE            = DIR + "/storage";
   LOG              = DIR + "/logs";
   // binaries
-  PARTITIONER_BIN  = BIN + "/km_part";
-  SUPERK_BIN       = BIN + "/km_superk";
-  COUNTER_BIN      = BIN + "/km_count";
-  MERGER_BIN       = BIN + "/km_merge";
+  PARTITIONER_BIN  = BIN + "/km_minim_repart";
+  SUPERK_BIN       = BIN + "/km_reads_to_superk";
+  COUNTER_BIN      = BIN + "/km_superk_to_kmer_count";
+  MERGER_BIN       = BIN + "/km_merge_within_partition";
 
   // synchro
   SYNCHRO_P        = SYNCHRO + "/partitioner";

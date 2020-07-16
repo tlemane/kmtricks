@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-#include "kmpart.hpp"
+#include "km_minim_repart.hpp"
 
 string get_str_fof(string fof_path)
 {
@@ -31,18 +31,17 @@ string get_str_fof(string fof_path)
 
 Repart::Repart() : Tool ("km_part")
 {
-  setParser(new OptionsParser("Kmtricks sub-program: partitioner"));
+  setParser(new OptionsParser("km_minim_repart"));
+
   getParser()->push_back(new OptionOneParam(STR_URI_FILE,
-    "fof that contains one fastx per line", true));
+                                              "fof that contains path of read files, one per line", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
-    "size of a k-mer", true));
+                                              "size of a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
-    "root of run directory", true));
-  getParser()->push_back(new OptionOneParam(STR_DIR_SYNCHRO,
-    "directory to write synchronization files", true));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES,
-    "nb cores"));
-};
+                                              "kmtricks run directory", true));
+   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
+                                              "number of cores", false, "8"));
+}
 
 template<size_t span> struct Functor 
 { 

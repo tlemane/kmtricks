@@ -21,7 +21,7 @@
 #include <gatb/kmer/impl/HashSorting.hpp>
 #include <gatb/kmer/impl/PartitionsCommand.hpp>
 #include <libgen.h>
-#include "kmcount.hpp"
+#include "km_superk_to_kmer_count.hpp"
 #include "CountProcessorDump.hpp"
 
 #ifndef KMTYPE
@@ -154,28 +154,32 @@ struct Functor
 
 KmCount::KmCount() : Tool("km_count")
 {
-  setParser(new OptionsParser("Kmtricks sub-program: counter"));
-  getParser()->setHelp("WARNING: this is a sub-program used by Kmtricks, don't use it directly.");
-  getParser()->push_back(new OptionOneParam(STR_URI_FILE,
-    "path"));
-  getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
-    "run directory", true));
-  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
-    "abundance min to keep a k-mer", true));
-  getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
-    "size of a k-mer", true));
-  getParser()->push_back(new OptionOneParam(STR_MAX_HASH,
+  setParser(new OptionsParser("kmtricks: km_superk_to_kmer_count"));
+
+  IOptionsParser *hParser = new OptionsParser("hash, only with -mode 1");
+  hParser->push_back(new OptionOneParam(STR_HASHER,
+    "hash function: sabuhash, xor", false, "xor"));
+  hParser->push_back(new OptionOneParam(STR_MAX_HASH,
     "max hash value", false, "0"));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES,
-    "nb cores", true));
-  getParser()->push_back(new OptionOneParam(STR_MODE,
-    "0: k-mers, 1: hashes", false, "1"));
+
+  getParser()->push_back(new OptionOneParam(STR_URI_FILE,
+    "path to read file", true));
+  getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
+    "kmtricks run directory", true));
+  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
+    "abundance min to keep a k-mer", false, "2"));
+  getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
+    "size of a k-mer", false, "31"));
   getParser()->push_back(new OptionOneParam(STR_PART_ID,
-    "part id", true));
-  getParser()->push_back(new OptionOneParam(STR_HASHER,
-    "hash function: [sabuhash || xor]", false, "None"));
+    "partition id", true));
+  getParser()->push_back(new OptionOneParam(STR_MODE,
+    "0: k-mers, 1: hashes", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES,
+    "number of cores", true));
   getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
     "keep superkmers files", false, "0"));
+
+  getParser()->push_back(hParser);
 }
 
 void KmCount::execute()

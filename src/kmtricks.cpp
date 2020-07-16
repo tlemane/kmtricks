@@ -27,6 +27,22 @@
 
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
 
+const static map<string, int> output_format {
+  {"ascii", 0},
+  {"bin", 1},
+  {"pa", 2},
+  {"bf", 3},
+  {"bf_trp", 4}
+};
+
+const static map<string, int> exec_control {
+  {"all", 0},
+  {"part", 1},
+  {"superk", 2},
+  {"count", 3},
+  {"merge", 4}
+};
+
 void wait_end_signal(string sign)
 {
   const struct timespec t[] {{0, 1000000L}};
@@ -44,90 +60,120 @@ void signal_callback(int signum)
   exit(EXIT_FAILURE);
 }
 
-Kmtricks::Kmtricks()
-  : Tool("Kmtricks"),
-  _min_hash(0)
+Kmtricks::Kmtricks(bool env)
+  : Tool("kmtricks"),
+  _min_hash(0), _build_runtime(env)
 {
-  getParser()->push_back(new OptionOneParam(STR_URI_FILE,
-    "fof that contains path of read files, one per line", true));
-  getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
-    "directory to write tmp and output files", true));
-  getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
-    "size of a kmer", false, "31"));
-  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
-    "min abundance threshold for solid kmers", false, "2"));
-  getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MAX,
-    "max abundance threshold for solid kmers", false, "27777777"));
-  getParser()->push_back(new OptionOneParam(STR_REC_MIN,
-    "min recurrence threshold through datasets for solid kmers", false, "2"));
-  getParser()->push_back(new OptionOneParam(STR_NB_PROC,
-    "max simultaneously process", false, "8"));
-  getParser()->push_back(new OptionOneParam(STR_MAX_MEMORY, 
-    "max memory available in megabytes", true));
-  getParser()->push_back(new OptionOneParam(STR_UP_TO,
-    "run until step N. 1:partitioner, 2:superk, 3:count, 4:merge", false, "0"));
-  getParser()->push_back(new OptionOneParam(STR_ONLY,
-    "run only step N. 1:partitioner, 2:superk, 3:count, 4:merger", false, "0"));
-  getParser()->push_back(new OptionOneParam(STR_KEEP_TMP, "keep all files", false, "0"));
+  if (!env)
+  {
+    getParser()->push_back(new OptionOneParam(STR_URI_FILE,
+                                              "fof that contains path of read files, one per line", true));
+    getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
+                                              "directory to write tmp and output files", true));
+    getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
+                                              "size of a kmer", false, "31"));
+    getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
+                                              "min abundance threshold for solid kmers", false, "2"));
+    getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MAX,
+                                              "max abundance threshold for solid kmers", false, "3000000"));
+    getParser()->push_back(new OptionOneParam(STR_REC_MIN,
+                                              "min recurrence threshold through datasets for solid kmers", false, "2"));
+    getParser()->push_back(new OptionOneParam(STR_MAX_MEMORY,
+                                              "max memory available in megabytes", false, "8000"));
+    getParser()->push_back(new OptionOneParam(STR_MAT_FMT,
+                                          "output matrix format: ascii, bin, pa, bf, bf_trp", false, "bin"));
+    getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "8"));
+    getParser()->push_back(new OptionOneParam(STR_KEEP_TMP, "keep all files", false, "0"));
 
-  IOptionsParser* mParser = new OptionsParser ("kmer count, advanced performance tweaks");
+    IOptionsParser *cParser = new OptionsParser("kmtricks pipeline control");
 
-  mParser->push_back (new OptionOneParam (STR_MINIMIZER_TYPE,
-    "minimizer type (0=lexi, 1=freq)", false, "0"));
-  mParser->push_back (new OptionOneParam (STR_MINIMIZER_SIZE,
-    "size of a minimizer", false, "10"));
-  mParser->push_back (new OptionOneParam (STR_REPARTITION_TYPE,
-    "minimizer repartition (0=unordered, 1=ordered)", false, "0"));
-  mParser->push_back(new OptionOneParam ("-nb-parts", "number of partitions", false, "0"));
-  getParser()->push_back (mParser);
-  
-  IOptionsParser* oParser = new OptionsParser("output configuration");
+    cParser->push_back(new OptionOneParam(STR_UP_TO,
+                                              "run until step : part, superk, count, merge", false,
+                                              "all"));
+    cParser->push_back(new OptionOneParam(STR_ONLY,
+                                              "run only step : part, superk, count, merge", false,
+                                              "all"));
+    getParser()->push_back(cParser);
 
-  //oParser->push_back(new OptionOneParam(STR_COUNT_SIZE,
-  //  "size of count: 8, 16, 32 bits", false, "8"));
-  oParser->push_back(new OptionOneParam(STR_HASHER,
-    "hash function: [sabuhash || xor]", false, "xor"));
-  oParser->push_back(new OptionOneParam(STR_MAX_HASH,
-    "max hash value ( 0 < hash < max(int64) )", false, "1e9"));
-  oParser->push_back(new OptionOneParam(STR_MAT_FMT,
-    "output matrix format: [0, 1, 2, 3, 4] - 3 and 4 available only with -hasher\n\n"
-    "                           0: ascii    <kmer/hash>  <count_0> ... <count_n>\n"
-    "                           1: count    <uint64>     <uintX_0> ... <uintX_n>\n"
-    "                           2: pa       <uint64>     <presence/absence vecs>\n\n"
-    "                           3: bf       (hash0)      <presence/absence vecs>\n"
-    "                                          |                    |           \n"
-    "                                       (hashN)      <presence/absence vecs>\n\n"
-    "                           4: bf_trp   transposition of bf\n", true));
-  oParser->push_back(new OptionOneParam(STR_SPLIT,
-    "split matrix in indvidual files: [sdsl || howde], (only with -matrix-fmt 4)\n\n"
-    "                           sdsl: dump bit vector files with sdsl:bit_vector compatibility\n"
-    "                           howde: dump bit vector files with HowDeSBT compatibility", false, "0"));
-  getParser()->push_back(oParser);
+    IOptionsParser *mParser = new OptionsParser("advanced performance tweaks");
+
+    mParser->push_back(new OptionOneParam(STR_MINIMIZER_TYPE,
+                                          "minimizer type (0=lexi, 1=freq)", false, "0"));
+    mParser->push_back(new OptionOneParam(STR_MINIMIZER_SIZE,
+                                          "size of a minimizer", false, "10"));
+    mParser->push_back(new OptionOneParam(STR_REPARTITION_TYPE,
+                                          "minimizer repartition (0=unordered, 1=ordered)", false, "0"));
+    mParser->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", false, "0"));
+    getParser()->push_back(mParser);
+
+    IOptionsParser *oParser = new OptionsParser("hash mode configuration, only with -matrix-fmt <bf | bf_trp>");
+
+    oParser->push_back(new OptionOneParam(STR_HASHER,
+                                          "hash function: sabuhash, xor", false, "xor"));
+    oParser->push_back(new OptionOneParam(STR_MAX_HASH,
+                                          "max hash value ( 0 < hash < max(int64) )", false, "1000000000"));
+    oParser->push_back(new OptionOneParam(STR_SPLIT,
+                                          "split matrix in indvidual files: sdsl, howde, (only with -matrix-fmt bf_trp)", false, "0"));
+    getParser()->push_back(oParser);
+  }
+  else
+  {
+    setParser(new OptionsParser("kmtricks: build runtime environment"));
+
+    getParser()->push_back(new OptionOneParam(STR_URI_FILE,
+                                              "fof that contains path of read files, one per line", true));
+    getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
+                                              "directory to write tmp and output files", true));
+    getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
+                                              "size of a kmer", false, "31"));
+    getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
+                                              "min abundance threshold for solid kmers", false, "2"));
+    getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MAX,
+                                              "max abundance threshold for solid kmers", false, "30000000"));
+    getParser()->push_back(new OptionOneParam(STR_MAX_MEMORY,
+                                              "max memory available in megabytes", false, "8000"));
+    getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "8"));
+
+    IOptionsParser *mParser = new OptionsParser("advanced performance tweaks");
+    mParser->push_back(new OptionOneParam(STR_MINIMIZER_TYPE,
+                                          "minimizer type (0=lexi, 1=freq)", false, "0"));
+    mParser->push_back(new OptionOneParam(STR_MINIMIZER_SIZE,
+                                          "size of a minimizer", false, "10"));
+    mParser->push_back(new OptionOneParam(STR_REPARTITION_TYPE,
+                                          "minimizer repartition (0=unordered, 1=ordered)", false, "0"));
+    mParser->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", false, "0"));
+    getParser()->push_back(mParser);
+
+  }
 }
 
 void Kmtricks::parse_args()
 {
   _fof_path         = getInput()->getStr(STR_URI_FILE);
-  _nb_cores         = getInput()->getInt(STR_NB_CORES);
   _max_memory       = getInput()->getInt(STR_MAX_MEMORY);
   _k_size           = getInput()->getInt(STR_KMER_SIZE);
   _a_min            = getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
   _a_max            = getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
-  _r_min            = getInput()->getInt(STR_REC_MIN);
   _dir              = getInput()->getStr(STR_RUN_DIR);
-
-  _max_hash         = getInput()->getInt(STR_MAX_HASH);
-  _min_hash         = getInput()->getInt(STR_MAX_HASH);
-  _mat_fmt          = getInput()->getInt(STR_MAT_FMT);
-  _hasher           = getInput()->getStr(STR_HASHER);
-
-  _upto             = getInput()->getInt(STR_UP_TO);
-  _only             = getInput()->getInt(STR_ONLY);
   _nb_partitions    = getInput()->getInt(STR_NB_PARTS);
 
-  _keep_tmp         = getInput()->getInt(STR_KEEP_TMP);
+  if (!_build_runtime)
+  {
+    _r_min    = getInput()->getInt(STR_REC_MIN);
 
-  getInput()->add(1, STR_MAX_DISK, "0"); 
+    _nb_cores = getInput()->getInt(STR_NB_CORES);
+    _max_hash = getInput()->getInt(STR_MAX_HASH);
+    _mat_str  = getInput()->getStr(STR_MAT_FMT);
+    _mat_fmt  = output_format.at(_mat_str);
+    _hasher   = getInput()->getStr(STR_HASHER);
+
+    _upto = exec_control.at(getInput()->getStr(STR_UP_TO));
+    _only = exec_control.at(getInput()->getStr(STR_ONLY));
+
+    _keep_tmp = getInput()->getInt(STR_KEEP_TMP);
+  }
+
+  getInput()->add(1, STR_MAX_DISK, "0");
   getInput()->add(1, STR_STORAGE_TYPE, "file");
   getInput()->add(1, STR_SOLIDITY_KIND, "sum");
 }
@@ -136,7 +182,7 @@ void Kmtricks::init()
 {
   _nb_procs = _nb_cores;
 
-  char* buffer = new char[1024]; // 
+  char buffer[256];
 
 #if __APPLE__
   uint32_t size;
@@ -146,7 +192,6 @@ void Kmtricks::init()
 #endif
 
   _path_binary = dirname(buffer);
-  delete[] buffer;
 
   e = new Env(_dir, _path_binary);
   e->build();
@@ -188,35 +233,19 @@ void Kmtricks::init()
   {
     _hash_windows.emplace_back(i*window_size, ((i+1)*window_size)-1);
   }  
-  
-  size_t maxCores   = _nb_cores;
-  size_t maxMem     = _max_memory;
-  size_t minMemJob  = 1000;
-  
-  size_t maxJ_core  = min(maxCores/2, _bank_paths.size());
-  maxJ_core         = max(maxJ_core, (size_t)1);
-  size_t maxJ_mem   = maxMem/minMemJob;
-  maxJ_mem          = max(maxJ_mem, (size_t)1);
-  size_t maxJobs    = min(maxJ_core, maxJ_mem);
-  _max_job          = maxJobs;
-
-  _max_job          = max(_max_job, maxCores);
-  _core_p_j         = maxCores/_max_job;
-  _core_p_j         = max(_core_p_j, (size_t)1);
-
-  _mem_p_j          = maxMem / _max_job;
-  _mem_p_j          = max(_mem_p_j, (size_t)minMemJob);
-  
-
 }
 
 void Kmtricks::execute()
 {
   parse_args();
   init();
+
   signal(SIGINT, signal_callback);
 
   bool all = (_only == 0);
+
+  if (_build_runtime)
+    goto end;
 
   if ( (_only == 1) | all )
     km_part();
@@ -250,13 +279,13 @@ void Kmtricks::km_part()
                                  _k_size,            // -kmer-size
                                  _nb_procs,          // -nb-procs
                                  e->DIR,             // -run-dir
-                                 e->SYNCHRO_P,       // -dir-synchro
                                  e->LOG_PARTITIONER  // &> partitioner.log
     );
     _f_log << command << endl;
     std::system(command.c_str());
     wait_end_signal(e->SYNCHRO_P + END_TEMP_P);
   }
+  std::system(fmt::format(RM, e->SYNCHRO_P).c_str());
 }
 
 void Kmtricks::km_superk()
@@ -279,7 +308,6 @@ void Kmtricks::km_superk()
       _bank_paths[i],               // -file
       e->DIR,                       // -run-dir
       _k_size,                      // -kmer-size
-      e->SYNCHRO_S,                 // -dir-synchro
       1,                            // -nb-cores
       fmt::format(e->LOG_SUPERK, i) // &> superk.log
     );
@@ -290,6 +318,8 @@ void Kmtricks::km_superk()
     _superk_sync.wait_ressources(i);
   }
   _superk_sync.wait_end();
+  delete jobs;
+  std::system(fmt::format(RM, e->SYNCHRO_S).c_str());
 }
 
 void Kmtricks::km_count()
@@ -300,7 +330,6 @@ void Kmtricks::km_count()
 
   size_t* jobs = new size_t(0);
   vector<string> count_jobs;
-  //vector<uint64_t> vmem(nbs);
   string jname;
   char cop[256];
   for (size_t i=0; i<_bank_paths.size(); i++)
@@ -311,15 +340,12 @@ void Kmtricks::km_count()
     PartiInfo<5> tmpinfo(name);
     for (size_t n=0; n<_nb_partitions; n++)
     {
-      uint64_t nbelem = tmpinfo.getNbKmer(n);
-      //vmem.push_back((nbelem*64)/8000000);
       jname = _bank_paths[i]+"_"+to_string(n);
       count_jobs.push_back(jname);
     }
   }
 
-  //uint rmemCt = *max_element(vmem.begin(), vmem.end()) + 50;
-  size_t max_cj = _nb_procs;//min(_nb_procs, (_max_memory/rmemCt));
+  size_t max_cj = _nb_procs;
   FBasedSync _count_sync = FBasedSync(count_jobs, e->SYNCHRO_C, END_TEMP_C, jobs, max_cj, _progress, e, 0);
 
   uint keep_superk = _keep_tmp ? 1 : 0;
@@ -353,6 +379,7 @@ void Kmtricks::km_count()
   }
   _count_sync.wait_end();
   delete jobs;
+  std::system(fmt::format(RM, e->SYNCHRO_C).c_str());
 }
 
 void Kmtricks::km_merger()
@@ -398,7 +425,7 @@ void Kmtricks::km_merger()
       i,              // -part-id
       _a_min,         // -abundance-min
       _r_min,         // -recurrence-min
-      _mat_fmt,       // -mode
+      _mat_str,       // -mode
       fmt::format(e->LOG_MERGER, i)
     );
     _f_log << command << endl;
@@ -411,13 +438,22 @@ void Kmtricks::km_merger()
 
   fof.close();
   delete jobs;
+  std::system(fmt::format(RM, e->SYNCHRO_M).c_str());
 }
 
 int main(int argc, char* argv[])
 {
   try 
   {
-    Kmtricks().run(argc, argv);
+    string mode = "";
+    bool env = false;
+    if (argc > 1)
+      mode = argv[1];
+    if (mode == "env")
+    {
+      env = true; argc--; argv++;
+    }
+    Kmtricks(env).run(argc, argv);
   }
   catch (OptionFailure &e)
   {

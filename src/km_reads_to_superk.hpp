@@ -31,7 +31,7 @@ private:
 
 struct Parameter
 {
-  Parameter (KmSuperK &config, IProperties *props) : superk(superk), props(props) {}
+  Parameter (KmSuperK &superk, IProperties *props) : superk(superk), props(props) {}
   KmSuperK&       superk;
   IProperties*    props;
 };

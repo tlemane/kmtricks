@@ -18,7 +18,7 @@
 
 #include <fmt/format.h>
 #include <libgen.h>
-#include "kmsuperk.hpp"
+#include "km_reads_to_superk.hpp"
 template<size_t span> struct Functor
 {
   void operator() (Parameter parameter)
@@ -67,7 +67,6 @@ template<size_t span> struct Functor
     uint _nb_cores = props->getInt(STR_NB_CORES);
     Dispatcher dispatcher(_nb_cores);
 
-    //_superKstorage->openFiles("w");
     size_t groupSize = 1000;
     bool deleteSync = true;
     dispatcher.iterate(
@@ -95,23 +94,20 @@ template<size_t span> struct Functor
 
 KmSuperK::KmSuperK() : Tool ("km_superk")
 {
-  setParser(new OptionsParser("Kmtricks sub-program: superk"));
+  setParser(new OptionsParser("km_reads_to_superk"));
 
   getParser()->push_back(new OptionOneParam(STR_URI_FILE,
-    "fof that contains one fastx per line", true));
+    "path to read file", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,
     "size of a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
-    "root of run directory", true));
-  getParser()->push_back(new OptionOneParam(STR_DIR_SYNCHRO,
-    "directory to write superk synchronization files", true));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES, 
-    "nb cores", true));
+    "kmtricks run directory", true));
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES,
+    "number of cores", true));
 }
 
 void KmSuperK::execute()
 {
-  //getInput()->add(1, STR_NB_CORES, "1");
   size_t kmer_size = getInput()->getInt(STR_KMER_SIZE);
   Integer::apply<Functor, Parameter> (kmer_size, Parameter(*this, getInput()));
 }
