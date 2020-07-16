@@ -13,7 +13,9 @@ fof=./data/fof.txt
 nbpart=4
 kmersize=20
 
-${binary} -file ${fof} -run-dir ./run_test -kmer-size ${kmersize} -matrix-fmt 4 -nb-cores 1 -nb-parts ${nbpart} -max-memory 1000 -keep-tmp 1 -max-hash 100 -abundance-min 1 -recurrence-min 1 #-only 4
+mkdir -p run_test/storage
+cp -r ./data/partition_storage_gatb ./run_test/storage
+${binary} -file ${fof} -run-dir ./run_test -kmer-size ${kmersize} -matrix-fmt 0 -nb-cores 1 -nb-parts ${nbpart} -max-memory 1000 -keep-tmp 1 -abundance-min 1 -recurrence-min 1
 
 #check superkmers partitions
 echo -ne "Superkmers partitions ..."
@@ -42,14 +44,12 @@ done
 echo -e "\rHash/Kmer partitions ... ok"
 
 #check merge and trp
-echo -ne "Merge/Tranpose ..."
+echo -ne "Merge ..."
 for (( i=0; i<${nbpart}; i++ ))
 do
-    diff ./res/matrices/partition_${i}/no_trp_bf${i}.mat ./run_test/storage/matrix/partition_${i}/no_trp_bf${i}.mat
-    check_exit_code
-    diff ./res/matrices/partition_${i}/trp_bf${i}.mat ./run_test/storage/matrix/partition_${i}/trp_bf${i}.mat
+    diff ./res/matrices/partition_${i}/ascii_matrix${i}.mat ./run_test/storage/matrix/partition_${i}/ascii_matrix${i}.mat
     check_exit_code
 done
-echo -e "\rMerge/Transpose ... ok"
+echo -e "\rMerge ... ok"
 
 rm -rf ./run_test
