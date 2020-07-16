@@ -4,6 +4,7 @@
 |                                                              linux                                                             |                                                               osx                                                              |
 |:------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------:|
 | [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=1)](https://travis-ci.com/github/tlemane/kmtricks) | [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=4)](https://travis-ci.com/github/tlemane/kmtricks) |
+
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
 ## kmtrics IOs
