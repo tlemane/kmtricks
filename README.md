@@ -30,15 +30,23 @@ List of IDs available [here](tests/kmtricks/experiment_list_674.txt).
 
 ## kmtrics modules
 
+kmtricks is composed of 5 independent modules
+
+<img src="https://github.com/tlemane/kmtricks/blob/master/doc/kmtricks_pipeline.png" width="300">
+
+### Determine partitions
+
+From reads, determine minimizers and assign each minimizer to a partition
+
 ### Reads to partitioned super kmers
 
-TODO
+For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
 ### Super kmers to counted elements 
 
-TODO
+For each superkmer partition, determine, sort and count kmers, or hash value.
 
-(element = kmer or has value)
+(element = kmer or hash value)
 
 ### Merging counted kmers 
 
