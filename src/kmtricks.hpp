@@ -40,43 +40,32 @@ private:
   void execute() override;
 
   IteratorListener* _progress;
-  vector<string>  _bank_paths;
-  ofstream        _f_log;
+  vector<string>    _bank_paths;
+  ofstream          _f_log;
   
-  string          _fof_path;
-  Env*             e;
-  size_t           _k_size;
-  uint             _a_min, _a_max, _r_min;
-  uint             _nb_cores, _max_memory;
-  uint             _nb_partitions;
-  uint             _nb_procs;
+  string            _fof_path;
+  Env*              e;
+  size_t            _k_size;
+  uint              _a_min, _a_max, _r_min;
+  uint              _nb_cores, _max_memory;
+  uint              _nb_partitions;
+  uint              _nb_procs;
 
-  uint             _max_mem, _max_disk;
-  size_t           _max_job, _core_p_j, _mem_p_j;
+  string            _dir;
+  string            _path_binary;
 
+  string            _hasher;
+  uint64_t          _min_hash, _max_hash;
+  uint              _mat_fmt;
+  string            _mat_str;
+  string            _str_split;
+  bool              _split;
+  uint              _mode;
 
-  string           _dir;
-  string           _path_binary;
-
-  string           _hasher;
-  uint64_t         _min_hash, _max_hash;
-  uint             _mat_fmt;
-  string           _mat_str;
-  uint             _mode;
-
-  uint             _only, _upto;
-  bool             _keep_tmp;
-  bool             _build_runtime;
+  uint              _only, _upto;
+  bool              _keep_tmp;
+  bool              _build_runtime;
 
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
-  
-
-};
-
-struct Parameter
-{
-  Parameter (Kmtricks& m_superk, IProperties* props) : m_superk(m_superk), props(props) {}
-  Kmtricks&      m_superk;
-  IProperties*      props;
 };
 

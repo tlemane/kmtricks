@@ -43,14 +43,11 @@ const static map<string, int> exec_control {
   {"merge", 4}
 };
 
-void wait_end_signal(string sign)
-{
-  const struct timespec t[] {{0, 1000000L}};
-  while (!System::file().doesExist(sign))
-  {
-    nanosleep(t, nullptr);
-  }
-}
+const static map<string, int> filter_format {
+  {"none", 0},
+  {"sdsl", 1},
+  {"howde", 2}
+};
 
 void signal_callback(int signum)
 {
@@ -66,6 +63,7 @@ Kmtricks::Kmtricks(bool env)
 {
   if (!env)
   {
+    setParser(new OptionsParser("kmtricks"));
     getParser()->push_back(new OptionOneParam(STR_URI_FILE,
                                               "fof that contains path of read files, one per line", true));
     getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
@@ -84,6 +82,7 @@ Kmtricks::Kmtricks(bool env)
                                           "output matrix format: ascii, bin, pa, bf, bf_trp", false, "bin"));
     getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "8"));
     getParser()->push_back(new OptionOneParam(STR_KEEP_TMP, "keep all files", false, "0"));
+    getParser()->push_back(new OptionOneParam(STR_VERBOSE, "verbosity", false, "1"));
 
     IOptionsParser *cParser = new OptionsParser("kmtricks pipeline control");
 
@@ -113,7 +112,7 @@ Kmtricks::Kmtricks(bool env)
     oParser->push_back(new OptionOneParam(STR_MAX_HASH,
                                           "max hash value ( 0 < hash < max(int64) )", false, "1000000000"));
     oParser->push_back(new OptionOneParam(STR_SPLIT,
-                                          "split matrix in indvidual files: sdsl, howde, (only with -matrix-fmt bf_trp)", false, "0"));
+                                          "split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)", false, "none"));
     getParser()->push_back(oParser);
   }
   else
@@ -143,7 +142,6 @@ Kmtricks::Kmtricks(bool env)
                                           "minimizer repartition (0=unordered, 1=ordered)", false, "0"));
     mParser->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", false, "0"));
     getParser()->push_back(mParser);
-
   }
 }
 
@@ -170,7 +168,16 @@ void Kmtricks::parse_args()
     _upto = exec_control.at(getInput()->getStr(STR_UP_TO));
     _only = exec_control.at(getInput()->getStr(STR_ONLY));
 
-    _keep_tmp = getInput()->getInt(STR_KEEP_TMP);
+    _keep_tmp   = getInput()->getInt(STR_KEEP_TMP);
+    _str_split  = getInput()->getStr(STR_SPLIT);
+    _split      = filter_format.at(_str_split);
+
+    if (_split && (_mat_fmt != 4))
+    {
+      cout << fmt::format("-split option incompatible with -matrix-fmt {}", _mat_str) << endl;
+      cout << getParser()->getHelp() << endl;
+      exit(EXIT_FAILURE);
+    }
   }
 
   getInput()->add(1, STR_MAX_DISK, "0");
@@ -231,9 +238,19 @@ void Kmtricks::init()
 
   auto window_size = NMOD8((uint64_t)ceil((double)_max_hash / (double)_nb_partitions));
 
-  for (int i=0; i<_nb_partitions; i++)
+  if (!_build_runtime)
   {
-    _hash_windows.emplace_back(i*window_size, ((i+1)*window_size)-1);
+    ofstream hw(e->HASHW_MAP);
+    uint64_t lb, ub;
+    for ( int i = 0; i < _nb_partitions; i++ )
+    {
+      lb = i * window_size;
+      ub = ((i + 1) * window_size) - 1;
+      _hash_windows.emplace_back(make_tuple(lb, ub));
+      hw.write((char *) &lb, sizeof(uint64_t));
+      hw.write((char *) &ub, sizeof(uint64_t));
+    }
+    hw.close();
   }
 }
 
@@ -286,7 +303,9 @@ void Kmtricks::km_part()
     );
     _f_log << command << endl;
     std::system(command.c_str());
-    wait_end_signal(e->SYNCHRO_P + END_TEMP_P);
+    const struct timespec t[] {{0, 1000000L}};
+    while (!System::file().doesExist(e->SYNCHRO_P + END_TEMP_P))
+      nanosleep(t, nullptr);
   }
   std::system(fmt::format(RM, e->SYNCHRO_P).c_str());
 }

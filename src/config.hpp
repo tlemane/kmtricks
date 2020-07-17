@@ -146,6 +146,7 @@ public:
   string STORE_CONFIG;
   string STORE_PART;
   string FOF_FILE;
+  string HASHW_MAP;
 
   // log
   string LOG_SUPERK_D;
@@ -188,6 +189,7 @@ Env::Env(string main_dir, string binaries_dir)
   STORE_CONFIG     = STORE + "/config_storage";
   STORE_PART       = STORE + "/partition_storage";
   FOF_FILE         = STORE + "/fof.txt";
+  HASHW_MAP        = STORE + "/hash_window.vec";
   // log files
 
   LOG_SUPERK_D     = LOG + "/superk";
