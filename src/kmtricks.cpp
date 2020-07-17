@@ -25,30 +25,6 @@
 #include <mach-o/dyld.h>
 #endif
 
-#define NMOD8(byte) ((byte)+(8-((byte)%8)))
-
-const static map<string, int> output_format {
-  {"ascii", 0},
-  {"bin", 1},
-  {"pa", 2},
-  {"bf", 3},
-  {"bf_trp", 4}
-};
-
-const static map<string, int> exec_control {
-  {"all", 0},
-  {"part", 1},
-  {"superk", 2},
-  {"count", 3},
-  {"merge", 4}
-};
-
-const static map<string, int> filter_format {
-  {"none", 0},
-  {"sdsl", 1},
-  {"howde", 2}
-};
-
 void signal_callback(int signum)
 {
   cout << "\nInterrupt signal (" << signum << ") received" << endl;
