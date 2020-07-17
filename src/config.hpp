@@ -47,6 +47,58 @@ typedef const string cs;
     └── superk
 */
 
+#define NMOD8(byte) ((byte)+(8-((byte)%8)))
+
+#ifndef KTYPE
+#define KTYPE 64
+#endif
+
+#ifndef CNTYPE
+#define CNTYPE 8
+#endif
+
+#if KTYPE == 8
+typedef uint8_t kmtype_t;
+#elif KTYPE == 16
+typedef uint16_t kmtype_t;
+#elif KTYPE == 32
+typedef uint32_t kmtype_t;
+#elif KTYPE == 64
+typedef uint64_t kmtype_t;
+#elif KTYPE == 128
+typedef __uint128_t kmtype_t
+#endif
+
+#if CNTYPE == 8
+typedef uint8_t cntype_t;
+#elif CNTYPE == 16
+typedef uint16_t cntype_t;
+#elif CNTYPE == 32
+  typedef uint32_t cntype_t;
+#endif
+
+const static map<string, int> output_format {
+  {"ascii", 0},
+  {"bin", 1},
+  {"pa", 2},
+  {"bf", 3},
+  {"bf_trp", 4}
+};
+
+const static map<string, int> exec_control {
+  {"all", 0},
+  {"part", 1},
+  {"superk", 2},
+  {"count", 3},
+  {"merge", 4}
+};
+
+const static map<string, int> filter_format {
+  {"none", 0},
+  {"sdsl", 1},
+  {"howde", 2}
+};
+
 // arg flags not in gatb core
 cs STR_NOHUP        = "nohup";
 cs STR_DIR_SYNCHRO  = "-dir-synchro";
@@ -69,6 +121,7 @@ cs STR_UP_TO        = "-until";
 cs STR_ONLY         = "-only";
 cs STR_HSIZE        = "-hsize";
 cs STR_KEEP_TMP     = "-keep-tmp";
+cs STR_NB_FILE      = "-nb-files";
 
 // commands
 cs PARTITIONER_CMD  = 

@@ -26,19 +26,8 @@
 using namespace std;
 typedef unsigned char uchar;
 
-#ifndef KMAXSIZE
-#define KMAXSIZE 32
-#endif
-
-#ifndef MAXCNT
-#define MAXCNT 255
-#endif
-
 class KmMerge : public gatb::core::tools::misc::impl::Tool
 {
-  typedef selectK<KMAXSIZE>::type   KType;
-  typedef selectC<MAXCNT>::type     CType;
-
 public:
   KmMerge();
   void        execute() override;
@@ -52,7 +41,7 @@ private:
   void        transpose();
 
 private:
-  Merger<KType, CType>  *_m;
+  Merger<kmtype_t, cntype_t>  *_m;
   Env*                  e;
   uint                  _min_a;
   uint                  _min_r;

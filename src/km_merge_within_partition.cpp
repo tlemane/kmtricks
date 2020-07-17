@@ -18,14 +18,6 @@
 
 #include "km_merge_within_partition.hpp"
 
-const static map<string, int> output_format {
-  {"ascii", 0},
-  {"bin", 1},
-  {"pa", 2},
-  {"bf", 3},
-  {"bf_trp", 4}
-};
-
 KmMerge::KmMerge() : Tool("km_merge")
 {
   setParser(new OptionsParser("km_merge_within_partition"));
@@ -69,7 +61,7 @@ void KmMerge::merge_to_pa_matrix()
     _m->next();
     if (_m->keep)
     {
-      fout.write((char*)&_m->m_khash, sizeof(KType));
+      fout.write((char*)&_m->m_khash, sizeof(kmtype_t));
       fout.write((char*)_m->_bit_vector, _m->vlen);
     }
   }
@@ -90,10 +82,10 @@ void KmMerge::merge_to_bin()
     _m->next();
     if (_m->keep)
     {
-      fout.write((char*)&_m->m_khash, sizeof(KType));
+      fout.write((char*)&_m->m_khash, sizeof(kmtype_t));
       for (size_t i=0; i<_m->nb_files; i++)
       {
-        fout.write((char*)&_m->counts[i], sizeof(CType));
+        fout.write((char*)&_m->counts[i], sizeof(cntype_t));
       }
     }
   }
@@ -183,7 +175,7 @@ void KmMerge::execute()
   size_t hsize = getInput()->getInt(STR_HSIZE);
   bool setbv = _mode > 1;
 
-  _m = new Merger<KType, CType>(_fofpath, _min_a, _min_r, hsize, setbv);
+  _m = new Merger<kmtype_t, cntype_t>(_fofpath, _min_a, _min_r, hsize, setbv);
   switch (_mode)
 {
   case 0:

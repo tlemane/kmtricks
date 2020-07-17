@@ -18,14 +18,7 @@
 
 #pragma once
 #include <gatb/gatb_core.hpp>
-
-#ifndef KMTYPE
-typedef uint64_t kmtype_t;
-#endif
-
-#ifndef CNTYPE
-typedef uint8_t cntype_t;
-#endif
+#include "config.hpp"
 
 static const map<size_t, uint64_t> maxc = {
   { 1 , 0xFF},

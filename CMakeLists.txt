@@ -36,10 +36,24 @@ ExternalProject_Add(sdsl
         INSTALL_COMMAND "")
 
 add_definitions(${FLAGS})
+
+if (NOT KMERTYPE)
+    set(KMERTYPE 64)
+endif()
+
+
+if (NOT COUNTTYPE)
+    set(COUNTTYPE 8)
+endif()
+
+add_definitions(-DKTYPE=${KMERTYPE})
+add_definitions(-DCNTYPE=${COUNTTYPE})
+
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/src)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/fmt/include)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/thirdparty)
 include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include)
+include_directories(${PROJECT_BINARY_DIR}/sdsl/src/sdsl-build/include)
 if (debug)
     include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include/Debug)
 endif()
@@ -94,3 +108,6 @@ add_test(
         NAME kmtricks_test
         COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/kmtricks/; ./run_test.sh"
 )
+
+MESSAGE("KMER BIT REPRESENTATION = ${KMERTYPE}")
+MESSAGE("COUNT BIT REPRESENTATION = ${COUNTTYPE}")
