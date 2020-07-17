@@ -251,6 +251,7 @@ void BitMatrix::print_bits()
   cout << endl;
 }
 
+// from https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
 void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols)
 {
 #   define INP(x,y) inp[(x)*ncols/8 + (y)/8]
