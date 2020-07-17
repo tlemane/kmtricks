@@ -279,16 +279,16 @@ void Kmtricks::km_part()
     );
     _f_log << command << endl;
     std::system(command.c_str());
-    const struct timespec t[] {{0, 1000000L}};
     while (!System::file().doesExist(e->SYNCHRO_P + END_TEMP_P))
-      nanosleep(t, nullptr);
+    {
+      sleep(1);
+    }
   }
   std::system(fmt::format(RM, e->SYNCHRO_P).c_str());
 }
 
 void Kmtricks::km_superk()
 {
-
   uint rmemSk = 300;
   size_t max_cj = min(_nb_procs, (_max_memory/rmemSk));
 
