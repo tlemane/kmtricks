@@ -95,35 +95,34 @@ Final results are stored in the `directory_output_name/storage/matrix/`
 
 **Main options**
 
-[kmtricks options]
-
-file                                                        (1 arg) :    fof that contains path of read files, one per line
-run-dir                                                 (1 arg) :    directory to write tmp and output files
-kmer-size                                            (1 arg) :    size of a kmer  [default '31']
-abundance-min                                 (1 arg) :    min abundance threshold for solid kmers  [default '2']
-abundance-max                                (1 arg) :    max abundance threshold for solid kmers  [default '3000000']
-recurrence-min                                 (1 arg) :    min recurrence threshold through datasets for solid kmers  [default '2']. TODO details
-max-memory                                     (1 arg) :    max memory available in megabytes  [default '8000']
-matrix-fmt                                          (1 arg) :    output matrix format: ascii, bin, pa, bf, bf_trp  [default 'bin']. TODO details
-nb-cores                                              (1 arg) :    number of cores  [default '8']
-
-[kmtricks pipeline control options]
-
-until (1 arg) :    run until step : part, superk, count, merge  [default 'all']
-only  (1 arg) :    run only step : part, superk, count, merge  [default 'all']
-
-[advanced performance tweaks options]
-
-minimizer-type   (1 arg) :    minimizer type (0=lexi, 1=freq)  [default '0']
-minimizer-size    (1 arg) :    size of a minimizer  [default '10']
-repartition-type  (1 arg) :    minimizer repartition (0=unordered, 1=ordered)  [default '0']
-nb-parts               (1 arg) :    number of partitions  [default '0']
-
-[hash mode configuration, only with -matrix-fmt <bf | bf_trp> options]
-
-hasher   (1 arg) :    hash function: sabuhash, xor  [default 'xor']. For compatibility with HowDeSBT, use "sabuhash".
-max-hash (1 arg) :    max hash value ( 0 < hash < max(int64) )  [default '1000000000']. This is also the size of the final bloom filters 
-split    (1 arg) :    split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)  [default 'none']. TODO 
+* kmtricks options
+  * -file     					 fof that contains path of read files, one per line
+  * -run-dir                  directory to write tmp and output files
+  * -kmer-size              size of a kmer  [default '31']
+  * -abundance-min   min abundance threshold for solid kmers  [default '2']
+  * -abundance-max  max abundance threshold for solid kmers  [default '3000000']
+  * -recurrence-min   min recurrence threshold through datasets for solid kmers  [default '2'].
+    * TODO details
+  * -max-memory       max memory available in megabytes  [default '8000']
+  * -matrix-fmt            output matrix format: ascii, bin, pa, bf, bf_trp  [default 'bin']. 
+    * TODO details
+  * -nb-cores               number of cores  [default '8']
+* kmtricks pipeline control options
+  * -until                      run until step : part, superk, count, merge  [default 'all']
+  * -only                      run only step : part, superk, count, merge  [default 'all']
+* advanced performance tweaks options
+  * -minimizer-type   minimizer type (0=lexi, 1=freq)  [default '0']
+  * -minimizer-size    size of a minimizer  [default '10']
+  * -repartition-type  minimizer repartition (0=unordered, 1=ordered)  [default '0']
+    * TODO details
+  * -nb-parts               number of partitions  [default '0']
+* hash mode configuration, only with -matrix-fmt <bf | bf_trp> options
+  * -hasher                  hash function: sabuhash, xor  [default 'xor']. 
+    * For compatibility with HowDeSBT, use "sabuhash".
+  * -max-hash             max hash value ( 0 < hash < max(int64) )  [default '1000000000']. 
+    * This is also the size of the final bloom filters 
+  * -split                       split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)  [default 'none']. 
+    * TODO details
 
 **Full example, with HowDeSBT compatibility**
 
