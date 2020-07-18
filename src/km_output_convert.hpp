@@ -16,10 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 #pragma once
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <map>
 #include <gatb/gatb_core.hpp>
 #include <sdsl/bit_vectors.hpp>
 #include <HowDeSBT/bloom_filter_file.h>
 #include "config.hpp"
+
+using namespace std;
+using namespace sdsl;
 
 #define NBYTE(bits) (((bits) >> 3) + ((bits) % 8 != 0))
 #define round_up_16(b)  ((((std::uint64_t) (b))+15)&(~15))
