@@ -39,13 +39,13 @@ kmtricks is composed of 5 independent modules
 
 **Note1:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
 
-**Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole structure. The creation of the directory and its structure can be done thanks to the following command: 
+**Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
 
 `TODO`
 
 Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
 
-### Determine partitions: `km_minim_repart`
+### Module `km_minim_repart`: determine partitions
 
 From reads, determine minimizers and assign each minimizer to a partition.
 
@@ -53,7 +53,7 @@ From reads, determine minimizers and assign each minimizer to a partition.
 
 `./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
 
-### Reads to partitioned super kmers: `km_reads_to_superk`
+### Module `km_reads_to_superk`: from reads to partitioned super kmers
 
 For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
@@ -61,21 +61,21 @@ For each read file,  using the previously determined partitions from minimizers,
 
 `./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
 
-### Super kmers to counted elements: `km_superk_to_kmer_count` 
+### Module `km_superk_to_kmer_count`: from super kmers to counted elements 
 
-For each superkmer partition, determine, sort and count kmers, or hash value.
+For each superkmer partition, determine, sort and count elements that may be kmers or hash value.
 
 `./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8  -kmer-size 31`
 
 Option `-mode` enables to provide results either as kmers or hash values 
 
-### Merging counted kmers and transpose matrix: `km_merge_within_partition`
+### Module `km_merge_within_partition ` merges counted kmers and transpose matrix
 
 For a given partition id, merges values for all input read files. 
 
 `./bin/km_merge_within_partition -file file_of_files.txt -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2 -min-hash 0 -max-hash 100000 `
 
-### Generate output for downstream usages: `km_output_convert`
+### Module `km_output_convert`: generates output for downstream usages
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
