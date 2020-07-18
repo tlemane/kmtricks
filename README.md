@@ -7,7 +7,7 @@
 
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
-## kmtrics IOs
+## kmtricks IOs
 
 kmtricks is composed of a **set of independent modules** designed for kmer counting given a set of raw read sets. A pipeline of those modules is proposed. 
 
@@ -17,10 +17,11 @@ kmtricks is composed of a **set of independent modules** designed for kmer count
 
 * a matrix of kmer x abundance. M_(i,j) is the abundance of kmer i in the read set j
 * a matrix of kmer x presence or absence. M_(i,j) is the presence (1) or absence (0) of kmer i in the read set j
-* a matrix of hash_value x abundance. M_(i,j) is the abundance of the hash_value i (line numbers are hash values) in the read set j.
 * a matrix of bloom filters. M_(i,j) is the presence (1) or absence (0) of the hash_value i (line numbers are hash values) in the read set j.
+  * In this case, this matrix is provided vertically (one column is a bloom filter corresponding to one dataset).
+  * After transposition, this matrix may also be provided horizontally (one line is a bloom filter corresponding to one dataset). This enables to provide efficiently an independent bloom filter per input read file.  
 
-## kmtrics performances
+## kmtricks performances
 
 Compared to a usual pipeline as the one used by `HowDeSBT` using `JellyFish` for generating a bloom filter per input read set, `kmtricks` is 2.1 times faster.
 
@@ -30,37 +31,114 @@ Test realised with 100 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeo
 
 List of IDs available [here](tests/kmtricks/experiment_list_100.txt).
 
-## kmtrics modules
+## kmtricks modules
 
 kmtricks is composed of 5 independent modules
 
 <img src="https://github.com/tlemane/kmtricks/blob/master/doc/kmtricks_pipeline.png" width="500">
 
+**Note1:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
+
+**Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole structure. The creation of the directory and its structure can be done thanks to the following command: 
+
+`TODO`
+
+Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
+
 ### Determine partitions: `km_minim_repart`
 
-From reads, determine minimizers and assign each minimizer to a partition
+From reads, determine minimizers and assign each minimizer to a partition.
+
+**Usage example**
+
+`./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
 
 ### Reads to partitioned super kmers: `km_reads_to_superk`
 
 For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
+**Usage example**
+
+`./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
+
 ### Super kmers to counted elements: `km_superk_to_kmer_count` 
 
 For each superkmer partition, determine, sort and count kmers, or hash value.
 
-(element = kmer or hash value)
+`./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8  -kmer-size 31`
+
+Option `-mode` enables to provide results either as kmers or hash values 
 
 ### Merging counted kmers and transpose matrix: `km_merge_within_partition`
 
 For a given partition id, merges values for all input read files. 
 
+`./bin/km_merge_within_partition -file file_of_files.txt -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2 -min-hash 0 -max-hash 100000 `
+
 ### Generate output for downstream usages: `km_output_convert`
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
-## kmtrics pipeline
+TODO
 
-The kmtricks executable (in the `bin` directory) is a pipeline of the four modules. 
+## kmtricks pipeline
+
+The `kmtricks` executable (in the `bin` directory) is a pipeline of the four modules. 
+
+Note that this binary also enables to run independently any module (option `-only`) or enables to run modules until a step (option `-until`).
+
+**Usage:**
+
+`./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name`
+
+Final results are stored in the `directory_output_name/storage/matrix/`
+
+**Main options**
+
+[kmtricks options]
+
+file                                                        (1 arg) :    fof that contains path of read files, one per line
+run-dir                                                 (1 arg) :    directory to write tmp and output files
+kmer-size                                            (1 arg) :    size of a kmer  [default '31']
+abundance-min                                 (1 arg) :    min abundance threshold for solid kmers  [default '2']
+abundance-max                                (1 arg) :    max abundance threshold for solid kmers  [default '3000000']
+recurrence-min                                 (1 arg) :    min recurrence threshold through datasets for solid kmers  [default '2']. TODO details
+max-memory                                     (1 arg) :    max memory available in megabytes  [default '8000']
+matrix-fmt                                          (1 arg) :    output matrix format: ascii, bin, pa, bf, bf_trp  [default 'bin']. TODO details
+nb-cores                                              (1 arg) :    number of cores  [default '8']
+
+[kmtricks pipeline control options]
+
+until (1 arg) :    run until step : part, superk, count, merge  [default 'all']
+only  (1 arg) :    run only step : part, superk, count, merge  [default 'all']
+
+[advanced performance tweaks options]
+
+minimizer-type   (1 arg) :    minimizer type (0=lexi, 1=freq)  [default '0']
+minimizer-size    (1 arg) :    size of a minimizer  [default '10']
+repartition-type  (1 arg) :    minimizer repartition (0=unordered, 1=ordered)  [default '0']
+nb-parts               (1 arg) :    number of partitions  [default '0']
+
+[hash mode configuration, only with -matrix-fmt <bf | bf_trp> options]
+
+hasher   (1 arg) :    hash function: sabuhash, xor  [default 'xor']. For compatibility with HowDeSBT, use "sabuhash".
+max-hash (1 arg) :    max hash value ( 0 < hash < max(int64) )  [default '1000000000']. This is also the size of the final bloom filters 
+split    (1 arg) :    split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)  [default 'none']. TODO 
+
+**Full example, with HowDeSBT compatibility**
+
+```bash
+ls myreads1.fq.gz myreads2.fq.gz myreads3.fg.gz > file_of_files.txt # creates the file of files
+./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name -matrix-fmt bf_trp -hasher sabuhash
+```
+
+**logs**
+
+All execution logs are stored in the `my_directory_output_name/logs` directory.
+
+## kmtrick librairies
+
+In addition to modules, the `libs/kmtricks` directory contains headers `merger.hpp` and `bitmatrix.hpp`. They provide a framework for creating independent tools. The `libs/snippets` directory provides usage examples of those librairies.
 
 ## Install
 
@@ -80,4 +158,8 @@ ctest --verbose CTestTestfile.cmake
 ## Contacts
 
 Téo Lemane: teo.lemane@inria.fr
+
+Rayan Chikhi: rayan.chikhi@univ-lille.fr
+
+Pierre Peterlongo: pierre.peterlongo@inria.fr
 
