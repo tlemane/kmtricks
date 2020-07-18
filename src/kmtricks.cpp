@@ -168,14 +168,13 @@ void Kmtricks::init()
   char *buffer = new char[1024];
 
 #if __APPLE__
-  uint32_t size;
-  _NSGetExecutablePath(buffer, &size);
+  uint32_t size=1024;
+  if (_NSGetExecutablePath(buffer, &size) == 0)
+    // printf("executable path is %s %d\n", buffer, size);
 #else
   readlink("/proc/self/exe", buffer, 1024);
 #endif
-
   _path_binary = dirname(buffer);
-
   e = new Env(_dir, _path_binary);
   e->build();
   _f_log = ofstream(e->LOG_CMD, ios::out);
