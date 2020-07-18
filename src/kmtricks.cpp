@@ -258,6 +258,14 @@ void Kmtricks::execute()
     km_merger();
   if (_upto == 4) goto end;
 
+  if (_split)
+  {
+    if ((_only == 5) | all )
+      km_output();
+    if ( _upto == 5 )
+      goto end;
+  }
+  goto end;
   end:
     _f_log.close();
     delete e;
@@ -268,6 +276,10 @@ void Kmtricks::km_part()
 {
   if (!System::file().doesExist(e->STORE + "/partition_storage_gatb/minimRepart.minimRepart"))
   {
+    _progress = new ProgressSynchro(
+      createIteratorListener(_nb_partitions, "km_minim_repart"), System::thread().newSynchronizer()
+    );
+    _progress->init();
     string command = fmt::format(PARTITIONER_CMD,
                                  "",
                                  e->PARTITIONER_BIN, // partitioner
@@ -283,6 +295,8 @@ void Kmtricks::km_part()
     {
       sleep(1);
     }
+    _progress->finish();
+    delete _progress;
   }
   std::system(fmt::format(RM, e->SYNCHRO_P).c_str());
 }
@@ -293,7 +307,7 @@ void Kmtricks::km_superk()
   size_t max_cj = min(_nb_procs, (_max_memory/rmemSk));
 
   _progress = new ProgressSynchro(
-    createIteratorListener (_bank_paths.size(), "km_superk"), System::thread().newSynchronizer());
+    createIteratorListener (_bank_paths.size(), "km_reads_to_superk"), System::thread().newSynchronizer());
 
   size_t* jobs = new size_t(0);
   FBasedSync _superk_sync = FBasedSync(_bank_paths, e->SYNCHRO_S, END_TEMP_S, jobs, max_cj, _progress, e, 0);
@@ -324,7 +338,7 @@ void Kmtricks::km_count()
 {
   uint64_t nbs = _bank_paths.size()*_nb_partitions;
   _progress = new ProgressSynchro(
-    createIteratorListener (nbs, "km_count"), System::thread().newSynchronizer());
+    createIteratorListener (nbs, "km_superk_to_kmer_count"), System::thread().newSynchronizer());
 
   size_t* jobs = new size_t(0);
   vector<string> count_jobs;
@@ -385,7 +399,7 @@ void Kmtricks::km_merger()
   uint rmemMg = 100;
   size_t max_cj = min(_nb_procs, _max_memory/rmemMg);
   _progress = new ProgressSynchro(
-    createIteratorListener(_nb_partitions, "km_merge"), System::thread().newSynchronizer()
+    createIteratorListener(_nb_partitions, "km_merge_within_partition"), System::thread().newSynchronizer()
   );
   
   vector<string> parts;
@@ -437,6 +451,39 @@ void Kmtricks::km_merger()
   fof.close();
   delete jobs;
   std::system(fmt::format(RM, e->SYNCHRO_M).c_str());
+}
+
+void Kmtricks::km_output()
+{
+  size_t nb_files = _bank_paths.size();
+  _progress = new ProgressSynchro(
+    createIteratorListener(nb_files, "km_output_convert"), System::thread().newSynchronizer()
+  );
+  _progress->init();
+
+  string command = fmt::format(OUTPUT_CMD,
+    "",
+    e->OUTPUT_BIN, // km_output_convert
+    e->DIR,        // -run-dir
+    nb_files,     // -nb_files
+    _nb_partitions, // -nb-parts
+    _str_split,     // -split
+    _k_size,       // -kmer-size
+    e->LOG_SPLIT
+  );
+  _f_log << command << endl;
+  std::system(command.c_str());
+  string odir;
+  if (_str_split == "howde") odir = e->STORE_HOWDE;
+  else odir = e->STORE_SDSL;
+
+  while (!System::file().doesExist(e->SYNCHRO_SP + END_TEMP_SP))
+  {
+    sleep(1);
+    _progress->set(System::file().listdir(odir).size()-2);
+  }
+  _progress->finish();
+  delete _progress;
 }
 
 int main(int argc, char* argv[])

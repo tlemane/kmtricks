@@ -30,7 +30,7 @@ ExternalProject_Add(FMT
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
         INSTALL_COMMAND "")
 
-ExternalProject_Add(sdsl
+ExternalProject_Add(SDSL
         PREFIX sdsl
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/sdsl-lite
         INSTALL_COMMAND "")
@@ -53,22 +53,24 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/src)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/fmt/include)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/thirdparty)
 include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include)
-include_directories(${PROJECT_BINARY_DIR}/sdsl/src/sdsl-build/include)
+include_directories(${PROJECT_BINARY_DIR}/sdsl/src/SDSL-build/include)
 if (debug)
     include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include/Debug)
 endif()
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/libs)
 
 file(GLOB_RECURSE ProjectFiles src/*.cpp)
 link_directories(${PROJECT_BINARY_DIR}/FMT/src/FMT-build)
 link_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/${GATB_BUILD_LIB})
+link_directories(${PROJECT_BINARY_DIR}/sdsl/src/SDSL-build/lib)
 #
 install(DIRECTORY DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 set (LIBS gatbcore fmt z pthread)
-set (DEPS gatb FMT sdsl)
+set (DEPS gatb FMT SDSL)
 
 add_executable(kmtricks src/kmtricks.cpp)
 add_dependencies(kmtricks ${DEPS})
@@ -89,6 +91,10 @@ target_link_libraries(km_superk_to_kmer_count ${LIBS})
 add_executable(km_merge_within_partition src/km_merge_within_partition.cpp)
 add_dependencies(km_merge_within_partition ${DEPS})
 target_link_libraries(km_merge_within_partition ${LIBS})
+
+add_executable(km_output_convert src/km_output_convert.cpp)
+add_dependencies(km_output_convert ${DEPS})
+target_link_libraries(km_output_convert ${LIBS} sdsl)
 
 enable_testing()
 

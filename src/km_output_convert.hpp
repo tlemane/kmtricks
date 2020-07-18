@@ -15,57 +15,46 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
-
 #pragma once
-#include <libgen.h>
 #include <gatb/gatb_core.hpp>
-#include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
+#include <sdsl/bit_vectors.hpp>
+#include <HowDeSBT/bloom_filter_file.h>
 #include "config.hpp"
 
-void wait_end_signal(string sign);
-void signal_callback(int signum);
+#define NBYTE(bits) (((bits) >> 3) + ((bits) % 8 != 0))
+#define round_up_16(b)  ((((std::uint64_t) (b))+15)&(~15))
+typedef sdsl::bit_vector bitvector;
 
-class Kmtricks : public Tool
+class KmConvert : public Tool
 {
 public:
-    Kmtricks(bool env);
+  KmConvert ();
+
 private:
+  void execute();
   void parse_args();
   void init();
-  void km_part();
-  void km_superk();
-  void km_count();
-  void km_merger();
-  void km_output();
-  void execute() override;
 
-  IteratorListener* _progress;
-  vector<string>    _bank_paths;
-  ofstream          _f_log;
-  
-  string            _fof_path;
-  Env*              e;
-  size_t            _k_size;
-  uint              _a_min, _a_max, _r_min;
-  uint              _nb_cores, _max_memory;
-  uint              _nb_partitions;
-  uint              _nb_procs;
-
-  string            _dir;
-  string            _path_binary;
-
-  string            _hasher;
-  uint64_t          _min_hash, _max_hash;
-  uint              _mat_fmt;
-  string            _mat_str;
-  string            _str_split;
-  bool              _split;
-  uint              _mode;
-
-  uint              _only, _upto;
-  bool              _keep_tmp;
-  bool              _build_runtime;
-
+private:
+  Env*    _e;
+  string  _run_dir;
+  string  _split_str;
+  string  _hm_path;
+  bool    _howde;
+  bool     _sdsl;
+  uint64_t _vlen;
+  uint64_t    _filter_size;
+  uint    _nb_files;
+  uint    _nb_parts;
+  uint64_t _win_size;
+  uint32_t _kmer_size;
+  string _fof;
+  string _sync;
+  vector<string>   _f_names;
+  vector<ifstream> _matrices;
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
-};
+  map<string, uint> _fof_pos;
+  vector<uint>      _pos;
 
+
+};

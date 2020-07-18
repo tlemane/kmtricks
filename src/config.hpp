@@ -90,7 +90,8 @@ const static map<string, int> exec_control {
   {"part", 1},
   {"superk", 2},
   {"count", 3},
-  {"merge", 4}
+  {"merge", 4},
+  {"split", 5}
 };
 
 const static map<string, int> filter_format {
@@ -122,6 +123,7 @@ cs STR_ONLY         = "-only";
 cs STR_HSIZE        = "-hsize";
 cs STR_KEEP_TMP     = "-keep-tmp";
 cs STR_NB_FILE      = "-nb-files";
+cs STR_HASHM        = "-hash-map";
 
 // commands
 cs PARTITIONER_CMD  = 
@@ -132,7 +134,8 @@ cs COUNTER_CMD      =
   "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} &> {} &";
 cs MERGER_CMD       = 
   "{} {} -file {} -run-dir {} -min-hash {} -max-hash {} -part-id {} -abundance-min {} -recurrence-min {} -mode {} &> {} &";
-
+cs OUTPUT_CMD       =
+  "{} {} -run-dir {} -nb-files {} -nb-parts {} -split {} -kmer-size {} &> {} &";
 
 cs TEMP_S           = "/{}.superk";
 
@@ -141,6 +144,7 @@ cs END_TEMP_P       = "/partitioner.sync";
 cs END_TEMP_S       = "/superk_{}.sync";
 cs END_TEMP_C       = "/counter_{}.sync";
 cs END_TEMP_M       = "/merger_{}.sync";
+cs END_TEMP_SP      = "/split.sync";
 
 cs PART_DIR         = "/partition_{}";
 cs PART_TEMP_K      = "/partition_{}/{}.kmer";
@@ -181,12 +185,14 @@ public:
   string SUPERK_BIN; 
   string COUNTER_BIN;
   string MERGER_BIN;
+  string OUTPUT_BIN;
   
   // synchro
   string SYNCHRO_P;
   string SYNCHRO_S;
   string SYNCHRO_C;
   string SYNCHRO_M;
+  string SYNCHRO_SP;
 
 public:
   // storage
@@ -209,6 +215,7 @@ public:
   string LOG_SUPERK;
   string LOG_COUNTER;
   string LOG_MERGER;
+  string LOG_SPLIT;
   string LOG_CMD;
 
 };
@@ -225,12 +232,14 @@ Env::Env(string main_dir, string binaries_dir)
   SUPERK_BIN       = BIN + "/km_reads_to_superk";
   COUNTER_BIN      = BIN + "/km_superk_to_kmer_count";
   MERGER_BIN       = BIN + "/km_merge_within_partition";
+  OUTPUT_BIN       = BIN + "/km_output_convert";
 
   // synchro
   SYNCHRO_P        = SYNCHRO + "/partitioner";
   SYNCHRO_S        = SYNCHRO + "/superk";
   SYNCHRO_C        = SYNCHRO + "/counter";
   SYNCHRO_M        = SYNCHRO + "/merger";
+  SYNCHRO_SP       = SYNCHRO + "/split";
 
   // storage
   STORE_SUPERK     = STORE + "/superk_partitions";
@@ -254,6 +263,7 @@ Env::Env(string main_dir, string binaries_dir)
   LOG_SUPERK       = LOG_SUPERK_D + "/superk{}.log";
   LOG_COUNTER      = LOG_COUNTER_D + "/counter{}_{}.log";
   LOG_MERGER       = LOG_MERGER_D + "/merger{}.log";
+  LOG_SPLIT        = LOG + "/split.log";
   
   
 }
@@ -270,6 +280,7 @@ void Env::build()
   System::file().mkdir(SYNCHRO_S, -1);
   System::file().mkdir(SYNCHRO_C, -1);
   System::file().mkdir(SYNCHRO_M, -1);
+  System::file().mkdir(SYNCHRO_SP, -1);
   System::file().mkdir(STORE_SUPERK, -1);
   System::file().mkdir(STORE_KMERS, -1);
   System::file().mkdir(STORE_MATRIX, -1);
