@@ -169,8 +169,7 @@ void Kmtricks::init()
 
 #if __APPLE__
   uint32_t size=1024;
-  if (_NSGetExecutablePath(buffer, &size) == 0)
-    // printf("executable path is %s %d\n", buffer, size);
+  _NSGetExecutablePath(buffer, &size);
 #else
   readlink("/proc/self/exe", buffer, 1024);
 #endif
