@@ -14,8 +14,10 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-bionic-8.0
       - g++-7
       - gcc-7
+      - clang++-8
       - cmake
 
 script:
