@@ -200,6 +200,7 @@ void KmMerge::execute()
 
   _m->destroy();
   delete _m;
+  delete e;
 }
 
 int main (int argc, char* argv[])
