@@ -128,7 +128,7 @@ Final results are stored in the `directory_output_name/storage/matrix/`
 
 ```bash
 ls myreads1.fq.gz myreads2.fq.gz myreads3.fg.gz > file_of_files.txt # creates the file of files
-./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name -matrix-fmt bf_trp -hasher sabuhash
+./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name -matrix-fmt bf_trp -hasher sabuhash -split howde
 ```
 
 **logs**
