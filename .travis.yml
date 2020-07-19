@@ -10,6 +10,11 @@ compiler:
   - gcc
   - clang
 
+jobs:
+  exclude:
+  - osx: linux
+    compiler: clang
+
 addons:
   apt:
     sources:
