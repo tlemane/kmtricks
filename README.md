@@ -1,9 +1,11 @@
 # kmtricks
-[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
 
-|                                                              linux                                                             |                                                               osx                                                              |
-|:------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------:|
-| [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=1)](https://travis-ci.com/github/tlemane/kmtricks) | [![Travis](https://api.travis-ci.com/tlemane/kmtricks.svg?branch=master&job=4)](https://travis-ci.com/github/tlemane/kmtricks) |
+| linux       | osx        |
+|-------------|------------|
+| ![Linux][1] | ![osx][2]  | 
+
+[1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?use_travis_com=true
+[2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?use_travis_com=true
 
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
