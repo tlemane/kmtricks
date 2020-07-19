@@ -41,7 +41,7 @@ kmtricks is composed of 5 independent modules
 
 **Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
 
-`TODO`
+`./bin/kmtricks env`
 
 Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
 
@@ -59,13 +59,13 @@ For each read file,  using the previously determined partitions from minimizers,
 
 **Usage example**
 
-`./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
+`./bin/km_reads_to_superk -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
 
 ### Module `km_superk_to_kmer_count`: from super kmers to counted elements 
 
-For each superkmer partition, determine, sort and count elements that may be kmers or hash value.
+For one superkmer partition, determine, sort and count elements that may be kmers or hash value.
 
-`./bin/km_reads_to_superk -file file_of_files.txt -run-dir my_directory_output_name -nb-cores 8  -kmer-size 31`
+`./bin/km_reads_to_kmer_count -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
 
 Option `-mode` enables to provide results either as kmers or hash values 
 
@@ -73,13 +73,13 @@ Option `-mode` enables to provide results either as kmers or hash values
 
 For a given partition id, merges values for all input read files. 
 
-`./bin/km_merge_within_partition -file file_of_files.txt -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2 -min-hash 0 -max-hash 100000 `
+`./bin/km_merge_within_partition -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2`
 
 ### Module `km_output_convert`: generates output for downstream usages
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
-TODO
+`./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
 
 ## kmtricks pipeline
 
@@ -122,7 +122,8 @@ Final results are stored in the `directory_output_name/storage/matrix/`
   * -max-hash:             max hash value ( 0 < hash < max(int64) )  [default '1000000000']. 
     * This is also the size of the final bloom filters 
   * -split:                       split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)  [default 'none']. 
-    * TODO details
+    * sdsl: dump one sdsl::bit_vector per file
+    * howde: dump one bloom filter per file, with HowDeSBT compatibility
 
 **Full example, with HowDeSBT compatibility**
 
@@ -151,7 +152,7 @@ sh install.sh
 
 ```bash
 cd build
-ctest --verbose CTestTestfile.cmake
+ctest CTestTestfile.cmake
 ```
 
 ## Contacts
