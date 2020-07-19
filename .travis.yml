@@ -12,7 +12,7 @@ compiler:
 
 jobs:
   exclude:
-  - osx: linux
+  - os: linux
     compiler: clang
 
 addons:
