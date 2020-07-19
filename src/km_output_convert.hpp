@@ -19,6 +19,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <iosfwd>
 #include <vector>
 #include <map>
 #include <gatb/gatb_core.hpp>
