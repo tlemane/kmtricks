@@ -133,9 +133,9 @@ cs SUPERK_CMD       =
 cs COUNTER_CMD      = 
   "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} &> {} &";
 cs MERGER_CMD       = 
-  "{} {} -file {} -run-dir {} -min-hash {} -max-hash {} -part-id {} -abundance-min {} -recurrence-min {} -mode {} &> {} &";
+  "{} {} -run-dir {} -part-id {} -abundance-min {} -recurrence-min {} -mode {} &> {} &";
 cs OUTPUT_CMD       =
-  "{} {} -run-dir {} -nb-files {} -nb-parts {} -split {} -kmer-size {} &> {} &";
+  "{} {} -run-dir {} -nb-files {} -split {} -kmer-size {} &> {} &";
 
 cs TEMP_S           = "/{}.superk";
 

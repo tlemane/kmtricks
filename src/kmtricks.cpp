@@ -215,6 +215,7 @@ void Kmtricks::init()
   if (!_build_runtime)
   {
     ofstream hw(e->HASHW_MAP);
+    hw.write((char*)&_nb_partitions, sizeof(uint32_t));
     uint64_t lb, ub;
     for ( int i = 0; i < _nb_partitions; i++ )
     {
@@ -427,11 +428,8 @@ void Kmtricks::km_merger()
 
     string command = fmt::format(MERGER_CMD,
       "",
-      e->MERGER_BIN,  // kbf_merger
-      path,            // -file
+      e->MERGER_BIN,
       e->DIR,         // -run-dir
-      get<0>(_hash_windows[i]),      // -min-hash
-      get<1>(_hash_windows[i]),      // -max-hash
       i,              // -part-id
       _a_min,         // -abundance-min
       _r_min,         // -recurrence-min
@@ -464,7 +462,6 @@ void Kmtricks::km_output()
     e->OUTPUT_BIN, // km_output_convert
     e->DIR,        // -run-dir
     nb_files,     // -nb_files
-    _nb_partitions, // -nb-parts
     _str_split,     // -split
     _k_size,       // -kmer-size
     e->LOG_SPLIT

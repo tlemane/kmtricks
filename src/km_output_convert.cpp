@@ -23,7 +23,7 @@ KmConvert::KmConvert() : Tool("km_output_convert")
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks runtime directory", true));
   getParser()->push_back(new OptionOneParam(STR_URI_FILE, "extract bitvectors only for the files contained in the fof", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_FILE, "number of reads files", true));
-  getParser()->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", true));
+  //getParser()->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", true));
   getParser()->push_back(new OptionOneParam(STR_SPLIT, "output format: sdsl, howde", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_SIZE, "size of a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_VERBOSE, "verbosity level", false, "1"));
@@ -38,7 +38,7 @@ void KmConvert::parse_args()
   _howde = filter_format.at(_split_str) != 1;
   _nb_files = getInput()->getInt(STR_NB_FILE);
   _vlen = NMOD8(NBYTE(_nb_files));
-  _nb_parts = getInput()->getInt(STR_NB_PARTS);
+  //_nb_parts = getInput()->getInt(STR_NB_PARTS);
   _kmer_size = getInput()->getInt(STR_KMER_SIZE);
   _fof = getInput()->getStr(STR_URI_FILE);
 }
@@ -70,6 +70,8 @@ void KmConvert::init()
 
   string mpath;
   uint64_t h0, h1;
+
+  hw.read((char*)&_nb_parts, sizeof(uint32_t));
   for ( int i = 0; i < _nb_parts; i++ )
   {
     hw.read((char *) &h0, sizeof(uint64_t));

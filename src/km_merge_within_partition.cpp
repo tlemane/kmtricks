@@ -22,33 +22,44 @@ KmMerge::KmMerge() : Tool("km_merge")
 {
   setParser(new OptionsParser("km_merge_within_partition"));
 
-  IOptionsParser *hParser = new OptionsParser("hash mode, -mode <bf | bf_trp>");
-  hParser->push_back(new OptionOneParam(STR_MIN_HASH, "lower bound hash", true));
-  hParser->push_back(new OptionOneParam(STR_MAX_HASH, "upper bound hash", true));
+  //IOptionsParser *hParser = new OptionsParser("hash mode, -mode <bf | bf_trp>");
+  //hParser->push_back(new OptionOneParam(STR_MIN_HASH, "lower bound hash", true));
+  //hParser->push_back(new OptionOneParam(STR_MAX_HASH, "upper bound hash", true));
 
-  getParser()->push_back(new OptionOneParam(STR_URI_FILE, "fof that contains path of partitions, one per line", true));
+  //getParser()->push_back(new OptionOneParam(STR_URI_FILE, "fof that contains path of partitions, one per line", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_PART_ID, "partition id", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min to keep a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min to keep a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
   getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "12"));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
-
-  getParser()->push_back(hParser);
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
+  //getParser()->push_back(hParser);
 }
 
 void KmMerge::parse_args()
 {
   _run_dir        = getInput()->getStr(STR_RUN_DIR);
-  _fofpath        = getInput()->getStr(STR_URI_FILE);
   _min_a          = getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
   _min_r          = getInput()->getInt(STR_REC_MIN);
-  _lower_hash     = getInput()->getInt(STR_MIN_HASH);
-  _upper_hash     = getInput()->getInt(STR_MAX_HASH);
   _id             = getInput()->getInt(STR_PART_ID);
   _mode           = output_format.at(getInput()->getStr(STR_MODE));
   e = new Env(_run_dir, "");
+  _fofpath = fmt::format(e->STORE_KMERS + PART_DIR + "/partition{}.fof", _id, _id);
+
+  ifstream hw(e->HASHW_MAP, ios::in);
+  uint64_t h0, h1;
+  uint32_t nb_parts;
+  hw.read((char*)&nb_parts, sizeof(uint32_t));
+  for ( int i = 0; i < nb_parts; i++ )
+  {
+    hw.read((char *) &h0, sizeof(uint64_t));
+    hw.read((char *) &h1, sizeof(uint64_t));
+    _hash_windows.push_back(make_tuple(h0, h1));
+  }
+  hw.close();
+  _lower_hash = get<0>(_hash_windows[_id]);
+  _upper_hash = get<1>(_hash_windows[_id]);
 }
 
 void KmMerge::merge_to_pa_matrix()

@@ -175,7 +175,7 @@ KmCount::KmCount() : Tool("km_count")
   getParser()->push_back(new OptionOneParam(STR_MODE,
     "0: k-mers, 1: hashes", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
-    "number of cores", true));
+    "not used, needed by gatb args parser", true));
   getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
     "keep superkmers files", false, "0"));
 

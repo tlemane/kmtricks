@@ -53,7 +53,7 @@ private:
   uint64_t _vlen;
   uint64_t    _filter_size;
   uint    _nb_files;
-  uint    _nb_parts;
+  uint32_t   _nb_parts;
   uint64_t _win_size;
   uint32_t _kmer_size;
   string _fof;
