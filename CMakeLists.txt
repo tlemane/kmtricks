@@ -86,9 +86,9 @@ add_executable(km_reads_to_superk src/km_reads_to_superk.cpp)
 add_dependencies(km_reads_to_superk ${DEPS})
 target_link_libraries(km_reads_to_superk ${LIBS})
 #
-add_executable(km_superk_to_kmer_count src/km_superk_to_kmer_count.cpp)
-add_dependencies(km_superk_to_kmer_count ${DEPS})
-target_link_libraries(km_superk_to_kmer_count ${LIBS})
+add_executable(km_superk_to_kmer_counts src/km_superk_to_kmer_counts.cpp)
+add_dependencies(km_superk_to_kmer_counts ${DEPS})
+target_link_libraries(km_superk_to_kmer_counts ${LIBS})
 #
 add_executable(km_merge_within_partition src/km_merge_within_partition.cpp)
 add_dependencies(km_merge_within_partition ${DEPS})

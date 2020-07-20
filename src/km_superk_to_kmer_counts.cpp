@@ -21,7 +21,7 @@
 #include <gatb/kmer/impl/HashSorting.hpp>
 #include <gatb/kmer/impl/PartitionsCommand.hpp>
 #include <libgen.h>
-#include "km_superk_to_kmer_count.hpp"
+#include "km_superk_to_kmer_counts.hpp"
 #include "CountProcessorDump.hpp"
 
 #ifndef KMTYPE
@@ -154,7 +154,7 @@ struct Functor
 
 KmCount::KmCount() : Tool("km_count")
 {
-  setParser(new OptionsParser("kmtricks: km_superk_to_kmer_count"));
+  setParser(new OptionsParser("kmtricks: km_superk_to_kmer_counts"));
 
   IOptionsParser *hParser = new OptionsParser("hash, only with -mode 1");
   hParser->push_back(new OptionOneParam(STR_HASHER,

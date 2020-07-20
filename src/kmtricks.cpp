@@ -348,7 +348,7 @@ void Kmtricks::km_count()
 {
   uint64_t nbs = _bank_paths.size()*_nb_partitions;
   _progress = new ProgressSynchro(
-    createIteratorListener (nbs, "km_superk_to_kmer_count"), System::thread().newSynchronizer());
+    createIteratorListener (nbs, "km_superk_to_kmer_counts"), System::thread().newSynchronizer());
 
   size_t* jobs = new size_t(0);
   vector<string> count_jobs;

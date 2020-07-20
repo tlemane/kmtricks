@@ -160,7 +160,7 @@ cs CONFIG_GRP       = "config";
 cs REPART_GRP       = "minimRepart";
 
 cs RM               = "rm {}/* &> /dev/null";
-cs KILLALL          = "killall km_minim_repart km_superk_to_kmer km_reads_to_superk km_merge_within_partition &> /dev/null";
+cs KILLALL          = "killall km_minim_repart km_superk_to_kmer_counts km_reads_to_superk km_merge_within_partition km_output_convert &> /dev/null";
 
   class Env
 {
@@ -228,7 +228,7 @@ Env::Env(string main_dir, string binaries_dir)
   // binaries
   PARTITIONER_BIN  = BIN + "/km_minim_repart";
   SUPERK_BIN       = BIN + "/km_reads_to_superk";
-  COUNTER_BIN      = BIN + "/km_superk_to_kmer_count";
+  COUNTER_BIN      = BIN + "/km_superk_to_kmer_counts";
   MERGER_BIN       = BIN + "/km_merge_within_partition";
   OUTPUT_BIN       = BIN + "/km_output_convert";
 
