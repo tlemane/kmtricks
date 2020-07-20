@@ -40,15 +40,17 @@ Test realised with 100 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeo
 
 List of IDs available [here](tests/kmtricks/experiment_list_100.txt).
 
-## kmtricks modules
+## kmtricks usage
+
+kmtricks can be used in two different ways: by using each **independent modules** or by using the **pipeline** (kmtricks binary). 
+
+### kmtricks modules
 
 kmtricks is composed of 5 independent modules
 
-<img src="https://github.com/tlemane/kmtricks/blob/master/doc/kmtricks_pipeline.png" width="500">
+<img src="https://github.com/tlemane/kmtricks/blob/master/doc/kmtricks_pipeline.png" width="500">  
 
-**Note1:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
-
-**Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
+**Note1:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
 
 `./bin/kmtricks env`
 
@@ -82,9 +84,11 @@ my_run_directory/
      └── superk
 ```
 
+**Note2:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
+
 Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
 
-### Module `km_minim_repart`: determine partitions
+#### Module `km_minim_repart`: determine partitions
 
 From reads, determine minimizers and assign each minimizer to a partition.
 
@@ -92,7 +96,7 @@ From reads, determine minimizers and assign each minimizer to a partition.
 
 `./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
 
-### Module `km_reads_to_superk`: from reads to partitioned super kmers
+#### Module `km_reads_to_superk`: from reads to partitioned super kmers
 
 For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
@@ -100,29 +104,29 @@ For each read file,  using the previously determined partitions from minimizers,
 
 `./bin/km_reads_to_superk -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
 
-### Module `km_superk_to_kmer_count`: from super kmers to counted elements 
+#### Module `km_superk_to_kmer_counts`: from super kmers to counted elements 
 
 For one superkmer partition, determine, sort and count elements that may be kmers or hash value.
 
-`./bin/km_reads_to_kmer_count -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
+`./bin/km_reads_to_kmer_counts -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
 
 Option `-mode` enables to provide results either as kmers or hash values 
 
-### Module `km_merge_within_partition ` merges counted kmers and transpose matrix
+#### Module `km_merge_within_partition ` merges counted kmers and transpose matrix
 
 For a given partition id, merges values for all input read files. 
 
 `./bin/km_merge_within_partition -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2`
 
-### Module `km_output_convert`: generates output for downstream usages
+#### Module `km_output_convert`: generates output for downstream usages
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
 `./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
 
-## kmtricks pipeline
+### kmtricks pipeline
 
-The `kmtricks` executable (in the `bin` directory) is a pipeline of the four modules. 
+The `kmtricks` executable (in the `bin` directory) is a pipeline of the five modules. 
 
 Note that this binary also enables to run independently any module (option `-only`) or enables to run modules until a step (option `-until`).
 
@@ -130,7 +134,7 @@ Note that this binary also enables to run independently any module (option `-onl
 
 `./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name`
 
-Final results are stored in the `directory_output_name/storage/matrix/`
+Final results are stored in the `directory_output_name/storage/matrix/` and `directory_output_name/storage/vectors/`.
 
 **Main options**
 
@@ -205,8 +209,6 @@ make -j8
 cd build
 ctest CTestTestfile.cmake
 ```
-
-
 
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
