@@ -6,8 +6,8 @@ These headers allow to interact with some kmtricks files. Example are provided [
 
 * merger.hpp 
 * bitmatrix.hpp 
+* minim_repart.hpp -> work in progress, not tested 
 
 ## Coming soon
 
-* minim_repart.hpp 
 * skreader.hpp 
