@@ -4,17 +4,21 @@
 
 | linux            | osx             |
 |------------------|-----------------|
-| [![Linux][1]][3] | [![osx][2]][3]  | 
+| [![Linux][1]][3] | [![osx][2]][3]  |
 
 [1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?use_travis_com=true
 [2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?use_travis_com=true
 [3]: https://travis-ci.com/github/tlemane/kmtricks
 
-**Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
+
+
+kmtricks is a tool suite for counting kmers, and constructing bloom filters or counted kmer matrices from large and numerous read sets. 
 
 ## kmtricks IOs
 
-kmtricks is composed of a **set of independent modules** designed for kmer counting given a set of raw read sets. A pipeline of those modules is proposed. 
+kmtricks is composed of a **set of independent modules** designed for kmer counting given a set of raw read sets. 
+
+A pipeline of those modules is proposed, with the following IOs. See the [kmtricks pipeline](#kmtricks-pipeline) section for details.
 
 **Input** is composed of a set of read sets in fasta or fastq format, gzipped or not.
 
@@ -201,6 +205,10 @@ make -j8
 cd build
 ctest CTestTestfile.cmake
 ```
+
+
+
+**Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
 ## Contacts
 
