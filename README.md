@@ -1,11 +1,12 @@
 # kmtricks
 
-| linux       | osx        |
-|-------------|------------|
-| ![Linux][1] | ![osx][2]  | 
+| linux            | osx             |
+|------------------|-----------------|
+| [![Linux][1]][3] | [![osx][2]][3]  | 
 
 [1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?use_travis_com=true
 [2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?use_travis_com=true
+[3]: https://travis-ci.com/github/tlemane/kmtricks
 
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
