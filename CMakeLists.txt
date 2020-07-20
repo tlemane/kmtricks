@@ -107,6 +107,8 @@ add_executable(merger_ex libs/snippets/merger_ex.cpp)
 set_target_properties(merger_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
 target_link_libraries(merger_ex z)
 
+add_executable(minim_ex libs/snippets/minim_repart_ex.cpp)
+set_target_properties(minim_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
 
 add_test(
         NAME lib_test
