@@ -1,5 +1,8 @@
 # kmtricks
 
+[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
+
+
 | linux       | osx        |
 |-------------|------------|
 | ![Linux][1] | ![osx][2]  | 
@@ -44,6 +47,36 @@ kmtricks is composed of 5 independent modules
 **Note2:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
 
 `./bin/kmtricks env`
+
+```
+my_run_directory/  
+ ├── logs  
+ │   ├── cmds.log  
+ │   ├── counter  
+ │   ├── merger  
+ │   └── superk  
+ ├── storage
+ │   ├── config_storage_gatb // gatb config
+ │   │   └── config.config
+ │   ├── fof.txt        
+ │   ├── hash_window.vec     
+ │   ├── kmers_partitions    // km_superk_to_kmer_count output
+ │   │   ├── partition_0
+ │   │   └── partition_1
+ │   ├── matrix              // km_merge_within_partition output
+ │   │   ├── partition_0
+ │   │   └── partition_1
+ │   ├── superk_partitions   // km_reads_to_superk output
+ │   └── vectors             // km_output_convert output 
+ │       ├── howde
+ │       └── sdsl
+ └── synchro                // sync dir used by kmtricks pipeline
+     ├── counter
+     ├── merger
+     ├── partitioner
+     ├── split
+     └── superk
+```
 
 Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
 
@@ -104,20 +137,26 @@ Final results are stored in the `directory_output_name/storage/matrix/`
   * -abundance-min:   min abundance threshold for solid kmers  [default '2']
   * -abundance-max:  max abundance threshold for solid kmers  [default '3000000']
   * -recurrence-min:   min recurrence threshold through datasets for solid kmers  [default '2'].
-    * TODO details
+    * checks that a kmer solid appears at least in <rec-min> datasets with a count greater than <abu-min> 
   * -max-memory:       max memory available in megabytes  [default '8000']
   * -matrix-fmt:            output matrix format: ascii, bin, pa, bf, bf_trp  [default 'bin']. 
-    * TODO details
+    * ascii : <kmer/hash> <count> in ascii format
+    * bin   : <uintX kmer/hash> <uintX count>
+    * pa    : <uintX kmer/hash> <presence/absence bitvector>
+    * bf    : <presence/absence bitvector> (lines are hash values, vertically bf)
+    * bf_trp: bf transposition (horizontally bf)
   * -nb-cores:               number of cores  [default '8']
+
 * kmtricks pipeline control options
   * -until:                      run until step : part, superk, count, merge  [default 'all']
   * -only:                      run only step : part, superk, count, merge  [default 'all']
+
 * advanced performance tweaks options
   * -minimizer-type:   minimizer type (0=lexi, 1=freq)  [default '0']
   * -minimizer-size:    size of a minimizer  [default '10']
   * -repartition-type:  minimizer repartition (0=unordered, 1=ordered)  [default '0']
-    * TODO details
   * -nb-parts:               number of partitions  [default '0']
+
 * hash mode configuration, only with -matrix-fmt <bf | bf_trp> options
   * -hasher:                  hash function: sabuhash, xor  [default 'xor']. 
     * For compatibility with HowDeSBT, use "sabuhash".
@@ -140,14 +179,20 @@ All execution logs are stored in the `my_directory_output_name/logs` directory.
 
 ## kmtrick librairies
 
-In addition to modules, the `libs/kmtricks` directory contains headers `merger.hpp` and `bitmatrix.hpp`. They provide a framework for creating independent tools. The `libs/snippets` directory provides usage examples of those librairies.
+In addition to modules, the `libs/kmtricks` directory contains headers. They provide a framework for creating independent tools. The `libs/snippets` directory provides usage examples of those librairies.
 
 ## Install
+
+Size of k-mers and counts must be set at compile time.
+* KMERTYPE 8, 16, 32, 64, 128 -> respectively for k-mers lengths less or equal to : 4, 8, 16, 32, 64.
+* COUNTTYPE 8, 16, 32 -> respectively for max counts: 255, 65535, 4294967295.
 
 ```bash
 git clone --recursive https://github.com/tlemane/kmtricks
 cd kmtricks
-sh install.sh
+mkdir build ; cd build
+cmake .. -DKMERTYPE=64 -DCOUNTTYPE=8
+make -j8
 ```
 
 ## Test
