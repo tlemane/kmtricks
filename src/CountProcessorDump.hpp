@@ -20,12 +20,6 @@
 #include <gatb/gatb_core.hpp>
 #include "config.hpp"
 
-static const map<size_t, uint64_t> maxc = {
-  { 1 , 0xFF},
-  { 2 , 0xFFFF},
-  { 4 , 0xFFFFFFFF}
-};
-
 template <size_t span = KMER_DEFAULT_SPAN>
 class CountProcessorDumpPart : public CountProcessorAbstract<span>
 {

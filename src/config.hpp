@@ -49,14 +49,6 @@ typedef const string cs;
 
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
 
-#ifndef KTYPE
-#define KTYPE 64
-#endif
-
-#ifndef CNTYPE
-#define CNTYPE 8
-#endif
-
 #if KTYPE == 8
 typedef uint8_t kmtype_t;
 #elif KTYPE == 16
@@ -98,6 +90,12 @@ const static map<string, int> filter_format {
   {"none", 0},
   {"sdsl", 1},
   {"howde", 2}
+};
+
+static const map<size_t, uint64_t> maxc = {
+  { 1 , 0xFF},
+  { 2 , 0xFFFF},
+  { 4 , 0xFFFFFFFF}
 };
 
 // arg flags not in gatb core
