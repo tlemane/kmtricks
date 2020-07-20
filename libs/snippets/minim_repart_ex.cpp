@@ -23,10 +23,10 @@
 
 int main(int argc, char* argv[])
 {
-
   string path = argv[1];
   RepartFile f(path);
   string kmer = "GAGCAGCACAAACGAGACAC";
+  // string kmer = "AAAAAAAAAAAAAAAAAAAAAAA"; // no valid minimizer
   size_t sk = kmer.size();
   size_t sm = 10;
   MinimRepart<uint64_t> m(f);
@@ -41,6 +41,10 @@ int main(int argc, char* argv[])
   cout << "REV  : " << revcomp_str << " " << to_string(revcomp) << endl;
 
   uint64_t minim = m.get_minim_from_str(kmer, sk, sm);
+  if (minim == numeric_limits<uint64_t>::max()){
+    cerr << "No minimizer found" << endl;
+    return 1;
+  }
   string   minim_str = m.int_to_str(minim, sm);
 
   cout << "MINIM : " << minim_str << " " << to_string(minim) << endl;

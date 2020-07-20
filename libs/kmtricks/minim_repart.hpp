@@ -49,6 +49,39 @@ static const uint8_t NToB[256] = {
 
 
 
+// from https://github.com/tlemane/gatb-core-stripped/blob/7ecaff35b97ce2bfb7731dc2e6dbc49719e23a98/src/gatb/kmer/impl/Model.hpp#L1220
+bool is_allowed (uint64_t mmer, uint32_t len)
+		{	
+			u_int64_t  _mmask_m1  ;
+			u_int64_t  _mask_0101 ;
+			u_int64_t  _mask_ma1 ;
+			
+			//code to ban mmer with AA inside except if at the beginnning
+			// A C T G        00   01   10   11
+			_mmask_m1  = (1 << ((len-2)*2)) -1 ; //removes two first letters m = 8  gives    00 00 11 11 11 11 11 11
+			_mask_0101 = 0x5555555555555555  ; //         01 01 01 01 01 01 01 01
+			_mask_ma1  = _mask_0101 & _mmask_m1;//        00 00 01 01 01 01 01 01
+			
+			u_int64_t a1 = mmer; //
+			a1 =   ~(( a1 )   | (  a1 >>2 ));  //
+			a1 =((a1 >>1) & a1) & _mask_ma1 ;  //
+			
+			if(a1 != 0) return false;
+			
+			// if ((mmer & 0x3f) == 0x2a)   return false;   // TTT suffix
+			// if ((mmer & 0x3f) == 0x2e)   return false;   // TGT suffix
+			// if ((mmer & 0x3c) == 0x28)   return false;   // TT* suffix
+			// for (uint32_t j = 0; j < len - 3; ++j)       // AA inside
+			//      if ((mmer & 0xf) == 0)  return false;
+			//      else                    mmer >>= 2;
+			// if (mmer == 0)               return false;   // AAA prefix
+			// if (mmer == 0x04)            return false;   // ACA prefix
+			// if ((mmer & 0xf) == 0)   return false;       // *AA prefix
+			
+			return true;
+		}
+
+
 class RepartFile
 {
 public:
@@ -83,6 +116,8 @@ void RepartFile::load()
   _repart_table.resize(_nb_minims);
 
   fin.read((char*)_repart_table.data(), sizeof(uint16_t)*_nb_minims);
+
+
   fin.read((char*)&_has_minim_freq, sizeof(bool));
   fin.read((char*)&_magic, sizeof(_magic));
   if (_magic != MAGIC_NUMBER)
@@ -151,6 +186,7 @@ KT MinimRepart<KT>::seq_to_int(string seq, size_t s_size)
   }
   return res;
 }
+
 template<typename KT>
 uint64_t MinimRepart<KT>::get_minim_from_str(string seq, size_t s_size, size_t m_size)
 {
@@ -164,7 +200,8 @@ uint64_t MinimRepart<KT>::get_minim_from_str(string seq, size_t s_size, size_t m
   for (int i=nb_mmers-1; i>=0; i--)
   {
     tmp = (uint64_t)(kmer >> (i*2)) & _mmer_mask;
-    if (tmp < minim) minim = tmp;
+
+    if (is_allowed(tmp, m_size) && tmp < minim) minim = tmp;
   }
   return minim;
 }
