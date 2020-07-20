@@ -104,10 +104,10 @@ Kmtricks::Kmtricks(bool env)
     getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,
                                               "min abundance threshold for solid kmers", false, "2"));
     getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MAX,
-                                              "max abundance threshold for solid kmers", false, "30000000"));
+                                              "max abundance threshold for solid kmers", false, "max"));
     getParser()->push_back(new OptionOneParam(STR_MAX_MEMORY,
                                               "max memory available in megabytes", false, "8000"));
-    getParser()->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "8"));
+    getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
 
     IOptionsParser *mParser = new OptionsParser("advanced performance tweaks");
     mParser->push_back(new OptionOneParam(STR_MINIMIZER_TYPE,
@@ -118,6 +118,14 @@ Kmtricks::Kmtricks(bool env)
                                           "minimizer repartition (0=unordered, 1=ordered)", false, "0"));
     mParser->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", false, "0"));
     getParser()->push_back(mParser);
+
+    IOptionsParser *oParser = new OptionsParser("hash mode configuration, if you want to use kmtricks in hash mode");
+
+    oParser->push_back(new OptionOneParam(STR_HASHER,
+                                          "hash function: sabuhash, xor", false, "xor"));
+    oParser->push_back(new OptionOneParam(STR_MAX_HASH,
+                                          "max hash value ( 0 < hash < max(int64) )", false, "1000000000"));
+    getParser()->push_back(oParser);
   }
 }
 
@@ -127,19 +135,22 @@ void Kmtricks::parse_args()
   _max_memory       = getInput()->getInt(STR_MAX_MEMORY);
   _k_size           = getInput()->getInt(STR_KMER_SIZE);
   _a_min            = getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
-  _a_max            = getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
+  if (getInput()->getStr(STR_KMER_ABUNDANCE_MAX) == "max")
+    _a_max = maxc.at(sizeof(cntype_t));
+  else
+    _a_max            = getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
   _dir              = getInput()->getStr(STR_RUN_DIR);
   _nb_partitions    = getInput()->getInt(STR_NB_PARTS);
 
+  _max_hash = getInput()->getInt(STR_MAX_HASH);
+  _hasher   = getInput()->getStr(STR_HASHER);
   if (!_build_runtime)
   {
     _r_min    = getInput()->getInt(STR_REC_MIN);
 
     _nb_cores = getInput()->getInt(STR_NB_CORES);
-    _max_hash = getInput()->getInt(STR_MAX_HASH);
     _mat_str  = getInput()->getStr(STR_MAT_FMT);
     _mat_fmt  = output_format.at(_mat_str);
-    _hasher   = getInput()->getStr(STR_HASHER);
 
     _upto = exec_control.at(getInput()->getStr(STR_UP_TO));
     _only = exec_control.at(getInput()->getStr(STR_ONLY));
@@ -180,6 +191,10 @@ void Kmtricks::init()
 
   string line, in;
   ifstream fof(_fof_path);
+  if (!fof)
+  {
+    cout << "Unable to open " << _fof_path << endl; exit(EXIT_FAILURE);
+  }
   ofstream copyfof(e->FOF_FILE);
   while( getline(fof, line) )
   {
@@ -190,7 +205,6 @@ void Kmtricks::init()
   in.pop_back();
   fof.close(); 
   copyfof.close();
-  
   _mode = 0;
   if (_mat_fmt == 3 || _mat_fmt == 4)
     _mode = 1;
@@ -212,21 +226,18 @@ void Kmtricks::init()
 
   auto window_size = NMOD8((uint64_t)ceil((double)_max_hash / (double)_nb_partitions));
 
-  if (!_build_runtime)
+  ofstream hw(e->HASHW_MAP);
+  hw.write((char*)&_nb_partitions, sizeof(uint32_t));
+  uint64_t lb, ub;
+  for ( int i = 0; i < _nb_partitions; i++ )
   {
-    ofstream hw(e->HASHW_MAP);
-    hw.write((char*)&_nb_partitions, sizeof(uint32_t));
-    uint64_t lb, ub;
-    for ( int i = 0; i < _nb_partitions; i++ )
-    {
-      lb = i * window_size;
-      ub = ((i + 1) * window_size) - 1;
-      _hash_windows.emplace_back(make_tuple(lb, ub));
-      hw.write((char *) &lb, sizeof(uint64_t));
-      hw.write((char *) &ub, sizeof(uint64_t));
-    }
-    hw.close();
+    lb = i * window_size;
+    ub = ((i + 1) * window_size) - 1;
+    _hash_windows.emplace_back(make_tuple(lb, ub));
+    hw.write((char *) &lb, sizeof(uint64_t));
+    hw.write((char *) &ub, sizeof(uint64_t));
   }
+  hw.close();
 }
 
 void Kmtricks::execute()
