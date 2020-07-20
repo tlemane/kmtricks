@@ -183,7 +183,7 @@ In addition to modules, the `libs/kmtricks` directory contains headers. They pro
 
 ## Install
 
-Size of k-mers and counts must be set at compile time.
+Maximal size of k-mers and maximal stored counts must be set at compile time.
 * KMERTYPE 8, 16, 32, 64, 128 -> respectively for k-mers lengths less or equal to : 4, 8, 16, 32, 64.
 * COUNTTYPE 8, 16, 32 -> respectively for max counts: 255, 65535, 4294967295.
 
