@@ -6,12 +6,14 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set (debug 1)
 endif()
 
+set(CMAKE_CXX_FLAGS "-std=c++0x")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+
 if (debug)
-    set(FLAGS -std=c++0x -O0 -g -p)
     set(GATB_DEBUG "-DCMAKE_BUILD_TYPE=Debug")
     set(GATB_BUILD_LIB "lib/Debug")
 else()
-    set(FLAGS -std=c++0x -O3)
     set(GATB_DEBUG "")
     set(GATB_BUILD_LIB "lib")
 endif()
@@ -70,7 +72,7 @@ install(DIRECTORY DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 set (LIBS gatbcore fmt z pthread)
-set (DEPS gatb FMT SDSL)
+set (DEPS gatb FMT)
 
 add_executable(kmtricks src/kmtricks.cpp)
 add_dependencies(kmtricks ${DEPS})
@@ -93,7 +95,7 @@ add_dependencies(km_merge_within_partition ${DEPS})
 target_link_libraries(km_merge_within_partition ${LIBS})
 
 add_executable(km_output_convert src/km_output_convert.cpp)
-add_dependencies(km_output_convert ${DEPS})
+add_dependencies(km_output_convert ${DEPS} SDSL)
 target_link_libraries(km_output_convert ${LIBS} sdsl)
 
 enable_testing()
@@ -104,6 +106,7 @@ set_target_properties(bitmatrix_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT
 add_executable(merger_ex libs/snippets/merger_ex.cpp)
 set_target_properties(merger_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
 target_link_libraries(merger_ex z)
+
 
 add_test(
         NAME lib_test
