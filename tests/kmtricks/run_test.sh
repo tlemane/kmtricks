@@ -8,6 +8,8 @@ function check_exit_code {
     fi
 }
 
+rm -rf ./run_test
+
 binary=../../bin/kmtricks
 fof=./data/fof.txt
 nbpart=4
