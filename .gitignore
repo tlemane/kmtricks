@@ -38,6 +38,8 @@
 cmake-build-debug/
 libs/snippets/bitmatrix_ex
 libs/snippets/merger_ex
+libs/snippets/minim_ex
 run.sh
 run_init/
+install.sh
 
