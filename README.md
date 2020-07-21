@@ -92,23 +92,19 @@ Each module is presented below. However, the `kmtricks` binary enables to execut
 
 From reads, determine minimizers and assign each minimizer to a partition.
 
-**Usage example**
-
-`./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
+Example: `./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
 
 #### Module `km_reads_to_superk`: from reads to partitioned super kmers
 
 For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
-**Usage example**
-
-`./bin/km_reads_to_superk -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
+Example: `./bin/km_reads_to_superk -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
 
 #### Module `km_superk_to_kmer_counts`: from super kmers to counted elements 
 
 For one superkmer partition, determine, sort and count elements that may be kmers or hash value.
 
-`./bin/km_reads_to_kmer_counts -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
+Example: `./bin/km_reads_to_kmer_counts -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
 
 Option `-mode` enables to provide results either as kmers or hash values 
 
@@ -116,13 +112,13 @@ Option `-mode` enables to provide results either as kmers or hash values
 
 For a given partition id, merges values for all input read files. 
 
-`./bin/km_merge_within_partition -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2`
+Example: `./bin/km_merge_within_partition -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2`
 
 #### Module `km_output_convert`: generates output for downstream usages
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
-`./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
+Example: `./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
 
 ### kmtricks pipeline
 
