@@ -15,6 +15,8 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
+#ifndef MINIM_REPART_HPP
+#define MINIM_REPART_HPP
 
 #pragma once
 #include <vector>
@@ -50,7 +52,7 @@ static const uint8_t NToB[256] = {
 
 
 // from https://github.com/tlemane/gatb-core-stripped/blob/7ecaff35b97ce2bfb7731dc2e6dbc49719e23a98/src/gatb/kmer/impl/Model.hpp#L1220
-bool is_allowed (uint64_t mmer, uint32_t len)
+inline bool is_allowed (uint64_t mmer, uint32_t len)
 		{	
 			u_int64_t  _mmask_m1  ;
 			u_int64_t  _mask_0101 ;
@@ -103,11 +105,11 @@ private:
   uint32_t* _freq_order;
 };
 
-RepartFile::RepartFile(string m_path, string f_path)
+inline RepartFile::RepartFile(string m_path, string f_path)
   : _path(m_path), _path_freq(f_path), _is_load(false)
 { }
 
-void RepartFile::load()
+inline void RepartFile::load()
 {
   ifstream fin(_path, ios::binary | ios::in);
   fin.read((char*)&_nb_part, sizeof(_nb_part));
@@ -140,7 +142,7 @@ void RepartFile::load()
   _is_load = true;
 }
 
-uint16_t RepartFile::get(uint64_t minim_value)
+inline uint16_t RepartFile::get(uint64_t minim_value)
 {
   return _repart_table[minim_value];
 }
@@ -156,6 +158,7 @@ public:
   KT        rev_comp(KT seq, size_t size);
 
   uint16_t get_partition(uint64_t minim_value);
+  MinimRepart(): _rfile(nullptr){};
 
 
 private:
@@ -170,13 +173,13 @@ MinimRepart<KT>::MinimRepart(RepartFile &rfile)
 }
 
 template<typename KT>
-uint16_t MinimRepart<KT>::get_partition(uint64_t minim_value)
+uint16_t MinimRepart<KT>::get_partition(const uint64_t minim_value)
 {
   return _rfile.get(minim_value);
 }
 
 template<typename KT>
-KT MinimRepart<KT>::seq_to_int(string seq, size_t s_size)
+KT MinimRepart<KT>::seq_to_int(const string seq, const size_t s_size)
 {
   KT res = 0;
   for (size_t c=0; c<s_size; c++)
@@ -188,7 +191,7 @@ KT MinimRepart<KT>::seq_to_int(string seq, size_t s_size)
 }
 
 template<typename KT>
-uint64_t MinimRepart<KT>::get_minim_from_str(string seq, size_t s_size, size_t m_size)
+uint64_t MinimRepart<KT>::get_minim_from_str(const string seq, const size_t s_size, const size_t m_size)
 {
   KT kmer = seq_to_int(seq, s_size);
   KT revcomp = rev_comp(kmer, s_size);
@@ -234,3 +237,4 @@ KT MinimRepart<KT>::rev_comp(KT seq, size_t size)
   return res & _kmer_mask;
 }
 
+#endif // MINIM_REPART_HPP
