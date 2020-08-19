@@ -14,4 +14,3 @@
 [submodule "thirdparty/Criterion"]
 	path = thirdparty/Criterion
     url = https://github.com/Snaipe/Criterion
-    ignore = all
