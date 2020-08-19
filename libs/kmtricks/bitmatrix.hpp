@@ -25,16 +25,13 @@
 #include <iostream>
 #include <cassert>
 #include <iomanip>
+#include "utilities.hpp"
 
 using namespace std;
 typedef unsigned char uchar;
 
-#define NBYTE(bits) (((bits) >> 3) + ((bits) % 8 != 0))
-#define NMOD8(byte) ((byte)+(8-((byte)%8)))
-
-#define BITMASK(b) (1 << ((b) % CHAR_BIT))
-#define BITSLOT(b) ((b) / CHAR_BIT)
-#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
+namespace km
+{
 
 static const uchar reverseb[] = {
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
@@ -76,99 +73,167 @@ void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols);
 class BitMatrix
 {
 public:
-  BitMatrix(size_t n, size_t m, bool lendian);
-  BitMatrix(string file, size_t n, size_t m, bool lendian);
-  BitMatrix(uchar* mat, size_t n, size_t m, bool lendian);
+  BitMatrix(size_t n, size_t m, bool lendian, bool def);
+
+  BitMatrix(string &file, size_t n, size_t m, bool lendian);
+
+  BitMatrix(uchar *mat, size_t n, size_t m, bool lendian);
+
   ~BitMatrix();
 
-  // i, j in bits
-  void    set_bit(size_t i, size_t j, bool value);
-  void    tog_bit(size_t i, size_t j);
-  bool    get_bit(size_t n, size_t m);
-  // i, j in bytes
-  void    set_byte(size_t i, size_t j, uchar value);
-  void    tog_byte(size_t i, size_t j);
-  uchar   get_byte(size_t i, size_t j);
-  uchar*  get_line(size_t i);
-  uchar*  get_cols(size_t j);
-  void    dump(string file);
-  void    print_bytes();
-  void    print_bits();
+  BitMatrix(const BitMatrix &b);
 
-  BitMatrix   *transpose();
+  BitMatrix &operator=(const BitMatrix &b);
+
+  // i, j in bits
+  void set_bit(size_t i, size_t j, bool value);
+
+  void tog_bit(size_t i, size_t j);
+
+  bool get_bit(size_t n, size_t m);
+
+  // i, j in bytes
+  void set_byte(size_t i, size_t j, uchar value);
+
+  void tog_byte(size_t i, size_t j);
+
+  uchar get_byte(size_t i, size_t j);
+
+  uchar *get_line(size_t i);
+
+  uchar *get_cols(size_t j);
+
+  void clear();
+
+  void dump(string file);
+
+  void print_bytes();
+
+  void print_bits();
+
+  BitMatrix *transpose();
 
 public:
-  uchar* matrix;
+  uchar *matrix;
 
 private:
   inline void check8();
 
 private:
-  string  _fpath;
-  size_t  _m;  // in bytes
-  size_t  _n;  // in bytes
-  size_t  _mb; // in bits
-  size_t  _nb; // in bits
-  bool    _le; // true if little endian
+  string _fpath;
+  size_t _n;  // in bytes
+  size_t _m;  // in bytes
+  size_t _nb; // in bits
+  size_t _mb; // in bits
+  bool _le; // true if little endian
 };
+
 
 void BitMatrix::check8()
 {
-  if (_nb % 8 != 0)
+  if ( _nb % 8 != 0 )
     throw runtime_error("n % 8 != 0 -> n=" + to_string(_nb));
-  else if (_mb % 8 != 0)
+  else if ( _mb % 8 != 0 )
     throw runtime_error("m % 8 != 0 -> m=" + to_string(_mb));
 }
 
+
 BitMatrix::~BitMatrix()
 {
-  if (matrix) delete[] matrix;
+  if ( matrix )
+    delete[] matrix;
 }
 
-BitMatrix::BitMatrix(size_t n, size_t m, bool lendian)
-  : _n(n/8), _m(m), _nb(n), _mb(m*8), _le(lendian)
+
+BitMatrix::BitMatrix(size_t n, size_t m, bool lendian, bool def = false)
+  : _n(n / 8),
+    _m(m),
+    _nb(n),
+    _mb(m * 8),
+    _le(lendian)
 {
   check8();
-  matrix = new uchar[_nb*_m]();
+  matrix = new uchar[_nb * _m]();
+  if ( def )
+    memset(matrix, 0xFF, _nb * _m);
 }
 
-BitMatrix::BitMatrix(string file, size_t n, size_t m, bool lendian)
-  : _fpath(file), _n(n/8), _m(m), _nb(n), _mb(m*8), _le(lendian)
+
+BitMatrix::BitMatrix(string &file, size_t n, size_t m, bool lendian)
+  : _fpath(file),
+    _n(n / 8),
+    _m(m),
+    _nb(n),
+    _mb(m * 8),
+    _le(lendian)
 {
   check8();
-  matrix = new uchar[_nb*_m]();
+  matrix = new uchar[_nb * _m]();
   ifstream fin(_fpath, ios::in | ios::binary);
-  if (!fin)
+  if ( !fin )
     throw runtime_error("Unable to open : " + _fpath);
-  fin.read((char*)matrix, _nb*_m);
+  fin.read((char *) matrix, _nb * _m);
   fin.close();
 }
 
+
 BitMatrix::BitMatrix(uchar *mat, size_t n, size_t m, bool lendian)
-  : _n(n/8), _m(m), _nb(n), _mb(m*8), _le(lendian)
+  : _n(n / 8),
+    _m(m),
+    _nb(n),
+    _mb(m * 8),
+    _le(lendian)
 {
   check8();
   matrix = mat;
 }
+
+
+BitMatrix::BitMatrix(const BitMatrix &b)
+  : _n(b._n),
+    _m(b._m),
+    _nb(b._nb),
+    _mb(b._mb),
+    _le(b._le)
+{
+  matrix = new uchar[_nb * _m]();
+  copy(&b.matrix[0], &b.matrix[(_nb * _m) - 1], matrix);
+}
+
+
+BitMatrix &BitMatrix::operator=(const BitMatrix &b)
+{
+  _n = b._n;
+  _m = b._m;
+  _nb = b._nb;
+  _mb = b._mb;
+  _le = b._le;
+  matrix = new uchar[_nb * _m]();
+  copy(&b.matrix[0], &b.matrix[(_nb * _m) - 1], matrix);
+  return *this;
+}
+
 
 void BitMatrix::set_bit(size_t i, size_t j, bool value)
 {
   size_t offset = (i * _mb + j) / 8;
   size_t pos = (i * _mb + j) % 8;
   uchar mask = _le ? 0x1 << pos : 0x80 >> pos;
-  if (value)
+  if ( value )
     matrix[offset] |= mask;
   else
     matrix[offset] &= ~(mask);
 }
 
+
 void BitMatrix::tog_bit(size_t i, size_t j)
 {
   size_t offset = (i * _mb + j) / 8;
   size_t pos = (i * _mb + j) % 8;
-  uchar mask = _le ?  0x1 << pos : 0x80 >> pos;
+  uchar mask = _le ? 0x1 << pos : 0x80 >> pos;
   matrix[offset] ^= mask;
 }
+
 
 bool BitMatrix::get_bit(size_t i, size_t j)
 {
@@ -178,68 +243,83 @@ bool BitMatrix::get_bit(size_t i, size_t j)
   return matrix[offset] & mask;
 }
 
+
 void BitMatrix::set_byte(size_t i, size_t j, uchar value) // i, j in bytes
 {
-  matrix[i*_m+j] = _le ? value : reverseb[value];
+  matrix[i * _m + j] = _le ? value : reverseb[value];
 }
+
 
 void BitMatrix::tog_byte(size_t i, size_t j)
 {
-  size_t offset = i * _mb + j;
+  size_t offset = (i * _m + j);
   matrix[offset] = matrix[offset] ^ 0xFF;
 }
 
+
 uchar BitMatrix::get_byte(size_t i, size_t j)
 {
-  return matrix[i*_m+j];
+  return matrix[i * _m + j];
 }
 
-uchar* BitMatrix::get_line(size_t i)
+
+uchar *BitMatrix::get_line(size_t i)
 {
   uchar *line = new uchar[_n];
-  memcpy(line, &matrix[i*_m], _n);
+  memcpy(line, &matrix[i * _m], _n);
   return line;
 }
 
-BitMatrix* BitMatrix::transpose()
+
+BitMatrix *BitMatrix::transpose()
 {
-  uchar* mt = new uchar[_nb*_m];
+  uchar *mt = new uchar[_nb * _m];
   __sse_trans(matrix, mt, _nb, _mb);
   return new BitMatrix(mt, _mb, _n, !_le);
 }
 
+
+void BitMatrix::clear()
+{
+  memset(matrix, 0, _nb * _m);
+}
+
+
 void BitMatrix::dump(string file)
 {
-  if (!matrix) throw runtime_error("Matrix is null");
+  if ( !matrix )
+    throw runtime_error("Matrix is null");
 
   ofstream fout(file, ios::out | ios::binary);
-  fout.write((char*)matrix, _nb*_m);
+  fout.write((char *) matrix, _nb * _m);
   fout.close();
 }
+
 
 void BitMatrix::print_bytes()
 {
   cout << "\n\n";
-  for (int i=0; i<_nb; i++)
+  for ( size_t i = 0; i < _nb; i++ )
   {
-    for ( int j = 0; j < _m; j++ )
+    for ( size_t j = 0; j < _m; j++ )
       cout << "0x" << setfill('0') << setw(2) << hex << static_cast<int>(matrix[i * _m + j]) << " ";
     cout << "\n";
   }
   cout << endl;
 }
 
+
 void BitMatrix::print_bits()
 {
   cout << "\n\n";
   string v;
   uchar tmp;
-  for (int i=0; i<_nb; i++)
+  for ( size_t i = 0; i < _nb; i++ )
   {
-    for (int j=0; j<_m; j++)
+    for ( size_t j = 0; j < _m; j++ )
     {
       tmp = matrix[i * _m + j];
-      for (int p=7; p>=0; p--)
+      for ( int p = 7; p >= 0; p-- )
       {
         v = ((tmp >> p) & 0x1) ? "1" : "0";
         cout << v;
@@ -251,46 +331,60 @@ void BitMatrix::print_bits()
   cout << endl;
 }
 
+
 // from https://mischasan.wordpress.com/2011/10/03/the-full-sse2-bit-matrix-transpose-routine/
 void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols)
 {
-#   define INP(x,y) inp[(x)*ncols/8 + (y)/8]
-#   define OUT(x,y) out[(y)*nrows/8 + (x)/8]
+#   define INP(x, y) inp[(x)*ncols/8 + (y)/8]
+#   define OUT(x, y) out[(y)*nrows/8 + (x)/8]
   ssize_t rr, cc, i, h;
-  union { __m128i x; uint8_t b[16]; } tmp;
+  union
+  {
+    __m128i x;
+    uint8_t b[16];
+  } tmp;
   assert(nrows % 8 == 0 && ncols % 8 == 0);
 
 #pragma omp parallel for private(rr, cc, i, tmp)
   // Do the main body in 16x8 blocks:
-  for (rr = 0; rr <= nrows - 16; rr += 16) {
-    for (cc = 0; cc < ncols; cc += 8) {
-      for (i = 0; i < 16; ++i)
+  for ( rr = 0; rr <= nrows - 16; rr += 16 )
+  {
+    for ( cc = 0; cc < ncols; cc += 8 )
+    {
+      for ( i = 0; i < 16; ++i )
         tmp.b[i] = INP(rr + i, cc);
-      for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
-        *(uint16_t*)&OUT(rr,cc+i)= _mm_movemask_epi8(tmp.x);
+      for ( i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
+        *(uint16_t *) &OUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
     }
   }
 
-  if (nrows % 16 == 0) return;
+  if ( nrows % 16 == 0 )
+    return;
   rr = nrows - nrows % 16;
 
   // The remainder is a block of 8x(16n+8) bits (n may be 0).
   //  Do a PAIR of 8x8 blocks in each step:
-  for (cc = 0; cc <= ncols - 16; cc += 16) {
-    for (i = 0; i < 8; ++i) {
-      tmp.b[i] = h = *(uint16_t const*)&INP(rr + i, cc);
+  for ( cc = 0; cc <= ncols - 16; cc += 16 )
+  {
+    for ( i = 0; i < 8; ++i )
+    {
+      tmp.b[i] = h = *(uint16_t const *) &INP(rr + i, cc);
       tmp.b[i + 8] = h >> 8;
     }
-    for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1)) {
+    for ( i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
+    {
       OUT(rr, cc + i) = h = _mm_movemask_epi8(tmp.x);
       OUT(rr, cc + i + 8) = h >> 8;
     }
   }
-  if (cc == ncols) return;
+  if ( cc == ncols )
+    return;
 
   //  Do the remaining 8x8 block:
-  for (i = 0; i < 8; ++i)
+  for ( i = 0; i < 8; ++i )
     tmp.b[i] = INP(rr + i, cc);
-  for (i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
+  for ( i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
     OUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
+
+}; // end of namespace km
