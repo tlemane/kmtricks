@@ -4,10 +4,9 @@ These headers allow to interact with some kmtricks files. Example are provided [
 
 ## Available
 
-* merger.hpp 
-* bitmatrix.hpp 
-* minim_repart.hpp -> work in progress, not tested 
+* sequences.hpp : super-k-mers, k-mers and minimizers representation
+* skreader.hpp : read super-k-mers partitions 
+* repartition.hpp : request minimizer repartition
+* merger.hpp : k-way merger
+* bitmatrix.hpp : bit matrix representation with tranposition support
 
-## Coming soon
-
-* skreader.hpp 
