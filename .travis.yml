@@ -30,5 +30,5 @@ addons:
 script:
   - mkdir build
   - cd build
-  - cmake .. && make
+  - cmake .. -DTEST=1 && make
   - ctest --verbose CTestTestfile.cmake
