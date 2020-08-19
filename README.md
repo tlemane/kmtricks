@@ -195,7 +195,7 @@ Maximal size of k-mers and maximal stored counts must be set at compile time.
 git clone --recursive https://github.com/tlemane/kmtricks
 cd kmtricks
 mkdir build ; cd build
-cmake .. -DKMERTYPE=64 -DCOUNTTYPE=8
+cmake .. -DKMERTYPE=64 -DCOUNTTYPE=8 -DTEST=1
 make -j8
 ```
 
