@@ -39,7 +39,22 @@ cmake-build-debug/
 libs/snippets/bitmatrix_ex
 libs/snippets/merger_ex
 libs/snippets/minim_ex
+libs/snippets/repartition_ex
+libs/snippets/skreader_ex
+libs/snippets/sequences_ex
 run.sh
 run_init/
 install.sh
+
+tests/libs/test_bitmatrix
+tests/libs/test_code
+tests/libs/test_sequences
+tests/libs/test_repartition
+tests/libs/test_merger
+tests/libs/test_skreader
+
+
+
+
+
 
