@@ -19,6 +19,8 @@
 #include "kmtricks/merger.hpp"
 #include <iostream>
 
+using namespace km;
+
 int main(int argc, char* argv[])
 {
   try
@@ -36,7 +38,7 @@ int main(int argc, char* argv[])
       if ( m.keep )
       {
         cout << to_string(m.m_khash);           // ascii int value (hash or kmer)
-        //cout << m.getk(31, bToN);             // ascii kmer
+        //cout << m.get_kmer(31).str_value();   // get_kmer(size) return Kmer<KType>
         for (size_t i=0; i<m.nb_files; i++)     // counts
         {
           cout << " " << to_string(m.counts[i]);

@@ -17,31 +17,38 @@
 *****************************************************************************/
 
 #include "kmtricks/bitmatrix.hpp"
-
+using namespace km;
 int main(int argc, char* argv[])
 {
   int nb = 16; // nb line in bits
   int m = 2;   // nb cols in bytes
-  BitMatrix* mat = new BitMatrix(nb, m, true);
 
-  for (int i=0; i<nb; i++)
-    for (int j=0; j<m; j++)
-    {
-      mat->set_bit(i, 0, 1);
-    }
-  mat->set_bit(1,0,0);
-  BitMatrix* trp = mat->transpose();
-  BitMatrix* trp2 = trp->transpose();
+  try
+  {
+    BitMatrix* mat = new BitMatrix(nb, m, true);
 
-  for (int i=0; i<nb*m; i++)
-    assert(mat->matrix[i] == trp2->matrix[i]);
+    for (int i=0; i<nb; i++)
+      for (int j=0; j<m; j++)
+      {
+        mat->set_bit(i, 0, 1);
+      }
+    mat->set_bit(1,0,0);
+    BitMatrix* trp = mat->transpose();
+    BitMatrix* trp2 = trp->transpose();
 
-  mat->print_bits();
-  trp->print_bits();
+    for (int i=0; i<nb*m; i++)
+      assert(mat->matrix[i] == trp2->matrix[i]);
 
-  delete mat;
-  delete trp;
-  delete trp2;
+    mat->print_bits();
+    trp->print_bits();
 
+    delete mat;
+    delete trp;
+    delete trp2;
+  }
+  catch (exception& e)
+  {
+    cout << e.what() << endl;
+  }
   return 0;
 }
