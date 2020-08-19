@@ -22,3 +22,7 @@ fi
 rm tmp11.txt tmp12.txt tmp21.txt
 
 ../../libs/snippets/bitmatrix_ex > /dev/null
+
+../../libs/snippets/skreader_ex ./skreader_data/sk_part > tmpSk0.txt
+diff ./skreader_data/sk_part/superks0.txt tmpSk0.txt
+rm tmpSk0.txt
