@@ -209,7 +209,6 @@ void KmMerge::execute()
     break;
   }
 
-  _m->destroy();
   delete _m;
   delete e;
 }

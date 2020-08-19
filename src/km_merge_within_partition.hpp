@@ -24,6 +24,7 @@
 #include "config.hpp"
 
 using namespace std;
+using namespace km;
 typedef unsigned char uchar;
 
 class KmMerge : public gatb::core::tools::misc::impl::Tool
