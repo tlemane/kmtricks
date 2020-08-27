@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "sequences.hpp"
+#include <kmtricks/sequences.hpp>
 
 using namespace km;
 typedef uint64_t kt;
@@ -166,6 +166,24 @@ Test(superk, superk_nb_kmers)
 {
   Superk<kt> superk("GAGCAGCACAAACGAGACACAAAAAAAGAG", 20);
   cr_assert(superk.nb_kmers() == 11);
+}
+
+Test(superk, superk_operator)
+{
+  Superk<kt> superk("GAGCAGCACAAACGAGACACAAAAAAAGAG", 20);
+  Superk<kt> superk2("GAGCAGCACAAACGAGACACAAAAAAAGAG", 20);
+  Superk<kt> superk3("AAGCAGCACAAACGAGACACAAAAAAAGAG", 20);
+  Superk<kt> superk4("TAGCAGCACAAACGAGACACAAAAAAAGAG", 20);
+
+  cr_assert(superk == superk2);
+  cr_assert(superk < superk4);
+  cr_assert(superk > superk3);
+  cr_assert(superk != superk3);
+
+  cr_assert(superk == "GAGCAGCACAAACGAGACACAAAAAAAGAG");
+  cr_assert(superk < "TAGCAGCACAAACGAGACACAAAAAAAGAG");
+  cr_assert(superk > "AAGCAGCACAAACGAGACACAAAAAAAGAG");
+  cr_assert(superk != "AAGCAGCACAAACGAGACACAAAAAAAGAG");
 }
 
 Test(minimizer, minimizer_build_from_kmer)
