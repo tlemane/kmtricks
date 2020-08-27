@@ -24,6 +24,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <execinfo.h>
+#include <libgen.h>
 #include "config.hpp"
 
 #if __APPLE__
