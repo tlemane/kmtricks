@@ -1,6 +1,6 @@
 #include <criterion/criterion.h>
-#include "repartition.hpp"
-#include "sequences.hpp"
+#include <kmtricks/repartition.hpp>
+#include <kmtricks/sequences.hpp>
 
 using namespace km;
 typedef uint64_t kt;

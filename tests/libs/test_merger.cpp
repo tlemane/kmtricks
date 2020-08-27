@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "merger.hpp"
+#include <kmtricks/merger.hpp>
 
 using namespace km;
 typedef uint64_t kt;

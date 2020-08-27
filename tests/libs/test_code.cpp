@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "code.hpp"
+#include <kmtricks/code.hpp>
 
 using namespace km;
 typedef uint64_t kt;

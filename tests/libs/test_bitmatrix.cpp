@@ -1,6 +1,6 @@
 #include <criterion/criterion.h>
-#include "time.h"
-#include "bitmatrix.hpp"
+#include <time.h>
+#include <kmtricks/bitmatrix.hpp>
 
 typedef uint64_t kt;
 static uchar zero[32];

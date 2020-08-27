@@ -1,6 +1,6 @@
 #include <criterion/criterion.h>
-#include "skreader.hpp"
-#include "sequences.hpp"
+#include <kmtricks/skreader.hpp>
+#include <kmtricks/sequences.hpp>
 
 using namespace km;
 typedef uint64_t kt;
