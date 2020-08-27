@@ -24,6 +24,7 @@
 #include <fmt/format.h>
 #include <csignal>
 #include <unistd.h>
+#include "signal_handling.hpp"
 
 class FBasedSync
 {
@@ -56,6 +57,7 @@ private:
   IteratorListener* _progress;
   Env*              _e;
   int               _m;
+  SignalHandler    *_sigh;
 };
 
 FBasedSync::FBasedSync(
@@ -78,9 +80,10 @@ FBasedSync::FBasedSync(
   _m(m)
 {
   _progress->init();
+  _sigh = new SignalHandler();
 }
 
-FBasedSync::~FBasedSync() {}
+FBasedSync::~FBasedSync() { delete _sigh;}
 
 void FBasedSync::push(string s)
 {
@@ -89,6 +92,7 @@ void FBasedSync::push(string s)
 
 void FBasedSync::wait_ressources(size_t curr)
 {
+  _sigh->check_dir();
   if (*_jobs >= _max_job) {
     while (true)
     {
@@ -122,6 +126,7 @@ void FBasedSync::wait_ressources(size_t curr)
         }
 
         _end_queue.clear();
+        _sigh->check_dir();
         break;
       }
 
@@ -134,6 +139,7 @@ void FBasedSync::wait_end()
 {
   while (*_jobs > 0)
   {
+    _sigh->check_dir();
     bool finished_jobs = false;
     for (size_t j=0; j<_queue.size(); j++)
     {
