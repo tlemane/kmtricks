@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.13.0)
 project(kmtricks VERSION 0.0.0)
 
 set(CONTACT "teo.lemane@inria.fr")
