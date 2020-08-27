@@ -25,6 +25,7 @@
 #include <iterator>
 #include <algorithm>
 #include <iomanip>
+#include <string>
 #include "code.hpp"
 
 using namespace std;
@@ -32,7 +33,7 @@ using namespace std;
 namespace km
 {
 
-static const u_int64_t DEFAULT_MINIMIZER = 1000000000;
+#define DEFAULT_MINIMIZER 1000000000
 
 template<typename K>
 class Hasher
@@ -86,7 +87,7 @@ public:
   bool operator()(K value, size_t size) override
   {
     K mask1 = numeric_limits<K>::max() >> (((sizeof(K)*8)-(size*2))+4);
-    K mask01 = 0x5555555555555555;
+    K mask01 = (K)0x5555555555555555;
     K mask00 = mask01 & mask1;
     value = ~((value) | (value >> 2));
     value = ((value >> 1) & value) & mask00;
@@ -176,8 +177,10 @@ public:
   Superk(const Superk<K> &s);
   Superk<K>& operator=(const Superk<K> &s);
 
-  string str_value();
+  string str_value() const;
   uchar  *value();
+  Kmer<K> get_kmer(bool canonical);
+  void    get_kmer(Kmer<K> *kmer);
   Kmer<K> get_kmer(int n, bool canonical);
   void    get_kmer(int n, Kmer<K> *kmer);
 
@@ -190,6 +193,24 @@ public:
   void set_superk(string superkmer);
   void set_superk(uchar *buffer, size_t superk_size, size_t kmer_size, bool gatb_format = false);
 
+  bool operator<(Superk<K> const &s) const {return str_value().compare(s.str_value()) < 0;}
+  bool operator>(Superk<K> const &s) const {return str_value().compare(s.str_value()) > 0;}
+  bool operator!=(Superk<K> const &s) const {return str_value().compare(s.str_value()) != 0;}
+  bool operator==(Superk<K> const &s) const {return str_value().compare(s.str_value()) == 0;}
+
+  bool operator<(const char *value) const {return str_value().compare(value) < 0;}
+  bool operator>(const char *value) const {return str_value().compare(value) > 0;}
+  bool operator!=(const char *value) const {return str_value().compare(value) != 0;}
+  bool operator==(const char *value) const {return str_value().compare(value) == 0;}
+
+  bool operator<(string value) const {return str_value().compare(value) < 0;}
+  bool operator>(string value) const {return str_value().compare(value) > 0;}
+  bool operator!=(string value) const {return str_value().compare(value) != 0;}
+  bool operator==(string value) const {return str_value().compare(value) == 0;}
+
+  void operator++(int) {_kmer_index++;};
+  void operator--(int) {_kmer_index--;}
+
 private:
   void _build_from_string(string superkmer);
   void _build_from_gatb_format(uchar *buffer);
@@ -198,7 +219,6 @@ private:
 private:
   Code<K> *_code;
   uchar   *_bin_superk;
-  bool    _has_bin;
 
   size_t  _ksize;
   size_t  _superksize;
@@ -228,7 +248,7 @@ public:
   Minimizer(const Minimizer<K> &m);
   Minimizer<K>& operator=(const Minimizer<K> &m);
 
-  K       value();
+  K       value() const;
   string  str_value();
 
   void set_default();
@@ -274,6 +294,7 @@ private:
   bool        _out_valid;
 };
 
+#ifndef _KM_LIB_INCLUDE_
 ///////////////
 // KMER IMPL //
 ///////////////
@@ -362,15 +383,15 @@ template<typename K>
 Kmer<K>::Kmer(const Kmer<K> &k)
   : _code(k._code),
     _custom_hash(k._custom_hash),
-    _custom_enc(k._custom_enc),
     _has_bin(k._has_bin),
     _is_canonical(k._is_canonical),
     _bin_kmer(k._bin_kmer),
     _size(k._size),
     _kmer_mask(k._kmer_mask),
-    _hasher(k._hasher)
+    _hasher(k._hasher),
+    _custom_enc(k._custom_enc)
 {
-  if (!_custom_enc)
+if (!_custom_enc)
     _code = new Code<K>();
   if (!_custom_hash)
     _hasher = new XorHasher<K>();
@@ -556,7 +577,8 @@ Superk<K>::Superk(size_t kmer_size, Code<K> *encoding)
   :
   _code(encoding),
   _ksize(kmer_size),
-  _superksize(0)
+  _superksize(0),
+  _kmer_index(0)
 {
   _bin_superk = static_cast<uchar*>(calloc(1, sizeof(uchar)));
   if (!_code)
@@ -577,7 +599,8 @@ template<typename K>
 Superk<K>::Superk(string superkmer, size_t kmer_size, Code<K> *encoding)
   :
   _code(encoding),
-  _ksize(kmer_size)
+  _ksize(kmer_size),
+  _kmer_index(0)
 {
   _superksize = superkmer.size();
   _bin_superk = static_cast<uchar*>(calloc((_superksize/4)+1, sizeof(uchar)));
@@ -602,6 +625,7 @@ Superk<K>::Superk(uchar* buffer, size_t superk_size, size_t kmer_size, bool gatb
   _code(encoding),
   _bin_superk(nullptr),
   _superksize(superk_size),
+  _kmer_index(0),
   _ksize(kmer_size),
   _gatb(gatb_format)
 {
@@ -638,6 +662,7 @@ Superk<K>::Superk(const Superk<K> &s)
 : _code(nullptr),
   _bin_superk(nullptr),
   _superksize(s._superksize),
+  _kmer_index(s._kmer_index),
   _ksize(s._ksize),
   _gatb(s._gatb),
   _custom_enc(s._custom_enc),
@@ -658,6 +683,7 @@ Superk<K>& Superk<K>::operator=(const Superk<K> &s)
   _code = nullptr;
   _bin_superk = nullptr;
   _superksize = s._superksize;
+  _kmer_index = s._kmer_index;
   _ksize = s._ksize;
   _gatb = s._gatb;
   _custom_enc = s._custom_enc;
@@ -792,12 +818,10 @@ uchar* Superk<K>::value()
 
 
 template<typename K>
-string Superk<K>::str_value()
+string Superk<K>::str_value() const
 {
   string ret;
   ret = "";
-  //for (size_t i=0; i<(_superksize/4)+1; i++)
-  //size_t nb_bytes = _superksize%4 ? (_superksize/4)+1 : _superksize/4;
   size_t nb_bytes = (_superksize/4)+1;
   for (size_t i=0; i<nb_bytes; i++)
   {
@@ -936,6 +960,18 @@ void Superk<K>::get_kmer(int n, Kmer<K> *kmer)
 }
 
 
+template<typename K>
+Kmer<K> Superk<K>::get_kmer(bool canonical)
+{
+  return get_kmer(_kmer_index, canonical);
+}
+
+
+template<typename K>
+void Superk<K>::get_kmer(Kmer<K> *kmer)
+{
+  get_kmer(_kmer_index, kmer);
+}
 ////////////////////
 // MINIMIZER IMPL //
 ////////////////////
@@ -1194,9 +1230,9 @@ string Minimizer<K>::str_value()
 
 
 template<typename K>
-K Minimizer<K>::value()
+K Minimizer<K>::value() const
 {
   return _minimizer;
 }
-
+#endif
 } // end of namespace km

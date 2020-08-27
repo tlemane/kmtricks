@@ -28,7 +28,6 @@ using namespace std;
 namespace km
 {
 
-static const uint32_t MAGIC_NUMBER = 0x12345678;
 
 class RepartFile
 {
@@ -57,6 +56,12 @@ public:
   bool is_load;
 };
 
+#ifdef _KM_LIB_INCLUDE_
+extern const uint32_t MAGIC_NUMBER;
+#endif
+
+#ifndef _KM_LIB_INCLUDE_
+const uint32_t MAGIC_NUMBER = 0x12345678;
 
 RepartFile::RepartFile(string m_path, string f_path)
 : _path(m_path),
@@ -159,5 +164,5 @@ uint16_t RepartFile::get(uint64_t minimizer_value)
     load();
   return _repart_table[minimizer_value];
 }
-
+#endif
 } // end of namespace km

@@ -24,7 +24,17 @@ using namespace std;
 
 typedef unsigned char uchar;
 
+namespace km
+{
+#ifdef _KM_LIB_INCLUDE_
+extern uchar bToN[];
+extern uchar revC[];
+extern uchar NToB[];
+#endif
+
+#ifndef _KM_LIB_INCLUDE_
 uchar bToN[] = {'A', 'C', 'T', 'G'};
+
 uchar revC[] = {'T', 'G', 'A', 'C'};
 
 uchar NToB[256] = {
@@ -45,9 +55,7 @@ uchar NToB[256] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
-
-namespace km
-{
+#endif
 
 template<typename K>
 class Code
@@ -91,6 +99,8 @@ private:
   bool _custom_enc;
   bool _from_out;
 };
+
+#ifndef _KM_LIB_INCLUDE_
 
 template<typename K>
 Code<K>::~Code()
@@ -319,5 +329,5 @@ string Code<K>::decode(uchar value)
   tmp[4] = '\0';
   return tmp;
 }
-
+#endif
 } // end of namespace

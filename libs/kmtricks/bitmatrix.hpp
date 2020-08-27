@@ -33,7 +33,12 @@ typedef unsigned char uchar;
 namespace km
 {
 
-static const uchar reverseb[] = {
+#ifdef _KM_LIB_INCLUDE_
+extern uchar reverseb[];
+#endif
+
+#ifndef _KM_LIB_INCLUDE_
+uchar reverseb[] = {
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
   0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
   0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8,
@@ -67,6 +72,7 @@ static const uchar reverseb[] = {
   0x0f, 0x8f, 0x4f, 0xcf, 0x2f, 0xaf, 0x6f, 0xef,
   0x1f, 0x9f, 0x5f, 0xdf, 0x3f, 0xbf, 0x7f, 0xff,
 };
+#endif
 
 void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols);
 
@@ -128,7 +134,7 @@ private:
   bool _le; // true if little endian
 };
 
-
+#ifndef _KM_LIB_INCLUDE_
 void BitMatrix::check8()
 {
   if ( _nb % 8 != 0 )
@@ -386,5 +392,5 @@ void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols)
   for ( i = 8; --i >= 0; tmp.x = _mm_slli_epi64(tmp.x, 1))
     OUT(rr, cc + i) = _mm_movemask_epi8(tmp.x);
 }
-
+#endif
 }; // end of namespace km

@@ -51,7 +51,7 @@ private:
   string _prefix;
 };
 
-
+#ifndef _KM_LIB_INCLUDE_
 SuperkStorage::SuperkStorage(string &superk_dir, string &part_prefix, int nb_parts)
 : _pdir(superk_dir),
   _nb_parts(nb_parts),
@@ -129,7 +129,7 @@ int SuperkStorage::nb_files()
 {
   return _nb_parts;
 }
-
+#endif
 
 template<typename K>
 class SuperkReader
@@ -150,6 +150,7 @@ private:
   vector<bool>    _init;
 };
 
+#ifndef _KM_LIB_INCLUDE_
 
 template<typename K>
 SuperkReader<K>::SuperkReader(SuperkStorage *sk_storage, size_t kmer_size)
@@ -203,5 +204,5 @@ bool SuperkReader<K>::next_superk(int part_id, Superk<K> *superk)
   _current[part_id] += (_ksize+nbk-1+3)/4;
   return true;
 }
-
+#endif
 } // end of namespace km

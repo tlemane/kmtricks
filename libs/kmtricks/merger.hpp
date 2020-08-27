@@ -106,7 +106,7 @@ private:
   vector<uchar *> _headers;
 };
 
-
+#ifndef _KM_LIB_INCLUDE_
 template<typename K, typename C>
 Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector)
   : keep(false),
@@ -152,7 +152,7 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
     nb_files(m.nb_files),
     vlen(m.vlen),
     _bit_vector(nullptr),
-    _path(m.path),
+    _path(m._path),
     _a_min(m._a_min),
     _r_min(m._r_min),
     _nm_khash(m._nm_khash),
@@ -207,7 +207,7 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
   m_khash = m.m_khash;
   nb_files = m.nb_files;
   vlen = m.vlen;
-  _path = m.path;
+  _path = m._path;
   _a_min = m._a_min;
   _r_min = m._r_min;
   _nm_khash = m._nm_khash;
@@ -391,5 +391,5 @@ km::Kmer<K> Merger<K, C>::get_kmer(size_t ksize)
 {
   return km::Kmer<K>(m_khash, ksize, false);
 }
-
+#endif
 } // end of namespace km
