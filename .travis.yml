@@ -43,6 +43,7 @@ install:
 
 
 script:
+  - cd "${TRAVIS_BUILD_DIR}"
   - mkdir build
   - cd build
   - cmake .. -DTEST=1 && make
