@@ -237,11 +237,16 @@ void Kmtricks::init()
     hw.write((char *) &lb, sizeof(uint64_t));
     hw.write((char *) &ub, sizeof(uint64_t));
   }
+  hw.write((char*) &_max_hash, sizeof(uint64_t));
+  uint32_t minimsize = _config._minim_size;
+  hw.write((char*) &minimsize, sizeof(uint32_t));
   hw.close();
 }
 
 void Kmtricks::execute()
 {
+  if (System::file().doesExistDirectory("./km_backtrace"))
+    std::system("rm -rf ./km_backtrace");
   parse_args();
   init();
 

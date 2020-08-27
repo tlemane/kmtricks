@@ -20,6 +20,7 @@
 #include <string>
 #include <gatb/gatb_core.hpp>
 #include <fmt/format.h>
+#include <kmconfig.hpp>
 
 using namespace std;
 typedef const string cs;
@@ -162,7 +163,11 @@ cs REPART_GRP       = "minimRepart";
 cs RM               = "rm {}/* &> /dev/null";
 cs KILLALL          = "killall km_minim_repart km_superk_to_kmer_counts km_reads_to_superk km_merge_within_partition km_output_convert &> /dev/null";
 
-  class Env
+cs BACKTRACE        = "./km_backtrace/backtrace.log";
+cs RUN_INFOS        = "./km_backtrace/{}-{}";
+cs ERROR_MSG        = "\nSignal {} received from {}, all children are killed. Check your inputs. If the problem persists, please contact {} with a description of your run and the following file: {}.\n";
+
+class Env
 {
 public:
   Env(string main_dir, string binaries_dir);
@@ -221,7 +226,6 @@ public:
 Env::Env(string main_dir, string binaries_dir)
   : DIR(main_dir), BIN(binaries_dir)
 {
-
   SYNCHRO          = DIR + "/synchro";
   STORE            = DIR + "/storage";
   LOG              = DIR + "/logs";
@@ -262,8 +266,6 @@ Env::Env(string main_dir, string binaries_dir)
   LOG_COUNTER      = LOG_COUNTER_D + "/counter{}_{}.log";
   LOG_MERGER       = LOG_MERGER_D + "/merger{}.log";
   LOG_SPLIT        = LOG + "/split.log";
-  
-  
 }
 
 Env::~Env() {};
