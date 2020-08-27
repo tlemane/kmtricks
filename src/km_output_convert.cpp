@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 #include "km_output_convert.hpp"
+#include "signal_handling.hpp"
 
 KmConvert::KmConvert() : Tool("km_output_convert")
 {
@@ -166,6 +167,8 @@ int main(int argc, char *argv[])
 {
   try
   {
+    INIT_SIGN;
+
     KmConvert().run(argc, argv);
   }
   catch (OptionFailure &e)

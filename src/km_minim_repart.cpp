@@ -17,6 +17,7 @@
 *****************************************************************************/
 
 #include "km_minim_repart.hpp"
+#include "signal_handling.hpp"
 
 string get_str_fof(string fof_path)
 {
@@ -90,6 +91,8 @@ int main(int argc, char *argv[])
 {
   try 
   {
+    INIT_SIGN;
+
     Repart().run(argc, argv);
   }
   catch (OptionFailure &e)

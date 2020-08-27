@@ -17,6 +17,7 @@
 *****************************************************************************/
 
 #include "km_merge_within_partition.hpp"
+#include "signal_handling.hpp"
 
 KmMerge::KmMerge() : Tool("km_merge")
 {
@@ -217,6 +218,8 @@ int main (int argc, char* argv[])
 {
   try
   {
+    INIT_SIGN;
+
     KmMerge().run(argc, argv);
   }
 

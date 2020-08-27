@@ -19,6 +19,8 @@
 #include <fmt/format.h>
 #include <libgen.h>
 #include "km_reads_to_superk.hpp"
+#include "signal_handling.hpp"
+
 template<size_t span> struct Functor
 {
   void operator() (Parameter parameter)
@@ -116,6 +118,8 @@ int main(int argc, char* argv[])
 {
   try 
   {
+    INIT_SIGN;
+
     KmSuperK().run(argc, argv);
   }
   catch (OptionFailure &e)

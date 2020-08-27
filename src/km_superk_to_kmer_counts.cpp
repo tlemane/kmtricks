@@ -23,6 +23,7 @@
 #include <libgen.h>
 #include "km_superk_to_kmer_counts.hpp"
 #include "CountProcessorDump.hpp"
+#include "signal_handling.hpp"
 
 #ifndef KMTYPE
   typedef uint64_t kmtype_t;
@@ -103,7 +104,7 @@ struct Functor
 
     uint64_t _max_hash = props->getInt(STR_MAX_HASH);
     uint64_t window_size = NMOD8((uint64_t)ceil((double)_max_hash / (double)nb_partitions));
-    
+
     vector<ICommand*> cmds;
     string path = e->STORE_KMERS + fmt::format(PART_TEMP_K, part_id, prefix);
     CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, nb_partitions);
@@ -197,6 +198,7 @@ int main(int argc, char *argv[])
 {
   try
   {
+    INIT_SIGN;
     KmCount().run(argc, argv);
   }
 
