@@ -1,16 +1,27 @@
-project(kbf)
-
 cmake_minimum_required(VERSION 3.10.0)
+project(kmtricks VERSION 0.0.0)
 
+set(CONTACT "teo.lemane@inria.fr")
+
+configure_file("./config.h.in" ${PROJECT_BINARY_DIR}/include/kmconfig.hpp)
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    set(OPENMP OpenMP::OpenMP_CXX)
+endif()
+
+set (debug 0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set (debug 1)
 endif()
 
+# flags
 set(CMAKE_CXX_FLAGS "-std=c++0x")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
-if (debug)
+# debug mode
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(GATB_DEBUG "-DCMAKE_BUILD_TYPE=Debug")
     set(GATB_BUILD_LIB "lib/Debug")
 else()
@@ -18,40 +29,13 @@ else()
     set(GATB_BUILD_LIB "lib")
 endif()
 
-find_package(OpenMP)
+add_subdirectory(thirdparty) # Build thirdparty libraries
+add_subdirectory(libs/kmtricks) # Build kmtricks library
 
-include(ExternalProject)
-ExternalProject_Add(gatb
-        PREFIX gatb
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped
-        CMAKE_ARGS
-            ${GATB_DEBUG}
-        BUILD_ALWAYS 1
-        INSTALL_COMMAND "")
-
-ExternalProject_Add(FMT
-        PREFIX FMT
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
-        INSTALL_COMMAND "")
-
-ExternalProject_Add(SDSL
-        PREFIX sdsl
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/sdsl-lite
-        INSTALL_COMMAND "")
-
-if (TEST)
-    ExternalProject_Add(Criterion
-            PREFIX Criterion
-            SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/Criterion
-            INSTALL_COMMAND "")
-endif()
-
-add_definitions(${FLAGS})
-
+# type size
 if (NOT KMERTYPE)
     set(KMERTYPE 64)
 endif()
-
 
 if (NOT COUNTTYPE)
     set(COUNTTYPE 8)
@@ -60,172 +44,85 @@ endif()
 add_definitions(-DKTYPE=${KMERTYPE})
 add_definitions(-DCNTYPE=${COUNTTYPE})
 
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/src)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/fmt/include)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped/thirdparty)
-include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include)
-include_directories(${PROJECT_BINARY_DIR}/sdsl/src/SDSL-build/include)
-if (debug)
-    include_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/include/Debug)
-endif()
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty)
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/libs)
+# thirdparty source directories
+set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/thirdparty)
+set(GATB_DIR ${THIRDPARTY_DIR}/gatb-core-stripped)
+set(FMT_DIR ${THIRDPARTY_DIR}/fmt)
 
-file(GLOB_RECURSE ProjectFiles src/*.cpp)
-link_directories(${PROJECT_BINARY_DIR}/FMT/src/FMT-build)
-link_directories(${PROJECT_BINARY_DIR}/gatb/src/gatb-build/${GATB_BUILD_LIB})
-link_directories(${PROJECT_BINARY_DIR}/sdsl/src/SDSL-build/lib)
-#
-install(DIRECTORY DESTINATION ${PROJECT_SOURCE_DIR}/bin)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+# thirdparty build directories
+set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
+set(GATB_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/gatb/src/gatb-build)
+set(SDSL_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/sdsl/src/SDSL-build)
+set(FMT_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build)
 
-set (LIBS gatbcore fmt z pthread)
-set (DEPS gatb FMT)
+# includes
+set(GATB_INCLUDE ${GATB_DIR}/src ${GATB_DIR}/thirdparty ${GATB_BUILD_DIR}/include)
+set(FMT_INCLUDE ${FMT_DIR}/include)
+set(SDSL_INCLUDE ${SDSL_BUILD_DIR}/include)
+set(KMTRICKS_INCLUDE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/libs ${THIRDPARTY_DIR})
+set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
 
-add_executable(kmtricks src/kmtricks.cpp)
-add_dependencies(kmtricks ${DEPS})
-target_link_libraries(kmtricks ${LIBS})
-#
-add_executable(km_minim_repart src/km_minim_repart.cpp)
-add_dependencies(km_minim_repart ${DEPS})
-target_link_libraries(km_minim_repart ${LIBS})
-#
-add_executable(km_reads_to_superk src/km_reads_to_superk.cpp)
-add_dependencies(km_reads_to_superk ${DEPS})
-target_link_libraries(km_reads_to_superk ${LIBS})
-#
-add_executable(km_superk_to_kmer_counts src/km_superk_to_kmer_counts.cpp)
-add_dependencies(km_superk_to_kmer_counts ${DEPS})
-target_link_libraries(km_superk_to_kmer_counts ${LIBS})
-#
-add_executable(km_merge_within_partition src/km_merge_within_partition.cpp)
-add_dependencies(km_merge_within_partition ${DEPS})
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(km_merge_within_partition PUBLIC OpenMP::OpenMP_CXX ${LIBS})
-else()
-    target_link_libraries(km_merge_within_partition ${LIBS})
-endif()
+include_directories(${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE})
 
-add_executable(km_output_convert src/km_output_convert.cpp)
-add_dependencies(km_output_convert ${DEPS} SDSL)
-target_link_libraries(km_output_convert ${LIBS} sdsl)
+# thirdparty lib directories
+set(GATB_LIB_DIR ${GATB_BUILD_DIR}/${GATB_BUILD_LIB})
+set(SDSL_LIB_DIR ${SDSL_BUILD_DIR}/lib)
+set(FMT_LIB_DIR ${FMT_BUILD_DIR})
 
+# links
+link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR})
+
+# build kmtricks
+add_subdirectory(src)
+
+# build snippets
+add_subdirectory(libs/snippets)
+
+# tests
 enable_testing()
-
-add_executable(bitmatrix_ex libs/snippets/bitmatrix_ex.cpp)
-set_target_properties(bitmatrix_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(bitmatrix_ex PUBLIC OpenMP::OpenMP_CXX)
-endif()
-target_compile_options(bitmatrix_ex PRIVATE -Wall)
-
-
-add_executable(merger_ex libs/snippets/merger_ex.cpp)
-set_target_properties(merger_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-target_link_libraries(merger_ex z)
-target_compile_options(merger_ex PRIVATE -Wall)
-
-add_executable(minim_ex libs/snippets/minim_repart_ex.cpp)
-set_target_properties(minim_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-target_compile_options(minim_ex PRIVATE -Wall)
-
-add_executable(sequences_ex libs/snippets/sequences_ex.cpp)
-set_target_properties(sequences_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-target_compile_options(sequences_ex PRIVATE -Wall)
-
-add_executable(skreader_ex libs/snippets/skreader_ex.cpp)
-set_target_properties(skreader_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-target_compile_options(skreader_ex PRIVATE -Wall)
-
-add_executable(repartition_ex libs/snippets/repartition_ex.cpp)
-set_target_properties(repartition_ex PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/libs/snippets)
-target_compile_options(repartition_ex PRIVATE -Wall)
-
-
+set(TEST_VERBOSITY 0)
 if (TEST)
-    set(TEST_DEPS Criterion)
-    set(TEST_LIBS ${PROJECT_BINARY_DIR}/Criterion/src/Criterion-build)
-    set(TEST_INCS ${PROJECT_SOURCE_DIR}/thirdparty/Criterion/include ${PROJECT_SOURCE_DIR}/libs/kmtricks)
-
-    link_directories(${TEST_LIBS})
-    include_directories(${TEST_INCS})
-    link_libraries(criterion)
-
-    add_executable(test_code tests/libs/test_code.cpp)
-    set_target_properties(test_code PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    add_dependencies(test_code ${TEST_DEPS})
-
-    add_executable(test_sequences tests/libs/test_sequences.cpp)
-    set_target_properties(test_sequences PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    add_dependencies(test_sequences ${TEST_DEPS})
-
-    add_executable(test_skreader tests/libs/test_skreader.cpp)
-    set_target_properties(test_skreader PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    add_dependencies(test_skreader ${TEST_DEPS})
-
-    add_executable(test_merger tests/libs/test_merger.cpp)
-    set_target_properties(test_merger PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    target_link_libraries(test_merger z)
-    add_dependencies(test_merger ${TEST_DEPS})
-
-    add_executable(test_bitmatrix tests/libs/test_bitmatrix.cpp)
-    set_target_properties(test_bitmatrix PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    add_dependencies(test_bitmatrix ${TEST_DEPS})
-
-    add_executable(test_repartition tests/libs/test_repartition.cpp)
-    set_target_properties(test_repartition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    add_dependencies(test_repartition ${TEST_DEPS})
-
     if (TEST_VERBOSITY EQUAL 1)
         set(CRITERION_VERBOSE "--verbose")
     else()
         set(CRITERION_VERBOSE "")
     endif()
 
-    add_test(
-            NAME test_code
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_code ${CRITERION_VERBOSE}"
-    )
+    set(CRITERION_DIR ${THIRDPARTY_DIR}/Criterion)
+    set(CRITERION_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/Criterion/src/Criterion-build)
 
-    add_test(
-            NAME test_sequences
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_sequences ${CRITERION_VERBOSE}"
-    )
+    set(CRITERION_INCLUDE ${CRITERION_DIR}/include)
+    set(CRITERION_LIB_DIR ${CRITERION_BUILD_DIR})
 
-    add_test(
-            NAME test_skreader
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_skreader ${CRITERION_VERBOSE}"
-    )
-
-    add_test(
-            NAME test_merger
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_merger ${CRITERION_VERBOSE}"
-    )
-
-    add_test(
-            NAME test_bitmatrix
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_bitmatrix ${CRITERION_VERBOSE}"
-    )
-
-    add_test(
-            NAME test_repartition
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./test_repartition ${CRITERION_VERBOSE}"
-    )
-
-    add_test(
-            NAME lib_test
-            COMMAND sh -c  "cd ${PROJECT_SOURCE_DIR}/tests/libs/; ./run_test.sh"
-    )
-
-    add_test(
-            NAME kmtricks_test
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/kmtricks/; ./run_test.sh"
-    )
-
-
+    add_subdirectory(tests/libs) # kmtricks lib tests
+    add_subdirectory(tests/kmtricks) # kmtricks pipeline test
 endif()
 
+if (HOWDE)
+    include(ExternalProject)
+    ExternalProject_Add(howdesbt
+            PREFIX howdesbt
+            SOURCE_DIR ${THIRDPARTY_DIR}/HowDeSBT
+            CMAKE_ARGS -DSDSLINC=${SDSL_INCLUDE}
+            CMAKE_ARGS -DSDSLLIB=${SDSL_LIB_DIR}
+            CMAKE_ARGS -DKMTRICKS_LIB=${PROJECT_SOURCE_DIR}/bin/lib/
+            CMAKE_ARGS -DKMTRICKS_INC=${PROJECT_SOURCE_DIR}/libs/
+            CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
+            INSTALL_COMMAND "")
+    add_dependencies(howdesbt SDSL)
+endif()
 
-MESSAGE("KMER BIT REPRESENTATION = ${KMERTYPE}")
-MESSAGE("COUNT BIT REPRESENTATION = ${COUNTTYPE}")
+set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
+file(REMOVE ${INFOS})
+file(APPEND ${INFOS} "kmtricks build summary\n\n")
+file(APPEND ${INFOS} "KMERTYPE=${KMERTYPE}\n")
+file(APPEND ${INFOS} "COUNTTYPE=${COUNTTYPE}\n")
+file(APPEND ${INFOS} "Debug=${debug}\n")
+file(APPEND ${INFOS} "TEST=${TEST}, TEST_VERBOSITY=${TEST_VERBOSITY}\n")
+file(APPEND ${INFOS} "Binaries : ${PROJECT_SOURCE_DIR}/bin\n")
+file(APPEND ${INFOS} "kmtricks static library : ${PROJECT_SOURCE_DIR}/bin/lib\n")
+file(APPEND ${INFOS} "kmtricks ex snippets : ${PROJECT_SOURCE_DIR}/bin/snippets\n")
+if (HOWDE)
+    file(APPEND ${INFOS} "howdesbt binary : ${PROJECT_SOURCE_DIR}/bin/howdesbt\n")
+endif()
+file(APPEND ${INFOS}  "Run test : ctest CTestTestfile.cmake --verbose\n")
