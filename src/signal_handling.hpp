@@ -141,9 +141,9 @@ public:
     fout.close();
     FILE *back = fopen(BACKTRACE.c_str(), "w");
     void *array[256];
-    size_t size;
-    size = backtrace(array, 256);
-    backtrace_symbols_fd(array, size, fileno(back));
+    size_t _size;
+    _size = backtrace(array, 256);
+    backtrace_symbols_fd(array, _size, fileno(back));
   }
 
 private:
