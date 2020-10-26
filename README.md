@@ -212,7 +212,7 @@ ctest CTestTestfile.cmake
 
 Téo Lemane: teo.lemane@inria.fr
 
-Rayan Chikhi: rayan.chikhi@univ-lille.fr
+Rayan Chikhi: rayan.chikhi@pasteur.fr
 
 Pierre Peterlongo: pierre.peterlongo@inria.fr
 
