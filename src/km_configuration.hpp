@@ -22,21 +22,13 @@
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
 #include "config.hpp"
 
-void wait_end_signal(string sign);
-void signal_callback(int signum);
-
 class Kmtricks : public Tool
 {
 public:
-    Kmtricks(bool env);
+    Kmtricks();
 private:
   void parse_args();
   void init();
-  void km_part();
-  void km_superk();
-  void km_count();
-  void km_merger();
-  void km_output();
   void execute() override;
 
   IteratorListener* _progress;
@@ -46,25 +38,16 @@ private:
   string            _fof_path;
   Env*              e;
   size_t            _k_size;
-  uint              _a_min, _a_max, _r_min;
+  uint              _a_min, _a_max;
   uint              _nb_cores, _max_memory;
   uint              _nb_partitions;
   uint              _nb_procs;
 
   string            _dir;
-  string            _path_binary;
 
   string            _hasher;
   uint64_t          _min_hash, _max_hash;
-  uint              _mat_fmt;
-  string            _mat_str;
-  string            _str_split;
-  bool              _split;
-  uint              _mode;
 
-  uint              _only, _upto;
-  bool              _keep_tmp;
-  bool              _build_runtime;
 
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
 };

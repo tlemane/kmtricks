@@ -72,44 +72,6 @@ public:
   };
   ~SignalHandler() = default;
 
-  bool check_dir()
-  {
-    if (System::file().doesExistDirectory("./km_backtrace"))
-    {
-      auto paths = System::file().listdir("./km_backtrace");
-      if ( paths.size() > 2 )
-      {
-        for ( auto &p: paths )
-        {
-          if ( p.size() > 2 )
-          {
-            if (p.find("-") != string::npos)
-            {
-              vector<string> info = split_str(p, "-");
-              _exec_name = info[0];
-              _type = info[1];
-            }
-          }
-        }
-        kill_all();
-        return true;
-      }
-    }
-    return false;
-  };
-
-  void kill_all()
-  {
-    cerr << endl;
-    cerr << fmt::format(ERROR_MSG,
-      _type,
-      _exec_name,
-      CONTACT,
-      BACKTRACE);
-    std::system(KILLALL.c_str());
-    exit(EXIT_FAILURE);
-  }
-
   static string signal_to_string(int sig)
   {
     switch ( sig )
