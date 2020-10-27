@@ -6,7 +6,7 @@ foreach( source_file ${TestFiles})
     add_dependencies(${name} Criterion)
     target_include_directories(${name} PUBLIC ${CRITERION_INCLUDE})
     target_link_directories(${name} PUBLIC ${CRITERION_LIB_DIR} ${TESTTEST})
-    target_link_libraries(${name} criterion z ${OPENMP} ${TESTTESTL})
+    target_link_libraries(${name} criterion z ${OPENMP} ${TESTTESTL} lz4)
     add_test(
             NAME ${name}
             COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./${name} ${CRITERION_VERBOSE}"

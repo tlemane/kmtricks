@@ -28,6 +28,7 @@
 
 #include "utilities.hpp"
 #include "sequences.hpp"
+#include "lz4_stream.hpp"
 
 typedef unsigned int  uint;
 typedef unsigned char uchar;
@@ -37,13 +38,19 @@ using namespace std;
 namespace km
 {
 
+//struct stream_t
+//{
+//  uchar *buf;
+//  int begin, end, eof, iskhash;
+//  gzFile f;
+//};
+
 struct stream_t
 {
   uchar *buf;
   int begin, end, eof, iskhash;
-  gzFile f;
+  istream *f;
 };
-
 
 template<typename K, typename C>
 struct hshcount_t
@@ -259,6 +266,10 @@ template<typename K, typename C>
 void Merger<K, C>::initp()
 {
   ifstream fof(_path, ios::in);
+  if (!fof.good())
+  {
+    cerr << "Unable to open " + _path + "." << endl;
+  }
   string line;
   while ( getline(fof, line))
   {
@@ -274,12 +285,16 @@ int Merger<K, C>::readb(size_t i)
   if ( _st[i]->begin >= _st[i]->end )
   {
     _st[i]->begin = 0;
-    _st[i]->end = gzread(_st[i]->f, _st[i]->buf, _buf_size);
+    //_st[i]->end = gzread(_st[i]->f, _st[i]->buf, _buf_size);
+    _st[i]->f->read((char*)_st[i]->buf, _buf_size);
+    _st[i]->end = _st[i]->f->gcount();
     if ( _st[i]->end == 0 )
     {
       _st[i]->eof = 1;
       return 0;
     }
+    //_st[i]->eof = _st[i]->f->eof();
+    //if (_st[i]->eof) return 0;
   }
   memcpy(&_hc[i]->khash, &_st[i]->buf[_st[i]->begin], sizeof(K));
   _st[i]->begin += sizeof(K);
@@ -309,7 +324,8 @@ int Merger<K, C>::init()
     _hc.push_back(new hshcount_t<K, C>());
     _st.push_back(new stream_t());
 
-    _st[i]->f = gzopen(pfiles[i].c_str(), "r");
+    //_st[i]->f = gzopen(pfiles[i].c_str(), "r");
+    _st[i]->f = new lz4_stream::istream(pfiles[i]);
     if ( !_st[i]->f )
       throw runtime_error("Unable to open " + pfiles[i]);
 
@@ -318,14 +334,16 @@ int Merger<K, C>::init()
     if ( _hsize > 0 )
     {
       _headers.push_back(new uchar[_hsize]());
-      gzread(_st[i]->f, _headers[i], _hsize - 1);
+      //gzread(_st[i]->f, _headers[i], _hsize - 1);
+      _st[i]->f->read((char*)_headers[i], _hsize-1);
       _headers[i][_hsize - 1] = '\0';
     }
 
     if ( !readb(i))
     {
       _hc[i]->khash_set = false;
-      gzclose(_st[i]->f);
+      delete _st[i]->f;
+      //gzclose(_st[i]->f);
       delete[] _st[i]->buf;
     }
     else
@@ -368,7 +386,8 @@ void Merger<K, C>::next()
       if ( !readb(i))
       {
         _hc[i]->khash_set = false;
-        gzclose(_st[i]->f);
+        delete _st[i]->f;
+        //gzclose(_st[i]->f);
         delete[] _st[i]->buf;
       }
     }

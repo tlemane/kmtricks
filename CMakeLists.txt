@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13.0)
 project(kmtricks VERSION 0.0.0)
 
 set(CONTACT "teo.lemane@inria.fr")
+set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
 
 configure_file("./config.h.in" ${PROJECT_BINARY_DIR}/include/kmconfig.hpp)
 
@@ -48,18 +49,21 @@ add_definitions(-DCNTYPE=${COUNTTYPE})
 set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/thirdparty)
 set(GATB_DIR ${THIRDPARTY_DIR}/gatb-core-stripped)
 set(FMT_DIR ${THIRDPARTY_DIR}/fmt)
+set(LZ_DIR ${THIRDPARTY_DIR}/lz4)
 
 # thirdparty build directories
 set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
 set(GATB_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/gatb/src/gatb-build)
 set(SDSL_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/sdsl/src/SDSL-build)
 set(FMT_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build)
+set(LZ_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/lz4/src/LZ4-build)
 
 # includes
 set(GATB_INCLUDE ${GATB_DIR}/src ${GATB_DIR}/thirdparty ${GATB_BUILD_DIR}/include)
 set(FMT_INCLUDE ${FMT_DIR}/include)
 set(SDSL_INCLUDE ${SDSL_BUILD_DIR}/include)
 set(KMTRICKS_INCLUDE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/libs ${THIRDPARTY_DIR})
+set(LZ_INCLUDE ${LZ_DIR}/lib)
 set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
 
 include_directories(${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE})
@@ -68,9 +72,10 @@ include_directories(${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_IN
 set(GATB_LIB_DIR ${GATB_BUILD_DIR}/${GATB_BUILD_LIB})
 set(SDSL_LIB_DIR ${SDSL_BUILD_DIR}/lib)
 set(FMT_LIB_DIR ${FMT_BUILD_DIR})
+set(LZ_LIB_DIR ${LZ_BUILD_DIR})
 
 # links
-link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR})
+link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR} ${LZ_LIB_DIR})
 
 # build kmtricks
 add_subdirectory(src)
@@ -96,6 +101,8 @@ if (TEST)
 
     add_subdirectory(tests/libs) # kmtricks lib tests
     add_subdirectory(tests/kmtricks) # kmtricks pipeline test
+else()
+    set(TEST 0)
 endif()
 
 if (HOWDE)
@@ -110,19 +117,52 @@ if (HOWDE)
             CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
             INSTALL_COMMAND "")
     add_dependencies(howdesbt SDSL)
+else()
+    set(HOWDE 0)
 endif()
 
-set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
 file(REMOVE ${INFOS})
-file(APPEND ${INFOS} "kmtricks build summary\n\n")
-file(APPEND ${INFOS} "KMERTYPE=${KMERTYPE}\n")
-file(APPEND ${INFOS} "COUNTTYPE=${COUNTTYPE}\n")
-file(APPEND ${INFOS} "Debug=${debug}\n")
-file(APPEND ${INFOS} "TEST=${TEST}, TEST_VERBOSITY=${TEST_VERBOSITY}\n")
-file(APPEND ${INFOS} "Binaries : ${PROJECT_SOURCE_DIR}/bin\n")
-file(APPEND ${INFOS} "kmtricks static library : ${PROJECT_SOURCE_DIR}/bin/lib\n")
-file(APPEND ${INFOS} "kmtricks ex snippets : ${PROJECT_SOURCE_DIR}/bin/snippets\n")
+file(APPEND ${INFOS} "System: ${CMAKE_SYSTEM_NAME}\n")
+file(APPEND ${INFOS} "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}\n")
+file(APPEND ${INFOS} "OpenMp: ${OpenMP_CXX_FOUND}\n")
+file(APPEND ${INFOS} "OpenMpVersion: ${OpenMP_CXX_VERSION}\n")
+file(APPEND ${INFOS} "HowDe: ${HOWDE}\n")
+file(APPEND ${INFOS} "KMERTYPE: ${KMERTYPE}\n")
+file(APPEND ${INFOS} "COUNTTYPE: ${COUNTTYPE}\n")
+file(APPEND ${INFOS} "Debug: ${debug}\n")
+file(APPEND ${INFOS} "TEST: ${TEST}\n")
+file(APPEND ${INFOS} "TEST_VERBOSITY: ${TEST_VERBOSITY}\n")
+file(APPEND ${INFOS} "Binaries: ${PROJECT_SOURCE_DIR}/bin\n")
+file(APPEND ${INFOS} "kmtricks static library: ${PROJECT_SOURCE_DIR}/bin/lib\n")
+file(APPEND ${INFOS} "kmtricks ex snippets: ${PROJECT_SOURCE_DIR}/bin/snippets\n")
 if (HOWDE)
-    file(APPEND ${INFOS} "howdesbt binary : ${PROJECT_SOURCE_DIR}/bin/howdesbt\n")
+    file(APPEND ${INFOS} "howdesbt binary: ${PROJECT_SOURCE_DIR}/bin/howdesbt\n")
 endif()
-file(APPEND ${INFOS}  "Run test : ctest CTestTestfile.cmake --verbose\n")
+file(APPEND ${INFOS}  "Run test: ctest CTestTestfile.cmake --verbose\n")
+
+message("${TARGETS}")
+
+function(get_all_targets var)
+    set(targets)
+    get_all_targets_recursive(targets ${CMAKE_CURRENT_SOURCE_DIR})
+    set(${var} ${targets} PARENT_SCOPE)
+endfunction()
+
+macro(get_all_targets_recursive targets dir)
+    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach(subdir ${subdirectories})
+        get_all_targets_recursive(${targets} ${subdir})
+    endforeach()
+
+    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ${targets} ${current_targets})
+endmacro()
+
+get_all_targets(all_targets)
+add_custom_target( end ALL
+        ${CMAKE_COMMAND} -E cmake_echo_color --cyan
+        "Binaries: ${PROJECT_SOURCE_DIR}/bin"
+        "kmtricks static library: ${PROJECT_SOURCE_DIR}/bin/lib"
+        "kmtricks ex snippets: ${PROJECT_SOURCE_DIR}/bin/snippets"
+        COMMENT "" )
+add_dependencies( end ${all_targets} )

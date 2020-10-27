@@ -50,6 +50,14 @@ typedef const string cs;
 
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
 
+#ifndef KTYPE
+#define KTYPE 64
+#endif
+
+#ifndef CNTYPE
+#define CNTYPE 32
+#endif
+
 #if KTYPE == 8
 typedef uint8_t kmtype_t;
 #elif KTYPE == 16
@@ -123,6 +131,7 @@ cs STR_HSIZE        = "-hsize";
 cs STR_KEEP_TMP     = "-keep-tmp";
 cs STR_NB_FILE      = "-nb-files";
 cs STR_HASHM        = "-hash-map";
+cs STR_LZ4_OUT      = "-lz4";
 
 // commands
 cs PARTITIONER_CMD  = 
@@ -130,7 +139,7 @@ cs PARTITIONER_CMD  =
 cs SUPERK_CMD       = 
   "{} {} -file {} -run-dir {} -kmer-size {} -nb-cores {} &> {} &";
 cs COUNTER_CMD      = 
-  "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} &> {} &";
+  "{} {} -file {} -run-dir {} -kmer-size {} -abundance-min {} -max-hash {} -mode {} -nb-cores {} -part-id {} -hasher {} -keep-tmp {} -lz4 {} &> {} &";
 cs MERGER_CMD       = 
   "{} {} -run-dir {} -part-id {} -abundance-min {} -recurrence-min {} -mode {} &> {} &";
 cs OUTPUT_CMD       =
@@ -165,7 +174,6 @@ cs KILLALL          = "killall km_minim_repart km_superk_to_kmer_counts km_reads
 
 cs BACKTRACE        = "./km_backtrace/backtrace.log";
 cs RUN_INFOS        = "./km_backtrace/{}-{}";
-cs ERROR_MSG        = "\nSignal {} received from {}, all children are killed. Check your inputs. If the problem persists, please contact {} with a description of your run and the following file: {}.\n";
 
 class Env
 {

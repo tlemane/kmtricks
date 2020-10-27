@@ -43,11 +43,12 @@ struct Functor
     KmCount &counter = parameter.counter;
     IProperties *props = parameter.props;
 
-    string _run_dir = props->getStr(STR_RUN_DIR);
-    uint   hash_mode = props->getInt(STR_MODE);
-    uint   nbCores = props->getInt(STR_NB_CORES);
-    bool   keep_tmp = props->getInt(STR_KEEP_TMP);
-    
+    string _run_dir   = props->getStr(STR_RUN_DIR);
+    uint   hash_mode  = props->getInt(STR_MODE);
+    uint   nbCores    = props->getInt(STR_NB_CORES);
+    bool   keep_tmp   = props->getInt(STR_KEEP_TMP);
+    bool   lz4        = props->getInt(STR_LZ4_OUT);
+
     Env *e = new Env(_run_dir, "");
     Storage *_config_storage = StorageFactory(STORAGE_FILE).load(e->STORE_CONFIG);
     Configuration _config = Configuration();
@@ -107,7 +108,7 @@ struct Functor
 
     vector<ICommand*> cmds;
     string path = e->STORE_KMERS + fmt::format(PART_TEMP_K, part_id, prefix);
-    CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, nb_partitions);
+    CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions);
 
     string hasher = props->getStr(STR_HASHER);
     bool sabuhash = false;
@@ -179,6 +180,8 @@ KmCount::KmCount() : Tool("km_count")
     "not used, needed by gatb args parser", true));
   getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
     "keep superkmers files", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_LZ4_OUT,
+    "compress output k-mers files with lz4 compression", false, "0"));
 
   getParser()->push_back(hParser);
 }
