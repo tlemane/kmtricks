@@ -16,6 +16,12 @@ ExternalProject_Add(SDSL
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/sdsl-lite
         INSTALL_COMMAND "")
 
+ExternalProject_Add(LZ4
+        PREFIX lz4
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/lz4
+        SOURCE_SUBDIR build/cmake
+        INSTALL_COMMAND "")
+
 if (TEST)
     ExternalProject_Add(Criterion
             PREFIX Criterion
