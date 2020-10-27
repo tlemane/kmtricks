@@ -293,7 +293,7 @@ class ICommand:
 BIN_DIR = f'{os.path.dirname(os.path.abspath(__file__))}/bin'
 if not os.path.exists(BIN_DIR):
     sys.exit("Unable to find kmtricks bin directory")
-if not os.path.exists(f'{BIN_DIR}/kmtricks'):
+if not os.path.exists(f'{BIN_DIR}/km_configuration'):
     sys.exit(f"Unable to find kmtricks binaries at {BIN_DIR}")
 
 BUILD_INFO = f'{os.path.dirname(os.path.abspath(__file__))}/build/build_infos.txt'
