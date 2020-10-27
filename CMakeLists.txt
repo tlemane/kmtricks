@@ -30,8 +30,8 @@ else()
     set(GATB_BUILD_LIB "lib")
 endif()
 
-add_subdirectory(thirdparty) # Build thirdparty libraries
-add_subdirectory(libs/kmtricks) # Build kmtricks library
+# build thirdparty libraries
+add_subdirectory(thirdparty)
 
 # type size
 if (NOT KMERTYPE)
@@ -76,6 +76,9 @@ set(LZ_LIB_DIR ${LZ_BUILD_DIR})
 
 # links
 link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR} ${LZ_LIB_DIR})
+
+# build kmtricks library
+add_subdirectory(libs/kmtricks) 
 
 # build kmtricks
 add_subdirectory(src)

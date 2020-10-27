@@ -4,7 +4,7 @@ foreach( source_file ${TestFiles})
     string ( REPLACE ".cpp" "" name ${source_file})
     add_executable(${name} ${source_file})
     add_dependencies(${name} Criterion)
-    target_include_directories(${name} PUBLIC ${CRITERION_INCLUDE})
+    target_include_directories(${name} PUBLIC ${CRITERION_INCLUDE} ${LZ_INCLUDE})
     target_link_directories(${name} PUBLIC ${CRITERION_LIB_DIR} ${TESTTEST})
     target_link_libraries(${name} criterion z ${OPENMP} ${TESTTESTL} lz4)
     add_test(

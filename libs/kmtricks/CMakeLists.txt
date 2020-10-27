@@ -4,6 +4,7 @@ if(OpenMP_CXX_FOUND)
 else()
 target_link_libraries(kmtricks PUBLIC z lz4)
 endif()
+target_include_directories(kmtricks PUBLIC ${LZ_INCLUDE})
 file(GLOB_RECURSE LibHeaders *.hpp)
 set_target_properties(kmtricks PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin/lib"
