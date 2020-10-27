@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from __future__ import annotations
 import sys
 import os
 import abc
@@ -274,7 +273,7 @@ class ICommand:
             return False
         return self.depends.issubset(finished)
     
-    def __lt__(self, that: ICommand):
+    def __lt__(self, that: "ICommand"):
         return self.idx < that.idx
 
     
@@ -419,7 +418,7 @@ class RepartitionCommand(ICommand):
     def preprocess(self) -> None:
         if not os.path.exists(self.run_directory):
             raise FileExistsError(f'{self.run_directory} doesn\'t exists.')
-        if os.path.exists(f'{self.run_directory}storage/partition_storage_gatb/minimRepart.minimRepart'):
+        if os.path.exists(f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'):
             self.cli_template = 'echo {nb_cores} &> /dev/null'
     
     def postprocess(self) -> None:
@@ -643,6 +642,7 @@ class Pool:
                     build=BUILD_INFO
                 ))
                 self.killall()
+                sys.exit(1)
             else:
                 cmd.postprocess()
                 self.finish_id.add(cmd.sync_id)
@@ -683,7 +683,7 @@ class Pool:
             for _, cmds in pool_cmds.items():
                 if cmds.p:
                     cmds.p.kill()
-        sys.exit(1)
+        return 1
 
 pool = Pool(Progress(), '')
 
@@ -780,6 +780,9 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('\nInterrupt signal received. All children are killed', file=sys.stderr)
         pool.killall()
+        rmtree('./km_backtrace')
+        sys.exit(1)
     except Exception as e:
         print(e, file=sys.stderr)
         pool.killall()
+        sys.exit(1)
