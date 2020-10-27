@@ -14,10 +14,11 @@ binary=../../bin/kmtricks
 fof=./data/fof.txt
 nbpart=4
 kmersize=20
+cores=12
 
 mkdir -p run_test/storage
 cp -r ./data/partition_storage_gatb ./run_test/storage
-${binary} -file ${fof} -run-dir ./run_test -kmer-size ${kmersize} -matrix-fmt ascii -nb-cores 2 -nb-parts ${nbpart} -max-memory 1000 -keep-tmp 1 -abundance-min 1 -recurrence-min 1
+python3 ../../kmtricks.py run --file ${fof} --run-dir ./run_test --kmer-size ${kmersize} --mode ascii --nb-cores ${cores} --nb-partitions ${nbpart} --keep-tmp --abundance-min 1 --recurrence-min 1 --max-memory 1000 --lz4
 
 #check superkmers partitions
 echo -ne "Superkmers partitions ..."
@@ -39,7 +40,7 @@ do
     while IFS= read -r file
     do
         file="$(basename -- $file)"
-        diff ./res/kmerparts/partition_${i} ./run_test/storage/kmers_partitions/partition_${i}/${file}.kmer
+        diff ./res/kmerparts/partition_${i} ./run_test/storage/kmers_partitions/partition_${i}/${file}.kmer.lz4
         check_exit_code
     done < ${fof}
 done
