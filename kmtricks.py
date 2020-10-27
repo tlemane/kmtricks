@@ -261,7 +261,7 @@ class ICommand:
     
     def run(self) -> None:
         self.preprocess()
-        self.p = subprocess.Popen(self.get_str_cmd(), shell=True)
+        self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
         #'exec ' prefix workaround: popen.kill/popen.terminate doesn't work with shell=True
         #probably works on osx, needs testing
 
@@ -689,10 +689,9 @@ class Pool:
         return finish
 
     def killall(self) -> int:
-        for _, pool_cmds in self.cmds:
-            for _, cmds in pool_cmds.items():
-                if cmds.p:
-                    cmds.p.kill()
+        for cmd in self.running:
+            if cmd.p:
+                cmd.p.kill()
         return 1
 
 pool = Pool(Progress(), '')
