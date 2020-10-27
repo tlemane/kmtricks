@@ -243,6 +243,7 @@ class ICommand:
         self.idx:           str = None
         self.wait:          bool = None
         self.sync_id:       str = None
+        self.sf:            str = None
     
     @abc.abstractmethod
     def preprocess(self) -> None:
@@ -260,13 +261,13 @@ class ICommand:
     
     def run(self) -> None:
         self.preprocess()
-        self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
+        self.p = subprocess.Popen(self.get_str_cmd(), shell=True)
         #'exec ' prefix workaround: popen.kill/popen.terminate doesn't work with shell=True
         #probably works on osx, needs testing
 
         if self.wait:
             while not self.is_done:
-                time.sleep(0.1) 
+                time.sleep(1) 
 
     def ready(self, finished: set) -> bool:
         if self.is_done:
@@ -276,7 +277,13 @@ class ICommand:
     def __lt__(self, that: "ICommand"):
         return self.idx < that.idx
 
-    
+    @property
+    def sync_file(self):
+        if self.sf:
+            return os.path.exists(self.sf)
+        return True
+                
+
     @property
     def exit_code(self) -> Optional[int]:
         if self.is_done:
@@ -311,7 +318,7 @@ ENV_CLI_TEMPLATE = (
     "-repartition-type {repartition_type} "
     "-nb-parts {nb_partitions} "
     "-hasher {hasher} "
-    "-max-hash {max_hash} "
+    "-max-hash {max_hash} >> /dev/null 2>&1 "
 )
 
 REPART_PREFIX_ID = 'R'
@@ -322,7 +329,7 @@ REPART_CLI_TEMPLATE = (
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
     "-nb-cores {nb_cores} "
-    "&> {log}"
+    ">> {log} 2>&1 "
 )
 
 SUPERK_PREFIX_ID = 'S'
@@ -332,7 +339,7 @@ SUPERK_CLI_TEMPLATE = (
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
     "-nb-cores {nb_cores} "
-    "&> {log}"
+    ">> {log} 2>&1 "
 )
 
 COUNT_PREFIX_ID = 'C'
@@ -349,7 +356,7 @@ COUNT_CLI_TEMPLATE = (
     "-hasher {hasher} "
     "-max-hash {max_hash} "
     "-nb-cores {nb_cores} "
-    "&> {log}"
+    ">> {log} 2>&1 "
 )
 
 MERGE_PREFIX_ID = 'M'
@@ -360,7 +367,7 @@ MERGE_CLI_TEMPLATE = (
     "-abundance-min {abundance_min} "
     "-recurrence-min {recurrence_min} "
     "-mode {mode} "
-    "&> {log}"
+    ">> {log} 2>&1 "
 )
 
 OUTPUT_PREFIX_ID = 'O'
@@ -371,7 +378,7 @@ OUTPUT_CLI_TEMPLATE = (
     "-nb-files {nb_files} "
     "-split {split} "
     "-kmer-size {kmer_size} "
-    "&> {log}"
+    ">> {log} 2>&1 "
 )
 
 progress_template = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {O}/{ON}'
@@ -419,7 +426,7 @@ class RepartitionCommand(ICommand):
         if not os.path.exists(self.run_directory):
             raise FileExistsError(f'{self.run_directory} doesn\'t exists.')
         if os.path.exists(f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'):
-            self.cli_template = 'echo {nb_cores} &> /dev/null'
+            self.cli_template = 'echo {nb_cores} >> /dev/null 2>&1'
     
     def postprocess(self) -> None:
         pass
@@ -435,6 +442,7 @@ class SuperkCommand(ICommand):
         self.cores = 1
         self.wait = False
         self.args['nb_cores'] = self.cores
+        self.sf = f'{self.run_directory}/synchro/superk/superk_{os.path.basename(self.args["f"])}.sync'
 
     def preprocess(self) -> None:
         repart_file = f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'
@@ -455,6 +463,7 @@ class CountCommand(ICommand):
         self.cores = 1
         self.wait = False
         self.args['nb_cores'] = self.cores
+        self.sf = f'{self.run_directory}/synchro/counter/counter_{os.path.basename(kwargs["f"])}_{kwargs["part_id"]}.sync'
 
     def preprocess(self) -> None:
         f = self.args['f']
@@ -478,6 +487,7 @@ class MergeCommand(ICommand):
         self.cores = 1
         self.wait = False
         self.args['nb_cores'] = self.cores
+        self.sf = f'{self.run_directory}/synchro/merger/merger_{kwargs["part_id"]}.sync'
 
     def preprocess(self) -> None:
         p = self.args['part_id']
@@ -669,7 +679,7 @@ class Pool:
     def check_finish(self) -> bool:
         finish = False
         for cmd in copy(self.running):
-            if cmd.is_done:
+            if cmd.is_done and cmd.sync_file:
                 finish = True
                 self.log_cmd.write(cmd.get_str_cmd()+'\n')
                 self.progress.update(cmd.idx)
@@ -713,7 +723,7 @@ def main():
     log_cmd_path = f'{log_dir}/cmds.log'
 
     progress_bar = Progress(progress_template)
-
+    
     global pool
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
 
