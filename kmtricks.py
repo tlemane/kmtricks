@@ -101,15 +101,16 @@ class OptionsParser:
 
     def _sub_env(self) -> None:
         desc = 'Build kmtricks runtime environment'
-        subparser: argparse.ArgumentParser = self.subparser.add_parser('env', description=desc,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=False
+        subparser: argparse.ArgumentParser = self.subparser.add_parser(
+            'env', description=desc,
+            formatter_class=lambda prog: CustomHelpFormatter(prog, max_help_position=40, width=100), add_help=False
         )
 
         glb = subparser.add_argument_group('global')
         adv = subparser.add_argument_group('advanced performance tweaks')
         hmd = subparser.add_argument_group('hash mode configuration')
 
-        glb.add_argument('--file', metavar='', type=str,
+        glb.add_argument('--file', metavar='FILE', type=str,
             help='fof that contains path of read files, one per line',
             required=True)
         glb.add_argument('--run-dir', metavar='DIR', type=str,
@@ -736,7 +737,6 @@ def main():
     
     cli = OptionsParser()
     args = cli.parse_args()
-    
     VERBOSE, DEBUG = args['verbose'], args['debug']
 
     only = control[args['only']]
@@ -830,7 +830,6 @@ if __name__ == '__main__':
             pass
         sys.exit(1)
     except Exception as e:
-        print()
         print(e, file=sys.stderr)
         pool.killall()
         sys.exit(1)
