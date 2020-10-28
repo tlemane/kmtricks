@@ -487,14 +487,16 @@ class CountCommand(ICommand):
         self.args['nb_cores'] = self.cores
 
     def preprocess(self) -> None:
-        f = self.args['f']
-        superkstorage = f'{self.run_directory}/storage/superk_partitions/{os.path.basename(f)}'
+        f = os.path.basename(self.args['f'])
+        superkstorage = f'{self.run_directory}/storage/superk_partitions/{f}'
         if not os.path.exists(f'{superkstorage}.superk'):
             raise FileExistsError(f'{superkstorage} doesn\'t exists.')
         
         pdir = f'{self.run_directory}/storage/kmers_partitions/partition_{self.args["part_id"]}'
-        if os.listdir(pdir):
-            raise FileExistsError (f'{pdir} already contains k-mer files')
+        ext = '.kmer.lz4' if self.args['lz4'] else '.kmer'
+        kmer_file = f'{pdir}/{f}{ext}'
+        if os.path.exists(kmer_file):
+            raise FileExistsError (f'{kmer_file} already exists')
 
     def postprocess(self) -> None:
         pass
@@ -830,6 +832,7 @@ if __name__ == '__main__':
             pass
         sys.exit(1)
     except Exception as e:
+        print()
         print(e, file=sys.stderr)
         pool.killall()
         sys.exit(1)
