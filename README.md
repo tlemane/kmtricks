@@ -52,7 +52,7 @@ kmtricks is composed of 5 independent modules
 
 **Note1:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
 
-`./bin/kmtricks env`
+`python3 kmtricks.py env`
 
 ```
 my_run_directory/  
@@ -122,59 +122,75 @@ Example: `./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb
 
 ### kmtricks pipeline
 
-The `kmtricks` executable (in the `bin` directory) is a pipeline of the five modules. 
+`kmtricks.py` is a pipeline of the five modules.
 
-Note that this binary also enables to run independently any module (option `-only`) or enables to run modules until a step (option `-until`).
+
+Note that this binary also enables to run independently any module (option `--only`) or enables to run modules until a step (option `--until`).
 
 **Usage:**
 
-`./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name`
+`python3 kmtricks.py run --file file_of_files.txt --run-dir my_directory_output_name`
 
 Final results are stored in the `directory_output_name/storage/matrix/` and `directory_output_name/storage/vectors/`.
 
-**Main options**
+```
+usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--abundance-min INT]
+                       [--abundance-max INT] [--recurrence-min INT] [--max-memory INT] 
+                       [--mode STR] [--nb-cores INT] [--until STR] [--only STR]
+                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
+                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
+                       [--keep-tmp] [--lz4] [-h]
 
-* kmtricks options
-  * -file:     					 fof that contains path of read files, one per line
-  * -run-dir:                  directory to write tmp and output files
-  * -kmer-size:              size of a kmer  [default '31']
-  * -abundance-min:   min abundance threshold for solid kmers  [default '2']
-  * -abundance-max:  max abundance threshold for solid kmers  [default '3000000']
-  * -recurrence-min:   min recurrence threshold through datasets for solid kmers  [default '2'].
-    * checks that a kmer solid appears at least in <rec-min> datasets with a count greater than <abu-min> 
-  * -max-memory:       max memory available in megabytes  [default '8000']
-  * -matrix-fmt:            output matrix format: ascii, bin, pa, bf, bf_trp  [default 'bin']. 
-    * ascii : <kmer/hash> <count> in ascii format
-    * bin   : <uintX kmer/hash> <uintX count>
-    * pa    : <uintX kmer/hash> <presence/absence bitvector>
-    * bf    : <presence/absence bitvector> (lines are hash values, vertically bf)
-    * bf_trp: bf transposition (horizontally bf)
-  * -nb-cores:               number of cores  [default '8']
+kmtricks pipeline
 
-* kmtricks pipeline control options
-  * -until:                      run until step : part, superk, count, merge  [default 'all']
-  * -only:                      run only step : part, superk, count, merge  [default 'all']
+global:
+  --file FILE             fof that contains path of read files, one per line
+  --run-dir DIR           directory to write tmp and output files
+  --kmer-size INT         size of a kmer [default: 31]
+  --abundance-min INT     min abundance threshold for solid kmers [default: 2]
+  --abundance-max INT     max abundance threshold for solid kmers [default: 3e9]
+  --recurrence-min INT    min reccurence threshold for solid kmers [default: 2]
+                            - checks that a kmer solid appears at least in <rec-min> 
+                              datasets with a count greater than <abu-min>
+  --max-memory INT        max memory available in megabytes [default: 8000]
+  --mode STR              output matrix format: [bin|ascii|pa|bf|bf_trp] [defaut: bin]
+                            - ascii:   <kmer> <count> in ascii format
+                            - bin:     <uintX kmer> [<uintX count>, ..., <uintX count_n>]
+                            - pa:      <uintX kmer> <presence/absence bit vector>
+                            - bf:      <presence/absence bit-vector> 
+                                       lines are hashes (vertically bf)
+                            - bf_trp:  bf mode transposition, horizontally bf
+  --nb-cores INT          number of cores [default: 8]
+  --keep-tmp              keep all tmp files [default: False]
+  --lz4                   lz4 compression for tmp files [default: False]
+  -h, --help              Show this message and exit
 
-* advanced performance tweaks options
-  * -minimizer-type:   minimizer type (0=lexi, 1=freq)  [default '0']
-  * -minimizer-size:    size of a minimizer  [default '10']
-  * -repartition-type:  minimizer repartition (0=unordered, 1=ordered)  [default '0']
-  * -nb-parts:               number of partitions  [default '0']
+pipeline control:
+  --until STR             run until step: [repart|superk|count|merge|split] [default: all]
+  --only STR              run until step: [repart|superk|count|merge|split] [default: all]
 
-* hash mode configuration, only with -matrix-fmt <bf | bf_trp> options
-  * -hasher:                  hash function: sabuhash, xor  [default 'xor']. 
-    * For compatibility with HowDeSBT, use "sabuhash".
-  * -max-hash:             max hash value ( 0 < hash < max(int64) )  [default '1000000000']. 
-    * This is also the size of the final bloom filters 
-  * -split:                       split matrix in individual files: sdsl, howde, (only with -matrix-fmt bf_trp)  [default 'none']. 
-    * sdsl: dump one sdsl::bit_vector per file
-    * howde: dump one bloom filter per file, with HowDeSBT compatibility
+advanced performance tweaks:
+  --minimizer-type INT    minimizer type (0=lexi, 1=freq) [default: 0]
+  --minimizer-size INT    size of minimizer [default: 10]
+  --repartition-type INT  minimizer repartition (0=unordered, 1=ordered) [default: 0]
+  --nb-partitions INT     number of partitions (0=auto) [default: 0]
+
+hash mode configuration:
+  --hasher STR            hash function: sabuhash, xor [default: xor]
+                            - For compatibility with HowDeSBT, use sabuhash
+  --max-hash INT          max hash value (0 < hash < max(int64)) [default: 1e9]
+                            - This is also the size of the final bloom filters
+  --split STR             split matrix in indidual files: [sdsl|howde] [default: None]
+                          (only with -mf, --mode bf_trp)
+                            - sdsl: dump one sdsl::bit_vector per file
+                            - howde: dump one HowDeSBT-bf per file
+```
 
 **Full example, with HowDeSBT compatibility**
 
 ```bash
 ls myreads1.fq.gz myreads2.fq.gz myreads3.fg.gz > file_of_files.txt # creates the file of files
-./bin/kmtricks -file file_of_files.txt -run-dir my_directory_output_name -matrix-fmt bf_trp -hasher sabuhash -split howde
+python3 kmtricks.py run --file file_of_files.txt --run-dir my_directory_output_name --mode bf_trp --hasher sabuhash --split howde
 ```
 
 **logs**
