@@ -233,17 +233,22 @@ class OptionsParser:
         return args
 
 class ICommand:
-    def __init__(self, run_directory):
+    def __init__(
+        self, run_directory: str, cli_template: str, 
+        args: dict, depends: set, idx: str, sync_id: str,
+        log_path: str, wait: bool
+    ):
         self.run_directory: str = run_directory 
-        self.cli_template:  str = None
-        self.args:          dict = None
+        self.cli_template:  str = cli_template
+        self.args:          dict = args
         self.p:             subprocess.Popen = None
-        self.depends:       set = None
+        self.depends:       set = depends
         self.cores:         int = None
-        self.idx:           str = None
-        self.wait:          bool = None
-        self.sync_id:       str = None
+        self.idx:           str = idx
+        self.wait:          bool = wait
+        self.sync_id:       str = sync_id
         self.sf:            str = None
+        self.log_path:      str = log_path
     
     @abc.abstractmethod
     def preprocess(self) -> None:
@@ -261,9 +266,14 @@ class ICommand:
     
     def run(self) -> None:
         self.preprocess()
-        self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
-        #'exec ' prefix workaround: popen.kill/popen.terminate doesn't work with shell=True
-        #probably works on osx, needs testing
+        #self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
+        if self.log_path:
+            with open(self.log_path, 'w') as log_file:
+                self.p = subprocess.Popen(
+                    self.get_str_cmd().split(' '), stdout=log_file, stderr=subprocess.STDOUT
+                )
+        else:
+            self.p = subprocess.Popen(self.get_str_cmd().split(' '))
 
         if self.wait:
             while not self.is_done:
@@ -318,7 +328,7 @@ ENV_CLI_TEMPLATE = (
     "-repartition-type {repartition_type} "
     "-nb-parts {nb_partitions} "
     "-hasher {hasher} "
-    "-max-hash {max_hash} >> /dev/null 2>&1 "
+    "-max-hash {max_hash}"
 )
 
 REPART_PREFIX_ID = 'R'
@@ -329,7 +339,6 @@ REPART_CLI_TEMPLATE = (
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
     "-nb-cores {nb_cores} "
-    ">> {log} 2>&1 "
 )
 
 SUPERK_PREFIX_ID = 'S'
@@ -338,8 +347,7 @@ SUPERK_CLI_TEMPLATE = (
     "-file {f} "
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
-    "-nb-cores {nb_cores} "
-    ">> {log} 2>&1 "
+    "-nb-cores {nb_cores}"
 )
 
 COUNT_PREFIX_ID = 'C'
@@ -355,8 +363,7 @@ COUNT_CLI_TEMPLATE = (
     "-lz4 {lz4} "
     "-hasher {hasher} "
     "-max-hash {max_hash} "
-    "-nb-cores {nb_cores} "
-    ">> {log} 2>&1 "
+    "-nb-cores {nb_cores}"
 )
 
 MERGE_PREFIX_ID = 'M'
@@ -366,8 +373,7 @@ MERGE_CLI_TEMPLATE = (
     "-part-id {part_id} "
     "-abundance-min {abundance_min} "
     "-recurrence-min {recurrence_min} "
-    "-mode {mode} "
-    ">> {log} 2>&1 "
+    "-mode {mode}"
 )
 
 OUTPUT_PREFIX_ID = 'O'
@@ -377,8 +383,7 @@ OUTPUT_CLI_TEMPLATE = (
     "-file {file} "
     "-nb-files {nb_files} "
     "-split {split} "
-    "-kmer-size {kmer_size} "
-    ">> {log} 2>&1 "
+    "-kmer-size {kmer_size}"
 )
 
 progress_template = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {O}/{ON}'
@@ -398,11 +403,17 @@ str_command = {
 
 class EnvCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = ENV_CLI_TEMPLATE
-        self.args = kwargs
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = ENV_CLI_TEMPLATE,
+            args = kwargs,
+            depends = None,
+            idx = None,
+            sync_id = None,
+            wait = True,
+            log_path = None
+        )
         self.cores = 1
-        self.wait = True
 
     def preprocess(self):
         if os.path.exists(self.run_directory):
@@ -413,14 +424,17 @@ class EnvCommand(ICommand):
 
 class RepartitionCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = REPART_CLI_TEMPLATE
-        self.args = kwargs
-        self.depends = {'E0'}
-        self.idx = 'R'
-        self.sync_id = 'R0'
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = REPART_CLI_TEMPLATE,
+            args = kwargs,
+            depends = {'E0'},
+            idx = 'R',
+            sync_id = 'R0',
+            wait = True,
+            log_path = kwargs['log']
+        )
         self.cores = 1
-        self.wait = True
 
     def preprocess(self) -> None:
         if not os.path.exists(self.run_directory):
@@ -433,16 +447,18 @@ class RepartitionCommand(ICommand):
 
 class SuperkCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = SUPERK_CLI_TEMPLATE
-        self.args = kwargs
-        self.depends = {REPART_PREFIX_ID + "0"}
-        self.idx = 'S'
-        self.sync_id = f'{SUPERK_PREFIX_ID}{self.args["id"]}'
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = SUPERK_CLI_TEMPLATE,
+            args = kwargs,
+            depends = {REPART_PREFIX_ID + "0"},
+            idx = 'S',
+            sync_id = f'{SUPERK_PREFIX_ID}{kwargs["id"]}',
+            wait = False,
+            log_path = kwargs['log']
+        )
         self.cores = 1
-        self.wait = False
         self.args['nb_cores'] = self.cores
-        self.sf = f'{self.run_directory}/synchro/superk/superk_{os.path.basename(self.args["f"])}.sync'
 
     def preprocess(self) -> None:
         repart_file = f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'
@@ -454,16 +470,18 @@ class SuperkCommand(ICommand):
 
 class CountCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = COUNT_CLI_TEMPLATE
-        self.args = kwargs
-        self.depends = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))}
-        self.idx = 'C'
-        self.sync_id = f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{kwargs["part_id"]}'
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = COUNT_CLI_TEMPLATE,
+            args = kwargs,
+            depends = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))},
+            idx = 'C',
+            sync_id = f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{kwargs["part_id"]}',
+            wait = False,
+            log_path = kwargs['log']
+        )
         self.cores = 1
-        self.wait = False
         self.args['nb_cores'] = self.cores
-        self.sf = f'{self.run_directory}/synchro/counter/counter_{os.path.basename(kwargs["f"])}_{kwargs["part_id"]}.sync'
 
     def preprocess(self) -> None:
         f = self.args['f']
@@ -476,18 +494,21 @@ class CountCommand(ICommand):
 
 class MergeCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = MERGE_CLI_TEMPLATE
-        self.args = kwargs
-        self.depends = set()
-        for i in range(self.args['fof'].nb):
-            self.depends.add(f'{COUNT_PREFIX_ID}_{i}_{kwargs["part_id"]}')
-        self.idx = 'M'
-        self.sync_id = f'{MERGE_PREFIX_ID}{kwargs["part_id"]}'
+        deps = set()
+        for i in range(kwargs['fof'].nb):
+            deps.add(f'{COUNT_PREFIX_ID}_{i}_{kwargs["part_id"]}')
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = MERGE_CLI_TEMPLATE,
+            args = kwargs,
+            depends = deps,
+            idx = 'M',
+            sync_id = f'{MERGE_PREFIX_ID}{kwargs["part_id"]}',
+            wait = False,
+            log_path = kwargs['log']
+        )
         self.cores = 1
-        self.wait = False
         self.args['nb_cores'] = self.cores
-        self.sf = f'{self.run_directory}/synchro/merger/merger_{kwargs["part_id"]}.sync'
 
     def preprocess(self) -> None:
         p = self.args['part_id']
@@ -504,16 +525,20 @@ class MergeCommand(ICommand):
 
 class OutputCommand(ICommand):
     def __init__(self, **kwargs):
-        super().__init__(kwargs['run_dir'])
-        self.cli_template = OUTPUT_CLI_TEMPLATE
-        self.args = kwargs
-        self.depends = set()
-        for i in range(self.args['nb_partitions']):
-            self.depends.add(f'M{i}')
-        self.idx = 'O'
-        self.sync_id = 'O'
+        deps = set()
+        for i in range(kwargs['nb_partitions']):
+            deps.add(f'M{i}')
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = OUTPUT_CLI_TEMPLATE,
+            args = kwargs,
+            depends = deps,
+            idx = 'O',
+            sync_id = 'O',
+            wait = True,
+            log_path = kwargs['log']
+        )
         self.cores = 1
-        self.wait = True
         self.args['nb_cores'] = self.cores
 
     def preprocess(self) -> None:
@@ -791,7 +816,7 @@ if __name__ == '__main__':
         pool.killall()
         rmtree('./km_backtrace')
         sys.exit(1)
-    except Exception as e:
-        print(e, file=sys.stderr)
-        pool.killall()
-        sys.exit(1)
+    #except Exception as e:
+    #    print(e, file=sys.stderr)
+    #    pool.killall()
+    #    sys.exit(1)
