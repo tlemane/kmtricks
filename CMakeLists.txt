@@ -27,7 +27,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(GATB_BUILD_LIB "lib/Debug")
 else()
     set(GATB_DEBUG "")
-    set(GATB_BUILD_LIB "lib")
+    set(GATB_BUILD_LIB "lib/Release")
 endif()
 
 # build thirdparty libraries
