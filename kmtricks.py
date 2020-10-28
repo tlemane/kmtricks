@@ -338,7 +338,7 @@ REPART_CLI_TEMPLATE = (
     "-file {file} "
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
-    "-nb-cores {nb_cores} "
+    "-nb-cores {nb_cores}"
 )
 
 SUPERK_PREFIX_ID = 'S'
@@ -447,11 +447,12 @@ class RepartitionCommand(ICommand):
 
 class SuperkCommand(ICommand):
     def __init__(self, **kwargs):
+        deps = {REPART_PREFIX_ID + "0"} if kwargs['only'] != 'superk' else set()
         super().__init__(
             run_directory = kwargs['run_dir'],
             cli_template = SUPERK_CLI_TEMPLATE,
             args = kwargs,
-            depends = {REPART_PREFIX_ID + "0"},
+            depends = deps,
             idx = 'S',
             sync_id = f'{SUPERK_PREFIX_ID}{kwargs["id"]}',
             wait = False,
@@ -470,11 +471,12 @@ class SuperkCommand(ICommand):
 
 class CountCommand(ICommand):
     def __init__(self, **kwargs):
+        deps = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))} if kwargs['only'] != 'count' else set()
         super().__init__(
             run_directory = kwargs['run_dir'],
             cli_template = COUNT_CLI_TEMPLATE,
             args = kwargs,
-            depends = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))},
+            depends = deps,
             idx = 'C',
             sync_id = f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{kwargs["part_id"]}',
             wait = False,
@@ -488,15 +490,20 @@ class CountCommand(ICommand):
         superkstorage = f'{self.run_directory}/storage/superk_partitions/{os.path.basename(f)}'
         if not os.path.exists(f'{superkstorage}.superk'):
             raise FileExistsError(f'{superkstorage} doesn\'t exists.')
-    
+        
+        pdir = f'{self.run_directory}/storage/kmers_partitions/partition_{self.args["part_id"]}'
+        if os.listdir(pdir):
+            raise FileExistsError (f'{pdir} already contains k-mer files')
+
     def postprocess(self) -> None:
         pass
 
 class MergeCommand(ICommand):
     def __init__(self, **kwargs):
         deps = set()
-        for i in range(kwargs['fof'].nb):
-            deps.add(f'{COUNT_PREFIX_ID}_{i}_{kwargs["part_id"]}')
+        if kwargs['only'] != 'merge':
+            for i in range(kwargs['fof'].nb):
+                deps.add(f'{COUNT_PREFIX_ID}_{i}_{kwargs["part_id"]}')
         super().__init__(
             run_directory = kwargs['run_dir'],
             cli_template = MERGE_CLI_TEMPLATE,
@@ -513,6 +520,8 @@ class MergeCommand(ICommand):
     def preprocess(self) -> None:
         p = self.args['part_id']
         pdir = f'{self.run_directory}/storage/kmers_partitions/partition_{p}'
+        if not os.listdir(pdir):
+            raise FileNotFoundError(f'{pdir} is empty')
         path = f'{pdir}/partition{p}.fof'
         ext = '.kmer' if not self.args['lz4'] else '.kmer.lz4'
         with open(path, 'w') as f_out:
@@ -526,8 +535,9 @@ class MergeCommand(ICommand):
 class OutputCommand(ICommand):
     def __init__(self, **kwargs):
         deps = set()
-        for i in range(kwargs['nb_partitions']):
-            deps.add(f'M{i}')
+        if kwargs['only'] != 'split':
+            for i in range(kwargs['nb_partitions']):
+                deps.add(f'M{i}')
         super().__init__(
             run_directory = kwargs['run_dir'],
             cli_template = OUTPUT_CLI_TEMPLATE,
@@ -814,9 +824,13 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('\nInterrupt signal received. All children are killed', file=sys.stderr)
         pool.killall()
-        rmtree('./km_backtrace')
+        try:
+            rmtree('./km_backtrace')
+        except FileNotFoundError:
+            pass
         sys.exit(1)
-    #except Exception as e:
-    #    print(e, file=sys.stderr)
-    #    pool.killall()
-    #    sys.exit(1)
+    except Exception as e:
+        print()
+        print(e, file=sys.stderr)
+        pool.killall()
+        sys.exit(1)
