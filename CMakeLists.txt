@@ -14,11 +14,14 @@ endif()
 set (debug 0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set (debug 1)
+else ()
+    set (CMAKE_BUILD_TYPE "Release")
 endif()
 
 # flags
-set(CMAKE_CXX_FLAGS "-std=c++0x")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(SSE_FLAGS "-msse -msse2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SSE_FLAGS} -std=c++0x")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
 # debug mode
