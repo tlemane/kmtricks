@@ -809,9 +809,10 @@ def main():
 
         output_commands = odict()
         if ((only == 5 or all_ and until > 4) and args['mode'] == 'bf_trp'):
+            fof.copy(f'{args["run_dir"]}/storage/fof.txt')
             dargs = deepcopy(args)
             log = f'{log_dir}/split.log'
-            output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, **dargs)
+            output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
             pool.push('O', output_commands)
 
     with Timer() as total_time:
