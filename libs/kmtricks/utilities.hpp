@@ -17,6 +17,10 @@
 *****************************************************************************/
 
 #pragma once
+#include <string>
+#include <vector>
+#include <iostream>
+#include <sstream>
 
 #define NBYTE(bits) (((bits) >> 3) + ((bits) % 8 != 0))
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
@@ -24,6 +28,22 @@
 #define BITMASK(b) (1 << ((b) % CHAR_BIT))
 #define BITSLOT(b) ((b) / CHAR_BIT)
 #define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
+
+template <typename X>
+void split(const std::string &s, char delim, X res)
+{
+  std::istringstream iss(s);
+  std::string item;                                                                
+  while (std::getline(iss, item, delim))
+    *res++ = item;
+}
+
+std::vector<std::string> split(const std::string &s, char delim)
+{
+  std::vector<std::string> elems;
+  split(s, delim, std::back_inserter(elems));
+  return elems;
+}
 
 template<unsigned long long klength>
 struct requiredK
