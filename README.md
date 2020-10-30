@@ -186,6 +186,15 @@ hash mode configuration:
                             - howde: dump one HowDeSBT-bf per file
 ```
 
+If you need specific thresholds for some or all datasets, you can add these thresholds in the fof. For datasets without a specific threshold, the --abundance-min is used.
+
+```
+/path/to/file/1.fasta
+/path/to/file/2.fasta 12
+/path/to/file/3.fasta
+/path/to/file/4.fasta 15
+```
+
 **Full example, with HowDeSBT compatibility**
 
 ```bash
