@@ -175,6 +175,7 @@ void KmMerge::transpose()
   BitMatrix *mat = new BitMatrix(path_mat, n, m, true);
   BitMatrix *trp = mat->transpose();
   string outp = e->STORE_MATRIX + fmt::format(BF_T_TEMP, _id, _id);
+  remove(path_mat.c_str());
   trp->dump(outp);
   delete mat;
   delete trp;
