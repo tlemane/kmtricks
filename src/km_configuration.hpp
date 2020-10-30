@@ -21,6 +21,7 @@
 #include <gatb/gatb_core.hpp>
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
 #include "config.hpp"
+#include "kmtricks/utilities.hpp"
 
 class Kmtricks : public Tool
 {

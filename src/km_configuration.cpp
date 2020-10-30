@@ -92,8 +92,12 @@ void Kmtricks::init()
   string line, in;
   ifstream fof(_fof_path);
   if (!fof) {cerr << "Unable to open " << _fof_path << endl; exit(EXIT_FAILURE);}
+  vector<string> sline;
   while (getline(fof, line))
-    in += line + ",";
+  {
+    sline = split(line, ' ');
+    in += sline[0] + ",";
+  }
   in.pop_back();
   
   IBank* bank = Bank::open(in);
