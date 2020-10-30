@@ -621,10 +621,12 @@ class Fof:
         return self.lfiles.index(file)
 
     def copy(self, path: str) -> None:
-        self.fp.seek(0)
+        #self.fp.seek(0)
         with open(path, 'w') as f_out:
-            for line in self.fp:
-                f_out.write(line)
+            for k, v in self.files.items():
+                f_out.write(k+'\n')
+            #for line in self.fp:
+            #    f_out.write(line)
 
     def __iter__(self):
         return self
@@ -664,8 +666,7 @@ class Pool:
     def exec(self) -> bool:
         self.progress.update()
         while len(self.finish_id) < self.count:
-            if len(self.callable) < self.available:
-                self.update_ready()
+            self.update_ready()
             if self.available and self.callable:
                 self.run_ready()
             if self.running:
@@ -747,7 +748,9 @@ def main():
 
     fof = Fof(args['file'])
     ab_per_file = fof.read(args['abundance_min'])
-    
+    fof_copy = f'{args["run_dir"]}/storage/fof.txt'
+    fof.fp.close()
+
     if all_:
         env_cmd = EnvCommand(**args)
         env_cmd.run()
@@ -763,10 +766,13 @@ def main():
     global pool
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
 
+    
+    fof.copy(fof_copy)
     if args['cmd'] == 'run':
         repart_commands = odict()
         if (only == 1 or all_):
             dargs = deepcopy(args)
+            dargs['file'] = fof_copy
             log = f'{log_dir}/repartition.log'
             repart_commands['R'] = RepartitionCommand(log=log, **dargs)
             pool.push('R', repart_commands)
@@ -809,7 +815,6 @@ def main():
 
         output_commands = odict()
         if ((only == 5 or all_ and until > 4) and args['mode'] == 'bf_trp'):
-            fof.copy(f'{args["run_dir"]}/storage/fof.txt')
             dargs = deepcopy(args)
             log = f'{log_dir}/split.log'
             output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
