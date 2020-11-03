@@ -32,9 +32,12 @@ A pipeline of those modules is proposed, with the following IOs. See the [kmtric
 
 ## kmtricks performances
 
-Compared to a usual pipeline as the one used by `HowDeSBT` using `JellyFish` for generating a bloom filter per input read set, `kmtricks` is 2.1 times faster.
+Compared to a usual pipeline as the one used by `HowDeSBT` using `JellyFish` for generating a bloom filter per input read set, `kmtricks` is 4.2 times faster.
 
-<img src="https://github.com/tlemane/kmtricks/blob/master/doc/perf_kmtricks_100.png" width="300">
+|      Method     | Indexation time | Max memory | Disk usage |
+|-----------------|:---------------:|:----------:|:----------:|
+| HowDeSBT makebf |       2h27      |   13.2 GB  |   55.1 GB  |
+| kmtricks        |      35min48s   |   3.5 GB   |   56.6 GB  
 
 Test realised with 100 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
 
