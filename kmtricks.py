@@ -623,7 +623,7 @@ class Fof:
     def copy(self, path: str) -> None:
         #self.fp.seek(0)
         with open(path, 'w') as f_out:
-            for k, v in self.files.items():
+            for k, _ in self.files.items():
                 f_out.write(k+'\n')
             #for line in self.fp:
             #    f_out.write(line)
@@ -816,6 +816,7 @@ def main():
         output_commands = odict()
         if ((only == 5 or all_ and until > 4) and args['mode'] == 'bf_trp'):
             dargs = deepcopy(args)
+            dargs['file'] = fof_copy
             log = f'{log_dir}/split.log'
             output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
             pool.push('O', output_commands)
