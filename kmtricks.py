@@ -751,18 +751,23 @@ def main():
     args = cli.parse_args()
     VERBOSE, DEBUG = args['verbose'], args['debug']
 
-    only = control[args['only']]
-    until = control[args['until']]
-    all_ = only == 6
+    all_ = None
+    if args['cmd'] == 'run':
+        only = control[args['only']]
+        until = control[args['until']]
+        all_ = only == 6
+    
+    if all_ or args['cmd'] == 'env':
+        env_cmd = EnvCommand(**args)
+        env_cmd.run()
+        if args['cmd'] == 'env': 
+            print(f'kmtricks runtime env build at: {args["run_dir"]}')
+            sys.exit(0)
 
     fof = Fof(args['file'])
     ab_per_file = fof.read(args['abundance_min'])
     fof_copy = f'{args["run_dir"]}/storage/fof.txt'
     fof.fp.close()
-
-    if all_:
-        env_cmd = EnvCommand(**args)
-        env_cmd.run()
 
     if not args['nb_partitions']:
         args['nb_partitions'] = len(os.listdir(f'{args["run_dir"]}/storage/kmers_partitions'))
