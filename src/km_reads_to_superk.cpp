@@ -50,7 +50,8 @@ template<size_t span> struct Functor
     Repartitor* repartitor = new Repartitor(_repart_storage->getGroup(REPART_GRP));
 
     string name = e->STORE_SUPERK + fmt::format(TEMP_S, prefix);
-    SuperKmerBinFiles* _superKstorage = new SuperKmerBinFiles(name, "superKparts", _config._nb_partitions);
+    bool lz4 = props->getInt(STR_LZ4_OUT);
+    SuperKmerBinFiles* _superKstorage = new SuperKmerBinFiles(name, "superKparts", _config._nb_partitions, lz4);
 
     typedef typename Kmer<span>::Type                                       Type;
     typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
@@ -104,6 +105,8 @@ KmSuperK::KmSuperK() : Tool ("km_superk")
     "size of a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
     "kmtricks run directory", true));
+  getParser()->push_back(new OptionOneParam(STR_LZ4_OUT,
+    "compress output super-k-mers files with lz4 compression", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
     "number of cores", true));
 }
