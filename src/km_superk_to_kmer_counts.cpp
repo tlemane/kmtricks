@@ -16,14 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-#include <fmt/format.h>
 #include <tuple>
+#include <libgen.h>
+#include <fmt/format.h>
 #include <gatb/kmer/impl/HashSorting.hpp>
 #include <gatb/kmer/impl/PartitionsCommand.hpp>
-#include <libgen.h>
+#include <kmtricks/logging.hpp>
 #include "km_superk_to_kmer_counts.hpp"
 #include "CountProcessorDump.hpp"
 #include "signal_handling.hpp"
+
+km::log_config km::LOG_CONFIG;
 
 #ifndef KMTYPE
   typedef uint64_t kmtype_t;
@@ -88,6 +91,7 @@ struct Functor
 
     uint part_id = props->getInt(STR_PART_ID);
     uint64_t memReq = ((pInfo.getNbKmer(part_id)*64)/8) + 4096;
+
     uint64_t hash_mem = 0;
     if (memReq > pool.getCapacity())
     {
@@ -138,6 +142,12 @@ struct Functor
           part_id, 1, kmerSize, pool, hash_mem, _superKstorage));
     }
 
+    km::LOG(km::INFO) << "File: " << prefix;
+    km::LOG(km::INFO) << "Mode: " << (hash_mode ? "hash" : "kmer");
+    km::LOG(km::INFO) << "Out:  " << (vec_size ? "vector" : "value:count");
+    km::LOG(km::INFO) << "lz4:  " << (lz4 ? "true" : "false");
+    km::LOG(km::INFO) << "Algo: " << (hash_mem ? "ByHash" : "ByVector");
+
     cmds[0]->execute();
     string sign = prefix+"_"+to_string(part_id);
     string end_sign = e->SYNCHRO_C + fmt::format(END_TEMP_C, sign);
@@ -187,6 +197,9 @@ KmCount::KmCount() : Tool("km_count")
     "compress output k-mers files with lz4 compression", false, "0"));
 
   getParser()->push_back(hParser);
+
+  km::LOG_CONFIG.show_labels=true;
+  km::LOG_CONFIG.level=km::INFO;
 }
 
 void KmCount::execute()

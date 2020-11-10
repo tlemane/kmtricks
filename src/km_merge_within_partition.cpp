@@ -16,18 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
+#include <kmtricks/logging.hpp>
 #include "km_merge_within_partition.hpp"
 #include "signal_handling.hpp"
+
+km::log_config km::LOG_CONFIG;
 
 KmMerge::KmMerge() : Tool("km_merge")
 {
   setParser(new OptionsParser("km_merge_within_partition"));
 
-  //IOptionsParser *hParser = new OptionsParser("hash mode, -mode <bf | bf_trp>");
-  //hParser->push_back(new OptionOneParam(STR_MIN_HASH, "lower bound hash", true));
-  //hParser->push_back(new OptionOneParam(STR_MAX_HASH, "upper bound hash", true));
-
-  //getParser()->push_back(new OptionOneParam(STR_URI_FILE, "fof that contains path of partitions, one per line", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_PART_ID, "partition id", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min to keep a k-mer", true));
@@ -35,7 +33,9 @@ KmMerge::KmMerge() : Tool("km_merge")
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
   getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "12"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
-  //getParser()->push_back(hParser);
+
+  km::LOG_CONFIG.show_labels=true;
+  km::LOG_CONFIG.level=km::INFO;
 }
 
 void KmMerge::parse_args()
@@ -187,6 +187,11 @@ void KmMerge::execute()
   parse_args();
   size_t hsize = getInput()->getInt(STR_HSIZE);
   bool setbv = _mode > 1;
+
+  km::LOG(km::INFO) << "Fof:   " << _fofpath;
+  km::LOG(km::INFO) << "Mode:  " << _mode;
+  km::LOG(km::INFO) << "A-min: " << _min_a;
+  km::LOG(km::INFO) << "R-min: " << _min_r;
 
   _m = new Merger<kmtype_t, cntype_t>(_fofpath, _min_a, _min_r, hsize, setbv);
   switch (_mode)

@@ -18,8 +18,11 @@
 
 #include <csignal>
 #include <fmt/format.h>
+#include <kmtricks/logging.hpp>
 #include "km_configuration.hpp"
 #include "config.hpp"
+
+km::log_config km::LOG_CONFIG;
 
 Kmtricks::Kmtricks()
   : Tool("kmtricks"),
@@ -39,7 +42,7 @@ Kmtricks::Kmtricks()
                                             "max abundance threshold for solid kmers", false, "max"));
   getParser()->push_back(new OptionOneParam(STR_MAX_MEMORY,
                                             "max memory available in megabytes", false, "8000"));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"), 0UL, false);
 
   IOptionsParser *mParser = new OptionsParser("advanced performance tweaks");
   mParser->push_back(new OptionOneParam(STR_MINIMIZER_TYPE,
@@ -58,6 +61,9 @@ Kmtricks::Kmtricks()
   oParser->push_back(new OptionOneParam(STR_MAX_HASH,
                                         "max hash value ( 0 < hash < max(int64) )", false, "1000000000"));
   getParser()->push_back(oParser);
+
+  km::LOG_CONFIG.show_labels=true;
+  km::LOG_CONFIG.level=km::DEBUG;
 }
 
 void Kmtricks::parse_args()
@@ -130,6 +136,16 @@ void Kmtricks::init()
   uint32_t minimsize = _config._minim_size;
   hw.write((char*) &minimsize, sizeof(uint32_t));
   hw.close();
+
+  ofstream log_file(e->DIR+"/config.log", ios::out);
+  km::LOG(km::INFO, log_file) << "Fof path:          " << _fof_path;
+  km::LOG(km::INFO, log_file) << "Kmer size:         " << _k_size;
+  km::LOG(km::INFO, log_file) << "Abundance min/max: " << _a_min << " " << _a_max;
+  km::LOG(km::INFO, log_file) << "Nb partitions:     " << _nb_partitions;
+  km::LOG(km::INFO, log_file) << "Max hash / hasher: " << _max_hash << " " << _hasher;
+  km::LOG(km::INFO, log_file) << "Window size:       " << window_size;
+  km::LOG(km::INFO, log_file) << "Minimizer size:    " << minimsize;
+  log_file.close();
 }
 
 void Kmtricks::execute()

@@ -21,8 +21,11 @@
 #include "km_output_convert.hpp"
 #include "signal_handling.hpp"
 
+#include <kmtricks/logging.hpp>
 #include <kmtricks/lz4_stream.hpp>
 #include <fmt/format.h>
+
+km::log_config km::LOG_CONFIG;
 
 KmConvert::KmConvert(const string &mode) : Tool("km_output_convert")
 {
@@ -32,10 +35,8 @@ KmConvert::KmConvert(const string &mode) : Tool("km_output_convert")
     getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks runtime directory", true));
     getParser()->push_back(new OptionOneParam(STR_URI_FILE, "extract bitvectors only for the files contained in the fof", false, "0"));
     getParser()->push_back(new OptionOneParam(STR_NB_FILE, "number of reads files", true));
-  //getParser()->push_back(new OptionOneParam(STR_NB_PARTS, "number of partitions", true));
     getParser()->push_back(new OptionOneParam(STR_SPLIT, "output format: sdsl, howde", true));
     getParser()->push_back(new OptionOneParam(STR_KMER_SIZE, "size of a k-mer", true));
-    //getParser()->push_back(new OptionOneParam(STR_VERBOSE, "verbosity level", false, "1"));
     getParser()->push_back(new OptionOneParam(STR_NB_CORES, "unused but needed by gatb args parser", false, "1"), 0UL, false);
 
     _from_merge = true;
@@ -56,6 +57,9 @@ KmConvert::KmConvert(const string &mode) : Tool("km_output_convert")
 
     _from_merge = false;
   }
+
+  km::LOG_CONFIG.show_labels=true;
+  km::LOG_CONFIG.level=km::INFO;
 }
 
 void KmConvert::parse_args()
@@ -278,10 +282,16 @@ void KmConvert::execute()
 {
   parse_args();
   init();
+
   if (_from_merge)
     from_merge();
   else
     from_count();
+  
+  km::LOG(km::INFO) << "File: " << (_from_merge ? _fof : _f_basename);
+  km::LOG(km::INFO) << "Mode: " << (_howde ? "howde" : "sdsl");
+  km::LOG(km::INFO) << "Size: " << _filter_size;
+  
   delete _e;
 }
 

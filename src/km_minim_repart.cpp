@@ -16,8 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
+#include <kmtricks/logging.hpp>
 #include "km_minim_repart.hpp"
 #include "signal_handling.hpp"
+
+km::log_config km::LOG_CONFIG;
 
 string get_str_fof(string fof_path)
 {
@@ -42,6 +45,9 @@ Repart::Repart() : Tool ("km_part")
                                               "kmtricks run directory", true));
    getParser()->push_back(new OptionOneParam(STR_NB_CORES,
                                               "number of cores", false, "8"));
+
+  km::LOG_CONFIG.show_labels=true;
+  km::LOG_CONFIG.level=km::INFO;
 }
 
 template<size_t span> struct Functor 
@@ -74,6 +80,8 @@ template<size_t span> struct Functor
         props->getInt(STR_NB_CORES));
     repart.execute ();
 
+    km::LOG(km::INFO) << "Repartition file at " << e->STORE_PART;
+    
     IFile* sync_file =  System::file().newFile(e->SYNCHRO_P+END_TEMP_P, "w");
     sync_file->flush();
     delete sync_file;
