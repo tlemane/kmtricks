@@ -784,9 +784,6 @@ class Pool:
 pool = Pool(Progress(), '')
 
 def main():
-    a = {}
-    a['A'] = 1
-    print(a['B'])
     global VERBOSE, DEBUG
     
     cli = OptionsParser()
