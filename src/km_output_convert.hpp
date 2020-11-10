@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 #pragma once
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -37,10 +38,12 @@ typedef sdsl::bit_vector bitvector;
 class KmConvert : public Tool
 {
 public:
-  KmConvert ();
+  KmConvert (const string &mode);
 
 private:
   void execute();
+  void from_merge();
+  void from_count();
   void parse_args();
   void init();
 
@@ -49,8 +52,10 @@ private:
   string  _run_dir;
   string  _split_str;
   string  _hm_path;
+  string  _f_basename;
   bool    _howde;
-  bool     _sdsl;
+  bool    _sdsl;
+  bool    _from_merge;
   uint64_t _vlen;
   uint64_t    _filter_size;
   uint    _nb_files;
