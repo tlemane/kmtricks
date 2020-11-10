@@ -8,6 +8,7 @@ import subprocess
 import io
 import heapq
 import logging
+import traceback
 from collections import OrderedDict as odict
 from collections import defaultdict as ddict
 from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
@@ -180,6 +181,8 @@ class OptionsParser:
             help='max abundance threshold for solid kmers', default=int(3e9))
         glb.add_argument('--recurrence-min', metavar='INT', type=int,
             help='min reccurence threshold for solid kmers', default=1)
+        glb.add_argument('--skip-merge', action=asInteger,
+            help='skip merge step, only with --mode bf', nargs=0, const=0, default=0)
         glb.add_argument('--max-memory', metavar='INT', type=int,
             help='max memory available in megabytes', default=8000)
         glb.add_argument('--mode', metavar='STR', type=str,
@@ -373,8 +376,10 @@ COUNT_CLI_TEMPLATE = (
     "-lz4 {lz4} "
     "-hasher {hasher} "
     "-max-hash {max_hash} "
+    "-vec-only {skip_merge} "
     "-nb-cores {nb_cores}"
 )
+#VEC ONLY
 
 MERGE_PREFIX_ID = 'M'
 MERGE_CLI_TEMPLATE = (
@@ -388,10 +393,19 @@ MERGE_CLI_TEMPLATE = (
 
 OUTPUT_PREFIX_ID = 'O'
 OUTPUT_CLI_TEMPLATE = (
-    f"{BIN_DIR}/km_output_convert "
+    f"{BIN_DIR}/km_output_convert from_merge "
     "-run-dir {run_dir} "
     "-file {file} "
     "-nb-files {nb_files} "
+    "-split {split} "
+    "-kmer-size {kmer_size}"
+)
+
+OUTPUT_PREFIX_ID_C = 'O'
+OUTPUT_CLI_TEMPLATE_C = (
+    f"{BIN_DIR}/km_output_convert from_count "
+    "-run-dir {run_dir} "
+    "-file {file_basename} "
     "-split {split} "
     "-kmer-size {kmer_size}"
 )
@@ -572,6 +586,31 @@ class OutputCommand(ICommand):
                 if os.path.isdir(d):
                     rmtree(d)
 
+class OutputCommandFromCount(ICommand):
+    def __init__(self, **kwargs):
+        deps = set()
+        if kwargs['only'] != 'split':
+            for i in range(kwargs['nb_partitions']):
+                deps.add(f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{i}')
+        super().__init__(
+            run_directory = kwargs['run_dir'],
+            cli_template = OUTPUT_CLI_TEMPLATE_C,
+            args = kwargs,
+            depends = deps,
+            idx = 'O',
+            sync_id = f'{OUTPUT_PREFIX_ID_C}{kwargs["file_id"]}',
+            wait = True,
+            log_path = kwargs['log']
+        )
+        self.cores = 1
+        self.args['nb_cores'] = self.cores
+
+    def preprocess(self) -> None:
+        pass
+
+    def postprocess(self) -> None:
+        pass
+
 class Timer():
     def __enter__(self):
         self.t1 = time.perf_counter()
@@ -745,6 +784,9 @@ class Pool:
 pool = Pool(Progress(), '')
 
 def main():
+    a = {}
+    a['A'] = 1
+    print(a['B'])
     global VERBOSE, DEBUG
     
     cli = OptionsParser()
@@ -816,7 +858,7 @@ def main():
             pool.push('C', count_commands)
 
         merge_commands = odict()
-        if (only == 4 or all_ and until > 3):
+        if ((only == 4 or all_ and until > 3) and not args['skip_merge']):
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
                 if ab_per_file:
@@ -828,12 +870,22 @@ def main():
             pool.push('M', merge_commands)
 
         output_commands = odict()
-        if ((only == 5 or all_ and until > 4) and args['mode'] == 'bf_trp'):
+        bf_trp = args['mode'] == 'bf_trp'
+        split = args['split'] != 'none'
+        
+        if ((only == 5 or all_ and until > 4) and bf_trp and split):
             dargs = deepcopy(args)
-            dargs['file'] = fof_copy
-            log = f'{log_dir}/split.log'
-            output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
-            pool.push('O', output_commands)
+            if not args['skip_merge']:
+                dargs['file'] = fof_copy
+                log = f'{log_dir}/split.log'
+                output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
+                pool.push('O', output_commands)
+            else:
+                for i, f, _ in fof:
+                    fb = os.path.basename(f)
+                    log = f'{log_dir}/split_{fb}.log'
+                    output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=f, fof=fof, file_id=i,file_basename=fb, log=log, **dargs)
+                pool.push('O', output_commands)
 
     with Timer() as total_time:
         pool.exec()
@@ -854,6 +906,7 @@ if __name__ == '__main__':
         sys.exit(1)
     except Exception as e:
         print()
-        print(e, file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print('\nAll children are killed')
         pool.killall()
         sys.exit(1)
