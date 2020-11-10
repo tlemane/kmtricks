@@ -401,7 +401,7 @@ OUTPUT_CLI_TEMPLATE = (
     "-kmer-size {kmer_size}"
 )
 
-OUTPUT_PREFIX_ID_C = 'O'
+OUTPUT_PREFIX_ID_C = 'B'
 OUTPUT_CLI_TEMPLATE_C = (
     f"{BIN_DIR}/km_output_convert from_count "
     "-run-dir {run_dir} "
@@ -411,6 +411,7 @@ OUTPUT_CLI_TEMPLATE_C = (
 )
 
 progress_template = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {O}/{ON}'
+progress_template2 = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {B}/{BN}'
 
 ERROR_MSG = '\nSignal {sig} received from {cmd} with the following arguments:\n{args}.\n All children are killed. Check your inputs. If the problem persists, please contact us with a description of your run and the following files: {backtrace} and {build}.\n'
 
@@ -597,7 +598,7 @@ class OutputCommandFromCount(ICommand):
             cli_template = OUTPUT_CLI_TEMPLATE_C,
             args = kwargs,
             depends = deps,
-            idx = 'O',
+            idx = OUTPUT_PREFIX_ID_C,
             sync_id = f'{OUTPUT_PREFIX_ID_C}{kwargs["file_id"]}',
             wait = True,
             log_path = kwargs['log']
@@ -609,7 +610,13 @@ class OutputCommandFromCount(ICommand):
         pass
 
     def postprocess(self) -> None:
-        pass
+        if not self.args['keep_tmp']:
+            for i in range(self.args['nb_partitions']):
+                ext = 'kmer.vec' if not self.args['lz4'] else '.kmer.vec.lz4'
+                fpath = f'{self.args["run_dir"]}/storage/kmers_partitions/partition_{i}/{self.args["file_basename"]}{ext}'
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+
 
 class Timer():
     def __enter__(self):
@@ -814,7 +821,7 @@ def main():
     log_dir = f'{args["run_dir"]}/logs'
     log_cmd_path = f'{log_dir}/cmds.log'
 
-    progress_bar = Progress(progress_template)
+    progress_bar = Progress(progress_template if not args['skip_merge'] else progress_template2)
     
     global pool
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
@@ -882,7 +889,7 @@ def main():
                     fb = os.path.basename(f)
                     log = f'{log_dir}/split_{fb}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=f, fof=fof, file_id=i,file_basename=fb, log=log, **dargs)
-                pool.push('O', output_commands)
+                pool.push('B', output_commands)
 
     with Timer() as total_time:
         pool.exec()
