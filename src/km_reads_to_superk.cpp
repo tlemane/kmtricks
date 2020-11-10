@@ -106,7 +106,7 @@ KmSuperK::KmSuperK() : Tool ("km_superk")
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
     "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_LZ4_OUT,
-    "compress output super-k-mers files with lz4 compression", false, "0"));
+    "compress output super-k-mers files with lz4 compression", false, "0"), 0UL, false);
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
     "number of cores", true));
 }
