@@ -223,6 +223,7 @@ public:
   string LOG_SUPERK_D;
   string LOG_COUNTER_D;
   string LOG_MERGER_D;
+  string LOG_SPLIT_D;
   string LOG_PARTITIONER;
   string LOG_SUPERK;
   string LOG_COUNTER;
@@ -269,6 +270,7 @@ Env::Env(string main_dir, string binaries_dir)
   LOG_COUNTER_D    = LOG + "/counter";
   LOG_MERGER_D     = LOG + "/merger";
   LOG_CMD          = LOG + "/cmds.log";
+  LOG_SPLIT_D      = LOG + "/split";
 
   LOG_PARTITIONER  = LOG + "/partitioner.log";
   LOG_SUPERK       = LOG_SUPERK_D + "/superk{}.log";
@@ -299,6 +301,7 @@ void Env::build()
   System::file().mkdir(LOG_SUPERK_D, -1);
   System::file().mkdir(LOG_COUNTER_D, -1);
   System::file().mkdir(LOG_MERGER_D, -1);
+  System::file().mkdir(LOG_SPLIT_D, -1);
 }
 
 void Env::build_p(uint p)
