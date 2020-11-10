@@ -35,6 +35,8 @@
 /bin/
 /toys/
 .idea/
+.vscode/
+build-vscode/
 cmake-build-debug/
 libs/snippets/bitmatrix_ex
 libs/snippets/merger_ex
