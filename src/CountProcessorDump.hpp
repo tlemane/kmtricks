@@ -17,8 +17,15 @@
 *****************************************************************************/
 
 #pragma once
+#include <string>
+#include <vector>
+#include <iostream>
+#include <iterator>
+#include <map>
+
 #include <gatb/gatb_core.hpp>
 #include <kmtricks/lz4_stream.hpp>
+#include <kmtricks/utilities.hpp>
 #include "config.hpp"
 
 
@@ -35,16 +42,18 @@ public:
     string out_part,
     uint partId,
     bool lz4,
-    size_t nbPartsPerPass = 0)
+    size_t nbPartsPerPass = 0,
+    size_t window = 0)
 
-    : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4), _min_abundance(min_abundance), _out_part(out_part), _partId(partId)
+    : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4), _min_abundance(min_abundance), _out_part(out_part), _partId(partId), _window(window/8), _window_bits(window)
   {
-    cout << out_part << endl;
     strcpy(_head, "kmerPart");
     sprintf(_b, "%03d", _partId);
     strcat(_head, _b);
     _part_file.rdbuf()->pubsetbuf(_buffer, 8192);
-    //_part_file = ofstream(_out_part);
+    
+    if (_window) _out_part += ".vec";
+    
     if (_lz4_output)
     {
       _part_file.open(_out_part+".lz4", std::ios::app | std::ios::binary);
@@ -62,13 +71,20 @@ public:
       cout << "Unable to open " + _out_part << endl;
       exit(EXIT_FAILURE);
     }
-    _writer->write(_head, strlen(_head));
+    
     model = new typename Kmer<span>::ModelCanonical(kmerSize);
     _mc = maxc.at(sizeof(cntype_t));
+
+    if (_window)
+      _vec.resize(_window);
+    else
+      _writer->write(_head, strlen(_head));
   }
 
-  virtual ~CountProcessorDumpPart()
+  ~CountProcessorDumpPart()
   {
+    if (_window)
+      flush();
     if (_lzstream)
       _lzstream->close();
     _part_file.close();
@@ -83,8 +99,7 @@ public:
 
   CountProcessorAbstract<span> *clone()
   {
-    return new CountProcessorDumpPart(_kmerSize, _min_abundance, _out_part, _partId, _lz4_output);
-    //return new CountProcessorDumpPart(_kmerSize, _nbPartsPerPass, _out_part, _partId);
+    return new CountProcessorDumpPart(_kmerSize, _min_abundance, _out_part, _partId, _window, _lz4_output);
   }
 
   void finishClones(vector<ICountProcessor<span> *> &clones)
@@ -108,7 +123,7 @@ public:
   }
 
   void endPart(size_t passId, size_t partId)
-  {
+  { 
   }
 
   bool process(size_t partId, const Type &kmer, const CountVector &count, CountNumber sum)
@@ -117,11 +132,23 @@ public:
     _hk = kmer.getVal();
     if (kmer_count >= _min_abundance)
     {
-      _hcount = kmer_count >= _mc ? _mc : (cntype_t)kmer_count;
-      _writer->write((char*)&_hk, sizeof(kmtype_t));
-      _writer->write((char *)&_hcount, sizeof(cntype_t));
+      if (_window)
+      {
+        BITSET(_vec, _hk -(_window_bits*_partId));
+      }
+      else
+      {
+        _hcount = kmer_count >= _mc ? _mc : (cntype_t)kmer_count;
+        _writer->write((char*)&_hk, sizeof(kmtype_t));
+        _writer->write((char *)&_hcount, sizeof(cntype_t));
+      }
     }
     return true;
+  }
+
+  void flush()
+  {
+    std::copy(_vec.begin(), _vec.end(), std::ostream_iterator<uint8_t>(*_writer));
   }
 
 private:
@@ -139,8 +166,10 @@ private:
   cntype_t  _hcount;
   uint      _partId;
   bool      _lz4_output;
+  size_t    _window;
+  size_t    _window_bits;
   lz4_stream::ostream *_lzstream;
   map<string, size_t> _namesOccur;
-
+  vector<uint8_t>     _vec;
   uint64_t  _mc;
 };
