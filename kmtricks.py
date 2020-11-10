@@ -881,13 +881,13 @@ def main():
             dargs = deepcopy(args)
             if not args['skip_merge']:
                 dargs['file'] = fof_copy
-                log = f'{log_dir}/split.log'
+                log = f'{log_dir}/split/split.log'
                 output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
                 pool.push('O', output_commands)
             else:
                 for i, f, _ in fof:
                     fb = os.path.basename(f)
-                    log = f'{log_dir}/split_{fb}.log'
+                    log = f'{log_dir}/split/split_{fb}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=f, fof=fof, file_id=i,file_basename=fb, log=log, **dargs)
                 pool.push('B', output_commands)
 
