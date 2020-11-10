@@ -205,22 +205,23 @@ private:
   class input_buffer : public std::streambuf {
   public:
     input_buffer(std::istream &source, bool uncompressed)
-      : source_(source),
-        uncompressed_(uncompressed),
+      : stream_(nullptr),
+        source_(source),
         offset_(0),
         src_buf_size_(0),
         ctx_(nullptr),
-        stream_(nullptr) {
+        uncompressed_(uncompressed)
+    {
       init_input_buffer();
     }
 
     input_buffer(const string filename, bool uncompressed)
-      : uncompressed_(uncompressed),
+      : stream_(new ifstream(filename, ios::in|ios::binary)),
+        source_(*stream_),
         offset_(0),
         src_buf_size_(0),
         ctx_(nullptr),
-        stream_(new ifstream(filename, ios::in|ios::binary)),
-        source_(*stream_)
+        uncompressed_(uncompressed)
     {
       assert(source_.good());
       init_input_buffer();
