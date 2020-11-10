@@ -108,7 +108,8 @@ struct Functor
 
     vector<ICommand*> cmds;
     string path = e->STORE_KMERS + fmt::format(PART_TEMP_K, part_id, prefix);
-    CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions);
+    uint64_t vec_size = props->getInt(STR_VEC_ONLY) ? window_size : 0;
+    CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions, vec_size);
 
     string hasher = props->getStr(STR_HASHER);
     bool sabuhash = false;
@@ -176,6 +177,8 @@ KmCount::KmCount() : Tool("km_count")
     "partition id", true));
   getParser()->push_back(new OptionOneParam(STR_MODE,
     "0: k-mers, 1: hashes", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_VEC_ONLY,
+    "0: hash/count, 1: bit-vector -> when merge is not required", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
     "not used, needed by gatb args parser", true));
   getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
