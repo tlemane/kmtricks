@@ -23,3 +23,5 @@
 #include "merger.hpp"
 #include "repartition.hpp"
 #include "skreader.hpp"
+#include "lz4_stream.hpp"
+#include "logging.hpp"
