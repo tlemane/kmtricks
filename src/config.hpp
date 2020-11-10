@@ -132,6 +132,7 @@ cs STR_KEEP_TMP     = "-keep-tmp";
 cs STR_NB_FILE      = "-nb-files";
 cs STR_HASHM        = "-hash-map";
 cs STR_LZ4_OUT      = "-lz4";
+cs STR_VEC_ONLY     = "-vec-only";
 
 // commands
 cs PARTITIONER_CMD  = 
