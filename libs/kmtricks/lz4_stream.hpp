@@ -16,6 +16,10 @@
 #include <memory>
 #include <streambuf>
 #include <vector>
+#include <string>
+#include <cstring>
+
+using namespace std;
 
 namespace lz4_stream {
 /**
