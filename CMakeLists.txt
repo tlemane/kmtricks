@@ -172,3 +172,9 @@ add_custom_target( end ALL
         "kmtricks ex snippets: ${PROJECT_SOURCE_DIR}/bin/snippets"
         COMMENT "" )
 add_dependencies( end ${all_targets} )
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_RELEASE EQUAL 1)
+    include(CPackConfig)
+endif()
