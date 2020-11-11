@@ -6,6 +6,12 @@ set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
 
 configure_file("./config.h.in" ${PROJECT_BINARY_DIR}/include/kmconfig.hpp)
 
+find_package(ZLIB)
+if (ZLIB_FOUND)
+    message("${ZLIB_INCLUDE_DIR}")
+    message("${ZLIB_LIBRARIES}")
+endif()
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     set(OPENMP OpenMP::OpenMP_CXX)
@@ -69,7 +75,7 @@ set(KMTRICKS_INCLUDE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/libs ${THIR
 set(LZ_INCLUDE ${LZ_DIR}/lib)
 set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
 
-include_directories(${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE})
+include_directories(${ZLIB_INCLUDE_DIR} ${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE})
 
 # thirdparty lib directories
 set(GATB_LIB_DIR ${GATB_BUILD_DIR}/${GATB_BUILD_LIB})
