@@ -340,7 +340,7 @@ class ICommand:
 
 BIN_DIR = f'{os.path.dirname(os.path.abspath(__file__))}/bin'
 if not os.path.exists(BIN_DIR):
-    sys.exit("Unable to find kmtricks bin directory")
+    BIN_DIR = BIN_DIR[:-4]
 if not os.path.exists(f'{BIN_DIR}/km_configuration'):
     sys.exit(f"Unable to find kmtricks binaries at {BIN_DIR}")
 
