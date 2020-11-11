@@ -1,6 +1,9 @@
 /*****************************************************************************
- *   kmtricks
- *   Authors: T. Lemane
+ *  \file code.hpp
+ *  \brief Encodingf
+ *  \author T. Lemane
+ *  \version 0.0.0 
+ *  Authors: T. Lemane
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -24,6 +27,10 @@ using namespace std;
 
 typedef unsigned char uchar;
 
+//! \defgroup Encoding
+
+//! \namespace km
+//!  The kmtricks library namespace
 namespace km
 {
 #ifdef _KM_LIB_INCLUDE_
@@ -33,10 +40,17 @@ extern uchar NToB[];
 #endif
 
 #ifndef _KM_LIB_INCLUDE_
+
+//! \ingroup Encoding
+//! \brief Default table: 2-bit to nt
 uchar bToN[] = {'A', 'C', 'T', 'G'};
 
+//! \ingroup Encoding
+//! \brief Default table: 2-bit to rev_nt
 uchar revC[] = {'T', 'G', 'A', 'C'};
 
+//! \ingroup Encoding
+//! \brief Default table: nt to 2-bit
 uchar NToB[256] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -57,43 +71,90 @@ uchar NToB[256] = {
 };
 #endif
 
+//! \ingroup Encoding
+//! \class Code
+//! \brief Manages sequence encoding
+//!
+//! Support uint8_t, uint16_t, uint32_t, uint64_t, [__uint128_t]
 template<typename K>
 class Code
 {
 public:
   Code();
 
+  /*! \brief Constructor.
+  *   \param bits_to_nt : array that maps 2-bit value to nt char
+  *   \param nt_to_bits : array that maps nt char to 2-bit value
+  *   \param revc : array that maps nt (2-bit) to rev_nt (nt char)
+  */
   Code(uchar *bits_to_nt, uchar *nt_to_bits, uchar *revc);
 
+  /*! \brief Constructor, nt_to_bits and revc are deducted from bits_to_nt
+  *   \param bits_to_nt : array that maps 2-bit value to nt char
+  */
   Code(uchar *bits_to_nt);
 
+  /*! \brief Destructor.
+  */
   ~Code();
 
+  /*! \brief Copy Constructor.
+  */
   Code(const Code<K> &c);
 
+  /*! \brief Copy assignment operator.
+  */
   Code<K> &operator=(const Code<K> &c);
 
+  /*! \brief set default encoding -> A:0, C:1, T:2, G:3
+  */
   void set_default_encoding();
 
+  /*! \brief set encoding
+  *   \param bits_to_nt : array that maps 2-bit value to nt char
+  *   \param nt_to_bits : array that maps nt char to 2-bit value
+  *   \param revc : array that maps nt (2-bit) to rev_nt (nt char)t
+  */
   void set_encoding(uchar *bits_to_nt, uchar *nt_to_bits, uchar *revc);
 
+  /*! \brief set encoding, nt_to_bits and revc are deducted from bits_to_nt.
+  *   \param bits_to_nt : array that maps 2-bit value to nt char
+  */
   void set_encoding(uchar *bits_to_nt);
 
+  /*! \brief encode a string
+  *   \param value : a sequence in {A, C, G, T}*
+  *   \param size : number of nt to encode
+  *   \return an unsigned interger that corresponds to the 2-bit encoding of the sequence
+  */
   K encode(string value, size_t size);
 
+  /*! \brief encode a char
+  *   \param value : a char in {A, C, G, T}
+  *   \return an unsigned char that corresponds to the 2-bit encoding of value
+  */
   uchar encode(char value);
 
+  /*! \brief decode 2-bit encoded sequence
+  *   \param value : encoded sequence
+  *   \param size : number of nt to decode
+  *   \return a decoded string in {A, C, G, T}*
+  */
   string decode(K value, size_t size);
 
+  /*! \brief decode 2-bit encoded char
+  *   \param value : encoded char
+  *   \return a decoded char as string in {A, C, G, T}
+  */
   string decode(uchar value);
 
 private:
   void destroy();
 
 public:
-  uchar *_bToN;
-  uchar *_NToB;
-  uchar *_revC;
+  uchar *_bToN; /*!< array[4] that maps 2-bit value to nt char */
+  uchar *_NToB; /*!< array[256] that maps nt char to 2-bit value */
+  uchar *_revC; /*!< array[4] that maps 2-bit value to rev_nt char */
 
 private:
   bool _custom_enc;

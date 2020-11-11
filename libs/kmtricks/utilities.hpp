@@ -22,11 +22,19 @@
 #include <iostream>
 #include <sstream>
 
+/*! \defgroup Utilities
+*/
+
+//!\ingroup Utilities
 #define NBYTE(bits) (((bits) >> 3) + ((bits) % 8 != 0))
+//!\ingroup Utilities
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
 
+//!\ingroup Utilities
 #define BITMASK(b) (1 << ((b) % CHAR_BIT))
+//!\ingroup Utilities
 #define BITSLOT(b) ((b) / CHAR_BIT)
+//!\ingroup Utilities
 #define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
 
 template <typename X>
@@ -38,6 +46,9 @@ void split(const std::string &s, char delim, X res)
     *res++ = item;
 }
 
+/*! \ingroup Utilities 
+*   \brief split string into std::vector<std::string>
+*/
 std::vector<std::string> split(const std::string &s, char delim)
 {
   std::vector<std::string> elems;
@@ -45,6 +56,7 @@ std::vector<std::string> split(const std::string &s, char delim)
   return elems;
 }
 
+//! \cond HIDDEN_SYMBOLS
 template<unsigned long long klength>
 struct requiredK
 {
@@ -75,8 +87,18 @@ template<> struct select_ <32> {typedef uint32_t type;};
 template<> struct select_ <64> {typedef uint64_t type;};
 template<> struct select_ <128> {typedef __uint128_t type;};
 
+//! \endcond
+
+//! \ingroup Utilities 
+//! \brief select kmer int type from k
+//!
+//! typedef selectK<31>::type   KType;
 template<unsigned long long klength>
 struct selectK : select_<requiredK<klength>::value> {};
 
+//! \ingroup Utilities 
+//! \brief select count int type from max count
+//!
+//! typedef selectC<255>::type   CType;
 template<unsigned long long klength>
 struct selectC : select_<requiredC<klength>::value> {};

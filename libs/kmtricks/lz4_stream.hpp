@@ -19,11 +19,20 @@
 #include <string>
 #include <cstring>
 
+/** \defgroup Stream
+ *
+ **/
+
 using namespace std;
 
+/*!
+ *  \namespace lz4_stream
+ *  lz4_stream namespace
+ */
 namespace lz4_stream {
 /**
  * @brief An output stream that will LZ4 compress the input data.
+ * \ingroup Stream
  *
  * An output stream that will wrap another output stream and LZ4
  * compress its input data to that stream.
@@ -161,7 +170,7 @@ private:
 
 /**
  * @brief An input stream that will LZ4 decompress output data.
- *
+ * \ingroup Stream
  * An input stream that will wrap another input stream and LZ4
  * decompress its output data to that stream.
  *

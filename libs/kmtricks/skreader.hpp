@@ -25,22 +25,54 @@
 
 using namespace std;
 
+//!\defgroup Storage
+
+//!\namespace km
+//! The kmtricks library namespace
 namespace km
 {
 
+//!\ingroup Storage
+//!\class SuperkStorage
+//!\brief Read SuperkStorage (HDF-like format)
+//!
+//! Read superkmers from each partition in a SuperkStorage
 class SuperkStorage
 {
 public:
+  //! \brief Constructor
+  //! \param superk_dir :
+  //! \param part_prefix :
+  //! \param nb_parts :
   SuperkStorage(string &superk_dir, string &part_prefix, int nb_parts);
+
+  //! \brief Destructor
   ~SuperkStorage();
 
+  //! \brief reset all files (seek(0))
   void reset_all();
+  
+  //! \brief reset a file (seek(0))
+  //! \param part_id :
   void reset(int part_id);
+  
+  //! \brief close all files
   void close_files();
+  
+  //! \brief close a file with this id
+  //! \param part_id :
   void close_file(int part_id);
 
+  //! \brief read a block of super-k-mers
+  //! \param block :
+  //! \param max_block_size :
+  //! \param nb_bytes :
+  //! \param id :
+  //! \return the block size
   int read_block(uchar **block, uint *max_block_size, uint *nb_bytes, int id);
 
+  //! \brief get the number of files (==nb partitions)
+  //! \return the number of files
   int nb_files();
 
 public:
@@ -131,13 +163,25 @@ int SuperkStorage::nb_files()
 }
 #endif
 
+//! \ingroup Storage
+//! \class SuperkReader
+//! \brief Decode superkmers from SuperkStorage
 template<typename K>
 class SuperkReader
 {
 public:
+  //! \brief Constructor
+  //! \param sk_storage :
+  //! \param kmer_size :
   SuperkReader(SuperkStorage *sk_storage, size_t kmer_size);
+  
+  //! \brief Destructor
   ~SuperkReader();
 
+  //! \brief decode a super-k-mer from a partition
+  //! \param part_id :
+  //! \param superk :
+  //! \return true if a super-k-mer was read
   bool next_superk(int part_id, Superk<K> *superk);
 
 private:

@@ -38,20 +38,16 @@ using namespace std;
 namespace km
 {
 
-//struct stream_t
-//{
-//  uchar *buf;
-//  int begin, end, eof, iskhash;
-//  gzFile f;
-//};
-
+//! \cond HIDDEN_SYMBOLS
 struct stream_t
 {
   uchar *buf;
   int begin, end, eof, iskhash;
   istream *f;
 };
+//! \endcond
 
+//! \cond HIDDEN_SYMBOLS
 template<typename K, typename C>
 struct hshcount_t
 {
@@ -59,6 +55,7 @@ struct hshcount_t
   C count;
   bool khash_set;
 };
+//! \endcond
 
 
 template<typename K, typename C>

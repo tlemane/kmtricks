@@ -23,22 +23,37 @@
 #include <algorithm>
 #include <iostream>
 
+//! \defgroup Repartition
+
 using namespace std;
 
 namespace km
 {
-
-
+//!\ingroup Repartition
+//!\class RepartFile
+//!\brief Read and query the repartition function
 class RepartFile
 {
 public:
+  //! \brief Constructor
+  //! \param m_path
+  //! \param f_path 
   RepartFile(string m_path, string f_path = "");
+
+  //! \brief Destructor
   ~RepartFile();
 
+  //! \brief Copy Constructor
   RepartFile(const RepartFile &r);
+  //! \brief Copy Assignment Operator
   RepartFile& operator=(const RepartFile &r);
 
+  //! \brief Load repartition file
   void load();
+
+  //! \brief Get partition id that corresponds to a minimizer
+  //! \param  minimizer_value minimizer in 2-bit encoding
+  //! \return partititon id 
   uint16_t get(uint64_t minimizer_value);
 
 private:

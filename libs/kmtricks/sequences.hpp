@@ -14,6 +14,7 @@
  *
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
 *****************************************************************************/
 
 #pragma once
@@ -30,20 +31,39 @@
 
 using namespace std;
 
+//! \defgroup Sequence
+
+//! \namespace km
+//! The kmtricks library namespace
 namespace km
 {
 
 #define DEFAULT_MINIMIZER 1000000000
 
+//! \ingroup Sequence
+//! \class Hasher
+//! \brief interface to build hasher for kmer 
+//! \see Kmer::hash
 template<typename K>
 class Hasher
 {
 public:
   Hasher() { };
   virtual ~Hasher() {};
+  
+  //! \brief interface to build hasher for kmer
+  //! \param data 
+  //! \param seed 64-bit seed
+  //! \return 64-bit hash value
+  //! \see Kmer::hash
   virtual uint64_t operator()(K data, uint64_t seed) = 0;
 };
 
+//! \ingroup Sequence
+//! \class XorHasher
+//! \brief xor hashing for kmer
+//! \see Kmer::hash
+//! \see Hasher
 template<typename K>
 class XorHasher : public Hasher<K>
 {
@@ -67,7 +87,12 @@ public:
   }
 };
 
-
+//! \ingroup Sequence
+//! \class Validator
+//! \brief interface to build validator for kmers and minimizers
+//! \see DefaultMinimizerValidator
+//! \see Minimizer::set_kmer
+//! \see Minimizer::set_superk
 template<typename K>
 class Validator
 {
@@ -77,7 +102,12 @@ public:
   virtual bool operator()(K value, size_t size) = 0;
 };
 
-
+//! \ingroup Sequence
+//! \class DefaultMinimizerValidator
+//! \brief Default validator for minimizer
+//! \see Validator
+//! \see Minimizer::set_kmer
+//! \see Minimizer::set_superk
 template<typename K>
 class DefaultMinimizerValidator : public Validator<K>
 {
@@ -95,57 +125,171 @@ public:
   }
 };
 
-
+ //! \ingroup Sequence
+ //! \class Kmer
+ //! \brief A kmer representation
+ //! 
+ //! Only in {A, C, G, T}*
 template<typename K>
 class Kmer
 {
 public:
+  //! \brief Constructor, empty kmer
+  //! \param canonical :
+  //! \param encoding :
   Kmer(bool canonical, Code<K> *encoding = nullptr);
+
+  //! \brief Constructor, from string
+  //! \param kmer : 
+  //! \param canonical :
+  //! \param encoding :
   Kmer(string kmer, bool canonical, Code<K> *encoding = nullptr);
+
+  //! \brief Constructor, from unsigned int
+  //! \param kmer :
+  //! \param kmer_size :
+  //! \param canonical :
+  //! \param encoding :
   Kmer(K kmer, size_t kmer_size, bool canonical, Code<K> *encoding = nullptr);
+
+  //! \brief Destructor
   ~Kmer();
 
+  //! \brief Copy Constructor
   Kmer(const Kmer<K> &k);
+
+  //! \brief Copy Assignment Operator
   Kmer& operator=(const Kmer<K>&);
 
+  //! \brief set kmer from string
+  //! \param kmer : a kmer in string format, in {A,C,T,G}*
   void set_kmer(string kmer);
+  
+  //! \brief set kmer from unsigned int (2-bit encoded)
+  //! \param kmer :
+  //! \param kmer_size :
   void set_kmer(K kmer, size_t kmer_size);
 
+  //! \brief get kmer int value
+  //! \return kmer int value
   K value() const;
+  
+  //! \brief get kmer str value
+  //! \return kmer as string
   string str_value();
+  
+  //! \brief get reverse complement ACCGA -> TCGGT
+  //! \return reverse complement as int
   K rev_comp();
+
+  //! \brief get reverse complement ACCGA -> TCGGT
+  //! \return reverse complement as string
   string str_rev_comp();
+  
+  //! \brief check if the kmer is canonical
+  //! \return true if canonical, else false
   bool is_canonical();
+
+  //! \brief use canonical form
   void use_canonical();
 
+  //! \brief get the kmer size
+  //! \return kmer size
   uint size();
 
+  //! \brief set default hasher (XorHasher)
+  //! \see XorHasher
+  //! \see Kmer::hash
   void set_default_hasher();
+
+  //! \brief set a custom hasher
+  //! \see Kmer::hash
+  //! \see Hasher
   void set_hasher(Hasher<K> *hasher);
 
+  //! \brief get kmer hash value, using internal hasher
+  //! \param seed :
+  //! \return hash value
   uint64_t hash(uint64_t seed = 0);
+
+  //! \brief get kmer hash value, using external hasher
+  //! \param hasher :
+  //! \param seed :
   uint64_t hash(Hasher<K> *hasher, uint64_t seed = 0);
 
+  //! \brief get kmer encoding
+  //! \return Code
+  //! \see Code
   Code<K> *get_encoding();
 
+  //! \brief less than operator
+  //! \param k
+  //! \return true if this < that
   bool operator<(Kmer<K> const &k) const {return _bin_kmer < k.value();}
+  //! \brief greater than operator
+  //! \param k
+  //! \return true if this > that
   bool operator>(Kmer<K> const &k) const {return _bin_kmer > k.value();}
+  //! \brief not equal than operator
+  //! \param k
+  //! \return true != this != that
   bool operator!=(Kmer<K> const &k) const {return _bin_kmer != k.value();}
+  //! \brief equal operator
+  //! \param k
+  //! \return true if this == that
   bool operator==(Kmer<K> const &k) const {return _bin_kmer == k.value();}
 
+  
+  //! \brief less than operator
+  //! \param value
+  //! \return true if this < that
   bool operator<(K const value) const {return _bin_kmer < value;}
+  //! \brief greater than operator
+  //! \param value
+  //! \return true if this > that
   bool operator>(K const value) const {return _bin_kmer > value;}
+  //! \brief not equal than operator
+  //! \param value
+  //! \return true != this != that
   bool operator!=(K const value) const {return _bin_kmer != value;}
+  //! \brief equal operator
+  //! \param value
+  //! \return true if this == that
   bool operator==(K const value) const {return _bin_kmer == value;}
 
+
+  //! \brief less than operator
+  //! \param value
+  //! \return true if this < that
   bool operator<(string value) const {return _bin_kmer < Kmer<K>(value, true).value();}
+  //! \brief greater than operator
+  //! \param value
+  //! \return true if this > that
   bool operator>(string value) const {return _bin_kmer > Kmer<K>(value, true).value();}
+  //! \brief not equal than operator
+  //! \param value
+  //! \return true != this != that
   bool operator!=(string value) const {return _bin_kmer != Kmer<K>(value, true).value();}
+  //! \brief equal operator
+  //! \param value
+  //! \return true if this == that
   bool operator==(string value) const {return _bin_kmer == Kmer<K>(value, true).value();}
 
+  //! \brief less than operator
+  //! \param value
+  //! \return true if this < that
   bool operator<(const char *value) const {return _bin_kmer < Kmer<K>(value, true).value();}
+  //! \brief greater than operator
+  //! \param value
+  //! \return true if this > that
   bool operator>(const char *value) const {return _bin_kmer > Kmer<K>(value, true).value();}
+  //! \brief not equal than operator
+  //! \param value
+  //! \return true != this != that
   bool operator!=(const char *value) const {return _bin_kmer != Kmer<K>(value, true).value();}
+  //! \brief equal operator
+  //! \param value
+  //! \return true if this == that
   bool operator==(const char *value) const {return _bin_kmer == Kmer<K>(value, true).value();}
 
 private:
@@ -164,17 +308,42 @@ private:
   bool      _custom_enc;
 };
 
-
+//! \ingroup Sequence
+//! \class Superk
+//! \brief A superkmer representation
+//!
+//! Corresponds to a set of overlapping kmers that shared the same minimizer. \see Minimizer
 template<typename K>
 class Superk
 {
 public:
+  //! \brief Constructor, empty superk
+  //! \param kmer_size :
+  //! \param encoding :
   Superk(size_t kmer_size, Code<K> *encoding = nullptr);
+  
+  //! \brief Constructor, from string
+  //! \param superkmer :
+  //! \param kmer_size :
+  //! \param encoding :
   Superk(string superkmer, size_t kmer_size, Code<K> *encoding = nullptr);
-  Superk(uchar* buffer, size_t superk_size, size_t kmer_size, bool gatb_format = false, Code<K> *encoding = nullptr);
+  
+  //! \brief Constructor, from buffer, 2-bit encoded array
+  //! \param buffer :
+  //! \param superk_size :
+  //! \param kmer_size :
+  //! \param gatb_format :
+  //! \param encoding :
+  Superk(uchar* buffer, size_t superk_size, size_t kmer_size,
+         bool gatb_format = false, Code<K> *encoding = nullptr);
+  
+  //! \brief Destructor
   ~Superk();
 
+  //! \brief Copy Constructor
   Superk(const Superk<K> &s);
+
+  //! \brief Copy Assignment Operator
   Superk<K>& operator=(const Superk<K> &s);
 
   string str_value() const;
@@ -231,21 +400,60 @@ private:
   bool    _custom_enc;
 };
 
+//! \ingroup Sequence
+//! \class Minimizer
+//! \brief A minimizer representation
+//! 
+//! For a sequence S, corresponds to the lexicographically smaller sub-sequence of size m
 template<typename K>
 class Minimizer
 {
 public:
+  //! \brief Constructor, empty minimizer
+  //! \param msize :
+  //! \param default_minim :
+  //! \param validator :
   Minimizer(size_t msize, K default_minim = DEFAULT_MINIMIZER, Validator<K> *validator = nullptr);
 
+  //! \brief Constructor, from kmer with default validator
+  //! \see Kmer
+  //! \param kmer :
+  //! \param msize :
+  //! \param check_validity :
+  //! \param default_minim :
   Minimizer(Kmer<K> *kmer, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
+  
+  //! \brief Constructor, from kmer with custom validator
+  //! \see Kmer
+  //! \param kmer :
+  //! \param msize :
+  //! \param validator :
+  //! \param default_minim :
   Minimizer(Kmer<K> *kmer, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
 
+  //! \brief Constructor, from superk with default validator
+  //! \see Superk
+  //! \param superk :
+  //! \param msize :
+  //! \param check_validity :
+  //! \param default_minim :
   Minimizer(Superk<K> *superk, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
+
+  //! \brief Constructor, from superk with custom validator
+  //! \see Superk
+  //! \param superk
+  //! \param msize :
+  //! \param validator :
+  //! \param default_minim :
   Minimizer(Superk<K> *superk, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
 
+  //! \brief Destructor
   ~Minimizer();
 
+  //! \brief Copy Constructor
   Minimizer(const Minimizer<K> &m);
+
+  //! \brief Copy Assignement Operator
   Minimizer<K>& operator=(const Minimizer<K> &m);
 
   K       value() const;

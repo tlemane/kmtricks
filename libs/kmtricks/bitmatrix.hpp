@@ -30,6 +30,10 @@
 using namespace std;
 typedef unsigned char uchar;
 
+//! \defgroup Matrix
+
+//! \namespace km
+//!  The kmtricks library namespac
 namespace km
 {
 
@@ -38,6 +42,8 @@ extern uchar reverseb[];
 #endif
 
 #ifndef _KM_LIB_INCLUDE_
+//! \ingroup Matrix
+//! \brief lookup table for reverse a byte
 uchar reverseb[] = {
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
   0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
@@ -76,47 +82,102 @@ uchar reverseb[] = {
 
 void __sse_trans(uint8_t const *inp, uint8_t *out, int nrows, int ncols);
 
+//! \ingroup Matrix
+//! \class BitMatrix
+//! \brief A bit matrix with SSE transposition support
 class BitMatrix
 {
 public:
+
+  //! \brief Constructor, empty matrix
+  //! \param n : 
+  //! \param m :
+  //! \param lendian :
+  //! \param def :
   BitMatrix(size_t n, size_t m, bool lendian, bool def);
 
+  //! \brief Constructor, matrix from file
+  //! \param file :
+  //! \param n :
+  //! \param m :
+  //! \param lendian :
   BitMatrix(string &file, size_t n, size_t m, bool lendian);
 
+  //! \brief Constructor, matrix from memory
+  //! \param mat :
+  //! \param n :
+  //! \param m :
+  //! \param lendian :
   BitMatrix(uchar *mat, size_t n, size_t m, bool lendian);
 
+  //! \brief Destructor
   ~BitMatrix();
 
+  //! \brief Copy Constructor
   BitMatrix(const BitMatrix &b);
 
+  //! \brief Copy Assignement Operator
   BitMatrix &operator=(const BitMatrix &b);
 
-  // i, j in bits
+  //! \brief set a bit (i, j)
+  //! \param i : line
+  //! \param j : column
+  //! \param value : true or false (0/1)
   void set_bit(size_t i, size_t j, bool value);
 
+  //! \brief toggle a bit (i, j)
+  //! \param i : line
+  //! \param j : column
   void tog_bit(size_t i, size_t j);
 
-  bool get_bit(size_t n, size_t m);
+  //! \brief get bit value (i, j)
+  //! \param i : line
+  //! \param j : column
+  //! \return true if one, else false
+  bool get_bit(size_t i, size_t j);
 
-  // i, j in bytes
+  //! \brief set a byte (i, j)
+  //! \param i : line
+  //! \param j : column
+  //! \param value : 
   void set_byte(size_t i, size_t j, uchar value);
 
+  //! \brief toggle a byte (i, j)
+  //! \param i : line
+  //! \param j : column
   void tog_byte(size_t i, size_t j);
 
+  //! \brief get byte value (i, j)
+  //! \param i : line
+  //! \param j : column
+  //! \return 
   uchar get_byte(size_t i, size_t j);
 
+  //! \brief get line i
+  //! \param i : line
+  //! \return line as uchar*
   uchar *get_line(size_t i);
 
+  //! \brief get line i
+  //! \param j : column
+  //! \return column as uchar*
   uchar *get_cols(size_t j);
 
+  //! \brief clear matrix, set all bits to 0
   void clear();
 
+  //! \brief dump matrix to file
+  //! \param file : path to file
   void dump(string file);
 
+  //! \brief print matrix as hex bytes
   void print_bytes();
 
+  //! \brief print matrix as bits
   void print_bits();
 
+  //! \brief transpose matrix
+  //! \return a new transposed BitMatrix*
   BitMatrix *transpose();
 
 public:

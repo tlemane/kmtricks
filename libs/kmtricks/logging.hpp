@@ -23,9 +23,16 @@
 #include <map>
 #include <vector>
 
+//! \defgroup Logging
+
+
+//! \namespace km
+//! The kmtricks library namespace
+//!
 namespace km 
 {
 
+//! \ingroup Logging
 enum levels {
     DEBUG,
     INFO,
@@ -39,6 +46,8 @@ extern const std::map<std::string, levels> string_to_level;
 #endif
 
 #ifndef _KM_LIB_INCLUDE_
+
+//! \ingroup Logging
 std::map<levels, std::string> level_to_string {
     {DEBUG, "DEBUG"},
     {INFO,  "INFO"},
@@ -46,6 +55,7 @@ std::map<levels, std::string> level_to_string {
     {ERROR, "ERROR"}
 };
 
+//! \ingroup Logging
 std::map<std::string, levels> string_to_level {
     {"DEBUG", DEBUG},
     {"INFO",  INFO},
@@ -60,6 +70,41 @@ struct log_config {
 };
 
 extern log_config LOG_CONFIG;
+
+//! \ingroup Logging
+//! \class LOG
+//! \brief A simple logging class
+//! \verbatim
+/*
+
+Usage:
+
+ #include <iostream>
+ #include <fstream>
+ #include <string>
+ #include <vector>
+ #include <kmtricks/logging.hpp>
+
+ km::log_config km::LOG_CONFIG;
+
+ int main(int argc, char *argv[])
+ {
+      km::LOG_CONFIG.show_labels=true;
+      km::LOG_CONFIG.level=km::DEBUG;
+      
+      int value = 10;
+
+      km::LOG(km::INFO) << "Some logs " << value;
+      km::LOG(km::INFO, value%2) << "Conditional logs " << value;
+      
+      std::ofstream log_file("path", "w");
+      km::LOG(km::INFO, log_file) << "Log in file " << value;
+      km::LOG(km::INFO, value%2, log_file) << "Log in file + conditional " << value;
+      
+      std::vector<int> vec_int { 1, 2, 3 };
+      km::LOG(km::INFO) << "Supports vectors " << vec_int;
+ } */ 
+//! \endverbatim
 
 class LOG
 {
