@@ -56,15 +56,15 @@ from kmtricks import __version__ as kmtricks_version
 
 system = platform.system()
 
-LINUX, OSX = system == "Linux", system == "Darwin"
+LINUX, OSX = system == 'Linux', system == 'Darwin'
 
 PACKAGE_NAME = f'kmtricks-{kmtricks_version}-bin-{system}.tar.gz'
 PACKAGE_PATH = f'{py_path}/../build/{PACKAGE_NAME}'
 PACKAGE_EXISTS = os.path.exists(PACKAGE_PATH)
 
-GH_TOKEN = os.environ["GH_TOKEN"]
+GH_TOKEN = os.environ['GH_TOKEN']
 
-BUILD_INFO = "Linux: Ubuntu 18.04, gcc 7.5" + "\n" "Darwin: OS X 10.13.6, Apple LLVM 9.1.0"
+BUILD_INFO = 'Linux: Ubuntu 18.04, gcc 7.5' + '\n' + 'Darwin: OS X 10.13.6, Apple LLVM 9.1.0'
 
 release_desc_path = f'{py_path}/../doc/releases/desc-{kmtricks_version}.txt'
 if os.path.exists(release_desc_path):
@@ -73,7 +73,7 @@ if os.path.exists(release_desc_path):
 
 g = Github(GH_TOKEN)
 u = g.get_user()
-lz4_repo = u.get_repo("kmtricks-test")
+lz4_repo = u.get_repo('kmtricks-test')
 
 LASTEST_VERSION = []
 try:
@@ -97,7 +97,7 @@ print(LASTEST_VERSION, CURRENT_VERSION)
 if not CURRENT_VERSION == [0,0,0]:
     if CURRENT_VERSION > LASTEST_VERSION or not LASTEST_VERSION:
         if PACKAGE_EXISTS:
-            release = lz4_repo.create_git_release(kmtricks_version, f"Release v{kmtricks_version}", BUILD_INFO, False, prerelease=False)
+            release = lz4_repo.create_git_release(f'v{kmtricks_version}', f'Release v{kmtricks_version}', BUILD_INFO, False, prerelease=False)
             release.upload_asset(PACKAGE_PATH)
     elif CURRENT_VERSION == LASTEST_VERSION:
         if PACKAGE_NAME not in assets_name:
