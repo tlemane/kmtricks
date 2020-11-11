@@ -1,0 +1,13 @@
+package:
+  name: kmtricks
+  version: "0.0.0"
+
+source:
+  path: ../../
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - zlib
+    - make
+    - cmake
