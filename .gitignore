@@ -55,6 +55,7 @@ tests/libs/test_repartition
 tests/libs/test_merger
 tests/libs/test_skreader
 
+/html/
 
 
 
