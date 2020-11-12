@@ -18,9 +18,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-mkdir build
-cd build
-cmake ..
+mkdir build-conda
+cd build-conda
+cmake .. -DSIZE=ALL
 make -j4
 cd .. 
 mkdir -p $PREFIX/bin
