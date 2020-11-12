@@ -28,6 +28,7 @@ import io
 import heapq
 import logging
 import traceback
+from math import ceil, log
 from collections import OrderedDict as odict
 from collections import defaultdict as ddict
 from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
@@ -198,6 +199,8 @@ class OptionsParser:
             help='min abundance threshold for solid kmers', default=2)
         glb.add_argument('--abundance-max', metavar='INT', type=int,
             help='max abundance threshold for solid kmers', default=int(3e9))
+        glb.add_argument('--max-count', metavar='INT', type=int,
+            help='allows to deduce the integer size to store counts', default=255)
         glb.add_argument('--recurrence-min', metavar='INT', type=int,
             help='min reccurence threshold for solid kmers', default=1)
         glb.add_argument('--skip-merge', action=asInteger,
@@ -263,6 +266,30 @@ class OptionsParser:
         if as_dict:
             return vars(args)
         return args
+
+class BinaryNotFoundError(Exception):
+    pass
+
+nf_temp = (
+    "k={} and c={} require {} but it seems to be missing, "
+    "use -DKMER_NB_BIT={} -DCOUNT_NB_BIT={} OR -DSIZE=ALL"
+)
+def get_k_c(kmer_max: int, count_max: int) -> Tuple[int, int]:
+    round_k = lambda x: 2**(int(ceil(log(2*x)/log(2))))
+    round_c = lambda x: ceil(log(x+1, 2))
+    return round_k(kmer_max), round_k(round_c(count_max)/2)
+
+def get_binary(dir: str, t: str, vk: int, vc: int=255) -> str:
+    k, c = get_k_c(vk, vc)
+    if t == 'merge':
+        pattern = f'km_merge_within_partition-k{k}c{c}'
+        path = f'{dir}/{pattern}'
+    elif t == 'count':
+        pattern = f'km_superk_to_kmer_counts-k{k}c{c}'
+        path = f'{dir}/{pattern}'
+    if os.path.exists(path):
+        return pattern
+    raise BinaryNotFoundError(nf_temp.format(vk, vc, pattern, k, c))
 
 class ICommand:
     def __init__(
@@ -384,7 +411,8 @@ SUPERK_CLI_TEMPLATE = (
 
 COUNT_PREFIX_ID = 'C'
 COUNT_CLI_TEMPLATE = (
-    f"{BIN_DIR}/km_superk_to_kmer_counts "
+    f"{BIN_DIR}/"
+    "{count_bin} "
     "-file {f} "
     "-run-dir {run_dir} "
     "-abundance-min {abundance_min} "
@@ -402,7 +430,8 @@ COUNT_CLI_TEMPLATE = (
 
 MERGE_PREFIX_ID = 'M'
 MERGE_CLI_TEMPLATE = (
-    f"{BIN_DIR}/km_merge_within_partition "
+    f"{BIN_DIR}/"
+    "{merge_bin} "
     "-run-dir {run_dir} "
     "-part-id {part_id} "
     "-abundance-min {abundance_min} "
@@ -868,6 +897,7 @@ def main():
 
         count_commands = odict()
         if (only == 3 or all_ and until > 2):
+            cbin = get_binary(BIN_DIR, 'count', args['kmer_size'], args['max_count'])
             for i, f, c in fof:
                 dargs = deepcopy(args)
                 dargs['mode'] = mode_kh[dargs['mode']]
@@ -876,19 +906,20 @@ def main():
                 for p in range(args['nb_partitions']):
                     log = f'{log_dir}/counter/counter{i}_{p}.log'
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
-                       f=f, part_id=p, fof=fof, log=log, **dargs
+                       f=f, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
                     )
             pool.push('C', count_commands)
 
         merge_commands = odict()
         if ((only == 4 or all_ and until > 3) and not args['skip_merge']):
+            mbin = get_binary(BIN_DIR, 'merge', args['kmer_size'], args['max_count'])
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
                 if ab_per_file:
                     dargs['abundance_min'] = 1
                 log = f'{log_dir}/merger/merger{p}.log'
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
-                    part_id=p, fof=fof, log=log, **dargs
+                    part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs
                 )
             pool.push('M', merge_commands)
 
