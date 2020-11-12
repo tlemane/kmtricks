@@ -22,19 +22,11 @@
 #include <gatb/kmer/impl/HashSorting.hpp>
 #include <gatb/kmer/impl/PartitionsCommand.hpp>
 #include <kmtricks/logging.hpp>
-#include "km_superk_to_kmer_counts.hpp"
 #include "CountProcessorDump.hpp"
+#include "km_superk_to_kmer_counts.hpp"
 #include "signal_handling.hpp"
 
 km::log_config km::LOG_CONFIG;
-
-#ifndef KMTYPE
-  typedef uint64_t kmtype_t;
-#endif
-
-#ifndef CNTYPE
-  typedef uint8_t cntype_t;
-#endif
 
 #define NMOD8(byte) ((byte)+(8-((byte)%8)))
 

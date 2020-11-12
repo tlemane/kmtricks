@@ -118,7 +118,11 @@ void KmMerge::merge_to_ascii()
     _m->next();
     if (_m->keep)
     {
+#if KTYPE == 128
+      fout << _m->m_khash;
+#else
       fout << to_string(_m->m_khash);
+#endif
       for (size_t vi=0; vi<_m->nb_files; vi++)
         fout << " " << to_string(_m->counts[vi]);
       fout << "\n";

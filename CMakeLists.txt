@@ -4,13 +4,18 @@ project(kmtricks VERSION 0.0.0)
 set(CONTACT "teo.lemane@inria.fr")
 set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+include(CheckTypeSize)
+set(INT128_FOUND 0)
+CHECK_TYPE_SIZE("__uint128_t" INT128)
+if (INT128 EQUAL 16)
+    set(INT128_FOUND 1)
+endif()
+
 configure_file("./config.h.in" ${PROJECT_BINARY_DIR}/include/kmconfig.hpp)
 
 find_package(ZLIB)
-if (ZLIB_FOUND)
-    message("${ZLIB_INCLUDE_DIR}")
-    message("${ZLIB_LIBRARIES}")
-endif()
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
@@ -43,16 +48,23 @@ endif()
 add_subdirectory(thirdparty)
 
 # type size
-if (NOT KMERTYPE)
-    set(KMERTYPE 64)
+if (NOT KMER_NB_BIT)
+    set(KMER_NB_BIT 32 64)
+endif()
+if (NOT COUNT_NB_BIT)
+    set(COUNT_NB_BIT 8 16 32)
 endif()
 
-if (NOT COUNTTYPE)
-    set(COUNTTYPE 8)
+if (SIZE STREQUAL "ALL")
+    if (INT128_FOUND EQUAL 1)
+        set(KMER_NB_BIT 8 16 32 64 128)
+    else()
+        set(KMER_NB_BIT 8 16 32 64)
+    endif()
+    set(COUNT_NB_BIT 8 16 32)
 endif()
-
-add_definitions(-DKTYPE=${KMERTYPE})
-add_definitions(-DCNTYPE=${COUNTTYPE})
+message("KMER NB BIT ${KMER_NB_BIT}")
+message("COUNT NB BIT ${COUNT_NB_BIT}")
 
 # thirdparty source directories
 set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/thirdparty)
@@ -179,7 +191,6 @@ add_custom_target( end ALL
         COMMENT "" )
 add_dependencies( end ${all_targets} )
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_RELEASE EQUAL 1)
     include(CPackConfig)

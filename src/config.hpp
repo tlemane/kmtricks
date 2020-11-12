@@ -18,6 +18,7 @@
 
 #pragma once
 #include <string>
+#include <cstdint>
 #include <gatb/gatb_core.hpp>
 #include <fmt/format.h>
 #include <kmconfig.hpp>
@@ -67,7 +68,7 @@ typedef uint32_t kmtype_t;
 #elif KTYPE == 64
 typedef uint64_t kmtype_t;
 #elif KTYPE == 128
-typedef __uint128_t kmtype_t
+typedef __uint128_t kmtype_t;
 #endif
 
 #if CNTYPE == 8
@@ -75,7 +76,7 @@ typedef uint8_t cntype_t;
 #elif CNTYPE == 16
 typedef uint16_t cntype_t;
 #elif CNTYPE == 32
-  typedef uint32_t cntype_t;
+typedef uint32_t cntype_t;
 #endif
 
 const static map<string, int> output_format {
