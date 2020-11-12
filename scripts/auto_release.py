@@ -73,16 +73,16 @@ if os.path.exists(release_desc_path):
 
 g = Github(GH_TOKEN)
 u = g.get_user()
-lz4_repo = u.get_repo('kmtricks-test')
+lz4_repo = u.get_repo('kmtricks')
 
-LASTEST_VERSION = []
+LATEST_VERSION = []
 try:
     latest_release = lz4_repo.get_latest_release()
     assets = latest_release.get_assets()
     assets_name = [asset.name for asset in assets]
     tag_name = latest_release.tag_name
     tag_name = tag_name[1:] if tag_name.startswith('v') else tag_name
-    LASTEST_VERSION = list(map(int, tag_name.split('.')))
+    LATEST_VERSION = list(map(int, tag_name.split('.')))
 except:
     pass
 
@@ -92,14 +92,14 @@ print(BUILD_INFO)
 print(system)
 print(PACKAGE_EXISTS)
 print(PACKAGE_PATH)
-print(LASTEST_VERSION, CURRENT_VERSION)
+print(LATEST_VERSION, CURRENT_VERSION)
 
 if not CURRENT_VERSION == [0,0,0]:
-    if CURRENT_VERSION > LASTEST_VERSION or not LASTEST_VERSION:
+    if CURRENT_VERSION > LATEST_VERSION or not LATEST_VERSION:
         if PACKAGE_EXISTS:
             release = lz4_repo.create_git_release(f'v{kmtricks_version}', f'Release v{kmtricks_version}', BUILD_INFO, False, prerelease=False)
             release.upload_asset(PACKAGE_PATH)
-    elif CURRENT_VERSION == LASTEST_VERSION:
+    elif CURRENT_VERSION == LATEST_VERSION:
         if PACKAGE_NAME not in assets_name:
             latest_release.upload_asset(PACKAGE_PATH)
     else:
