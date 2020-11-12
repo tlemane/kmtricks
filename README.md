@@ -152,6 +152,7 @@ global:
   --kmer-size INT         size of a kmer [default: 31]
   --abundance-min INT     min abundance threshold for solid kmers [default: 2]
   --abundance-max INT     max abundance threshold for solid kmers [default: 3e9]
+  --max-count INT         allows to deduce the integer size for counts [default: 255]
   --recurrence-min INT    min reccurence threshold for solid kmers [default: 2]
                             - checks that a kmer solid appears at least in <rec-min> 
                               datasets with a count greater than <abu-min>
@@ -215,22 +216,33 @@ In addition to modules, the `libs/kmtricks` directory contains headers. They pro
 
 ## Install
 
-Maximal size of k-mers and maximal stored counts must be set at compile time.
-* KMERTYPE 8, 16, 32, 64, 128 -> respectively for k-mers lengths less or equal to : 4, 8, 16, 32, 64.
-* COUNTTYPE 8, 16, 32 -> respectively for max counts: 255, 65535, 4294967295.
+Maximal size of k-mers and maximal stored counts must be set at compile time for some kmtricks binaries. 
+
+**Available values:**
+* KMER_NB_BIT=8;16;32;64;128 -> respectively for k less or equal to : 4, 8, 16, 32, 64
+* COUNT_NB_BIT=8;16;32 -> respectively for max counts: 255, 65535, 4294967295.
+
 
 ```bash
 git clone --recursive https://github.com/tlemane/kmtricks
 cd kmtricks
 mkdir build ; cd build
-cmake .. -DKMERTYPE=64 -DCOUNTTYPE=8 -DTEST=1
+
+# Several example, use only one
+cmake .. # Default, here KMER_NB_BIT="32;64" and COUNT_NB_BIT="8;16;32"
+cmake .. -DKMER_NB_BIT="64;128" -DCOUNT_NB_BIT="32" # Select values
+cmake .. -DSIZE=ALL # All, corresponds to all available values
+
 make -j8
 ```
+
+`kmtricks.py` pipeline automatically selects the binaries to be used according to parameters or provides compilation instructions if the required binaries are missing.
 
 ## Test
 
 ```bash
 cd build
+cmake .. -DTEST=1
 ctest CTestTestfile.cmake
 ```
 
