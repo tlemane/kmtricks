@@ -56,6 +56,32 @@ std::vector<std::string> split(const std::string &s, char delim)
   return elems;
 }
 
+#ifdef __SIZEOF_INT128__
+//! \ingroup Utilities
+//! \brief __uint128_t support for std::ostream
+std::ostream&
+operator<<( std::ostream& dest, __uint128_t value )
+{
+    const char digit[11] = "0123456789";
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do
+        {
+            --d;
+            *d = digit[ value % 10 ];
+            value/= 10;
+        } while ( value != 0 );
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
+}
+#endif
+
 //! \cond HIDDEN_SYMBOLS
 template<unsigned long long klength>
 struct requiredK
