@@ -87,12 +87,19 @@ class CustomHelpFormatter(argparse.HelpFormatter):
         return ', '.join(action.option_strings) + ' ' + args_string
     
     def _get_help_string(self, action):
+        REQUIRED = ('--file', '--run-dir')
+        NOARGS   = ('--keep-tmp', '--lz4', '--skip-merge')
         help = action.help
         if '%(default)' not in action.help:
             if action.default is not argparse.SUPPRESS:
                 defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
-                    help += ' [default: %(default)s]'
+                    if action.option_strings[0] in REQUIRED:
+                        help += ' [required]'
+                    elif action.option_strings[0] in NOARGS:
+                        help += ' [no arg]'
+                    else:
+                        help += ' [default: %(default)s]' 
         return help
 
 class OptionsParser:
@@ -180,6 +187,7 @@ class OptionsParser:
         )
 
         glb = subparser.add_argument_group('global')
+        rar = subparser.add_argument_group('merge options, see kmtricks README')
         ctr = subparser.add_argument_group('pipeline control')
         adv = subparser.add_argument_group('advanced performance tweaks')
         hmd = subparser.add_argument_group('hash mode configuration')
@@ -188,23 +196,19 @@ class OptionsParser:
         steps = ['repart', 'superk', 'count', 'merge', 'split']
 
         glb.add_argument('--file', metavar='FILE', type=str,
-            help='fof that contains path of read files, one per line',
+            help='fof that contains path of read files, see kmtricks README for the format',
             required=True)
         glb.add_argument('--run-dir', metavar='DIR', type=str,
             help='directory to write tmp and output files',
             required=True)
         glb.add_argument('--kmer-size', metavar='INT', type=int,
             help='size of a kmer', default=31)
-        glb.add_argument('--abundance-min', metavar='INT', type=int,
+        glb.add_argument('--count-abundance-min', metavar='INT', type=int,
             help='min abundance threshold for solid kmers', default=2)
         glb.add_argument('--abundance-max', metavar='INT', type=int,
             help='max abundance threshold for solid kmers', default=int(3e9))
         glb.add_argument('--max-count', metavar='INT', type=int,
             help='allows to deduce the integer size to store counts', default=255)
-        glb.add_argument('--recurrence-min', metavar='INT', type=int,
-            help='min reccurence threshold for solid kmers', default=1)
-        glb.add_argument('--skip-merge', action=asInteger,
-            help='skip merge step, only with --mode bf', nargs=0, const=0, default=0)
         glb.add_argument('--max-memory', metavar='INT', type=int,
             help='max memory available in megabytes', default=8000)
         glb.add_argument('--mode', metavar='STR', type=str,
@@ -212,7 +216,16 @@ class OptionsParser:
             help=f'output matrix format: [{"|".join(mt_format)}]')
         glb.add_argument('--nb-cores', metavar='INT', type=int,
             help='number of cores', default=8)
-        
+
+        rar.add_argument('--merge-abundance-min', metavar='INT/STR', type=str,
+            help='min abundance threshold for solid kmers', default=1)
+        rar.add_argument('--recurrence-min', metavar='INT', type=int,
+            help='min reccurence threshold for solid kmers', default=1)
+        rar.add_argument('--save-if', metavar='INT', type=int,
+            help='keep a non-solid kmer if it\'s solid in X dataset', default=0)
+        rar.add_argument('--skip-merge', action=asInteger,
+            help='skip merge step, only with --mode bf', nargs=0, const=0, default=0)
+
         ctr.add_argument('--until', metavar='STR', type=str,
             choices=steps, default='all',
             help=f'run until step: [{"|".join(steps)}]')
@@ -244,7 +257,6 @@ class OptionsParser:
         glb.add_argument('-h', '--help', action='help',
             help='Show this message and exit')
 
-
     def _get_subs(cls) -> List:
         return [getattr(cls, name) for name in dir(cls) if callable(getattr(cls, name)) and name.startswith('_sub')]
 
@@ -263,6 +275,11 @@ class OptionsParser:
         args = self.global_parser.parse_args(arglist)
         if args.cmd not in self.subcommands:
             self.global_parser.parse_args(['-h'])
+
+        if args.skip_merge and args.mode != 'bf':
+            print('--skip-merge only with --mode bf')
+            sys.exit()
+
         if as_dict:
             return vars(args)
         return args
@@ -435,9 +452,10 @@ MERGE_CLI_TEMPLATE = (
     "{merge_bin} "
     "-run-dir {run_dir} "
     "-part-id {part_id} "
-    "-abundance-min {abundance_min} "
+    "-abundance-min {merge_abundance_min} "
     "-recurrence-min {recurrence_min} "
-    "-mode {mode}"
+    "-mode {mode} "
+    "-save-if {save_if}"
 )
 
 OUTPUT_PREFIX_ID = 'O'
@@ -844,6 +862,7 @@ def main():
     cli = OptionsParser()
     args = cli.parse_args()
     VERBOSE, DEBUG = args['verbose'], args['debug']
+    args['abundance_min'] = args['count_abundance_min']
 
     all_ = None
     if args['cmd'] == 'run':
@@ -914,8 +933,6 @@ def main():
             mbin = get_binary(BIN_DIR, 'merge', args['kmer_size'], args['max_count'])
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
-                if ab_per_file:
-                    dargs['abundance_min'] = 1
                 log = f'{log_dir}/merger/merger{p}.log'
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
                     part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs

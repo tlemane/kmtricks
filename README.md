@@ -63,28 +63,23 @@ my_run_directory/
  │   ├── cmds.log  
  │   ├── counter  
  │   ├── merger  
- │   └── superk  
- ├── storage
- │   ├── config_storage_gatb // gatb config
- │   │   └── config.config
- │   ├── fof.txt        
- │   ├── hash_window.vec     
- │   ├── kmers_partitions    // km_superk_to_kmer_count output
- │   │   ├── partition_0
- │   │   └── partition_1
- │   ├── matrix              // km_merge_within_partition output
- │   │   ├── partition_0
- │   │   └── partition_1
- │   ├── superk_partitions   // km_reads_to_superk output
- │   └── vectors             // km_output_convert output 
- │       ├── howde
- │       └── sdsl
- └── synchro                // sync dir used by kmtricks pipeline
-     ├── counter
-     ├── merger
-     ├── partitioner
-     ├── split
-     └── superk
+ │   ├── superk  
+ │   └── split  
+ └── storage
+     ├── config_storage_gatb // gatb config
+     │   └── config.config
+     ├── fof.txt        
+     ├── hash_window.vec     
+     ├── kmers_partitions    // km_superk_to_kmer_count output
+     │   ├── partition_0
+     │   └── partition_1
+     ├── matrix              // km_merge_within_partition output
+     │   ├── partition_0
+     │   └── partition_1
+     ├── superk_partitions   // km_reads_to_superk output
+     └── vectors             // km_output_convert output 
+         ├── howde
+         └── sdsl
 ```
 
 **Note2:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
@@ -137,9 +132,10 @@ Note that this binary also enables to run independently any module (option `--on
 Final results are stored in the `directory_output_name/storage/matrix/` and `directory_output_name/storage/vectors/`.
 
 ```
-usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--abundance-min INT]
-                       [--abundance-max INT] [--recurrence-min INT] [--max-memory INT] 
-                       [--mode STR] [--nb-cores INT] [--until STR] [--only STR]
+usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
+                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
+                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
+                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
                        [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
                        [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
                        [--keep-tmp] [--lz4] [-h]
@@ -147,56 +143,52 @@ usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--abundance-
 kmtricks pipeline
 
 global:
-  --file FILE             fof that contains path of read files, one per line
-  --run-dir DIR           directory to write tmp and output files
-  --kmer-size INT         size of a kmer [default: 31]
-  --abundance-min INT     min abundance threshold for solid kmers [default: 2]
-  --abundance-max INT     max abundance threshold for solid kmers [default: 3e9]
-  --max-count INT         allows to deduce the integer size for counts [default: 255]
-  --recurrence-min INT    min reccurence threshold for solid kmers [default: 2]
-                            - checks that a kmer solid appears at least in <rec-min> 
-                              datasets with a count greater than <abu-min>
-  --max-memory INT        max memory available in megabytes [default: 8000]
-  --mode STR              output matrix format: [bin|ascii|pa|bf|bf_trp] [defaut: bin]
-                            - ascii:   <kmer> <count> in ascii format
-                            - bin:     <uintX kmer> [<uintX count>, ..., <uintX count_n>]
-                            - pa:      <uintX kmer> <presence/absence bit vector>
-                            - bf:      <presence/absence bit-vector> 
-                                       lines are hashes (vertically bf)
-                            - bf_trp:  bf mode transposition, horizontally bf
-  --nb-cores INT          number of cores [default: 8]
-  --keep-tmp              keep all tmp files [default: False]
-  --lz4                   lz4 compression for tmp files [default: False]
-  -h, --help              Show this message and exit
+  --file FILE                    fof that contains path of read files, one per line [required]
+  --run-dir DIR                  directory to write tmp and output files [required]
+  --kmer-size INT                size of a kmer [default: 31]
+  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
+  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
+  --max-count INT                allows to deduce the integer size to store counts [default: 255]
+  --max-memory INT               max memory available in megabytes [default: 8000]
+  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
+  --nb-cores INT                 number of cores [default: 8]
+  --keep-tmp                     keep all tmp files [no arg]
+  --lz4                          lz4 compression for tmp files [no arg]
+  -h, --help                     Show this message and exit
+
+merge options:
+  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
+  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
+  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
+  --skip-merge                   skip merge step, only with --mode bf [no arg]
 
 pipeline control:
-  --until STR             run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR              run until step: [repart|superk|count|merge|split] [default: all]
+  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
+  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
 
 advanced performance tweaks:
-  --minimizer-type INT    minimizer type (0=lexi, 1=freq) [default: 0]
-  --minimizer-size INT    size of minimizer [default: 10]
-  --repartition-type INT  minimizer repartition (0=unordered, 1=ordered) [default: 0]
-  --nb-partitions INT     number of partitions (0=auto) [default: 0]
+  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
+  --minimizer-size INT           size of minimizer [default: 10]
+  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
+  --nb-partitions INT            number of partitions (0=auto) [default: 0]
 
 hash mode configuration:
-  --hasher STR            hash function: sabuhash, xor [default: xor]
-                            - For compatibility with HowDeSBT, use sabuhash
-  --max-hash INT          max hash value (0 < hash < max(int64)) [default: 1e9]
-                            - This is also the size of the final bloom filters
-  --split STR             split matrix in indidual files: [sdsl|howde] [default: None]
-                          (only with -mf, --mode bf_trp)
-                            - sdsl: dump one sdsl::bit_vector per file
-                            - howde: dump one HowDeSBT-bf per file
+  --hasher STR                   hash function: sabuhash, xor [default: xor]
+  --max-hash INT                 max hash value (0 < hash < max(int64)) [default: 1000000000]
+  --split STR                    split matrix in indidual files: [sdsl|howde] (only with -mf, --mode
+                                 bf_trp) [default: none]
 ```
 
-If you need specific thresholds for some or all datasets, you can add these thresholds in the fof. For datasets without a specific threshold, the --abundance-min is used.
+If you need specific thresholds for some or all datasets, you can add these thresholds in the fof. For datasets without a specific threshold, the --count-abundance-min is used.
 
+**File of file format:**
+* STR **:** PATH_1 **;** ... **;** PATH_N **!** INT
+* Dataset ID : one or more fastx.gz files (seperated by **;**) ! An optional min abundance threshold
+
+**Fof example**:
 ```
-/path/to/file/1.fasta
-/path/to/file/2.fasta 12
-/path/to/file/3.fasta
-/path/to/file/4.fasta 15
+A1 : /path/to/fastq_A1_1
+B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2
 ```
 
 **Full example, with HowDeSBT compatibility**

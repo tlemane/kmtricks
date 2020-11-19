@@ -18,7 +18,7 @@ cores=12
 
 mkdir -p run_test/storage
 cp -r ./data/partition_storage_gatb ./run_test/storage
-python3 ../../kmtricks.py run --file ${fof} --run-dir ./run_test --kmer-size ${kmersize} --mode ascii --nb-cores ${cores} --nb-partitions ${nbpart} --keep-tmp --abundance-min 1 --recurrence-min 1 --max-memory 1000 --lz4
+python3 ../../kmtricks.py run --file ${fof} --run-dir ./run_test --kmer-size ${kmersize} --mode ascii --nb-cores ${cores} --nb-partitions ${nbpart} --keep-tmp --count-abundance-min 1 --recurrence-min 1 --max-memory 1000 --lz4
 
 #check superkmers partitions
 echo -ne "Superkmers partitions ..."
