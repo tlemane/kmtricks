@@ -95,16 +95,8 @@ void Kmtricks::init()
 
   const size_t span = KMER_DEFAULT_SPAN;
 
-  string line, in;
-  ifstream fof(_fof_path);
-  if (!fof) {cerr << "Unable to open " << _fof_path << endl; exit(EXIT_FAILURE);}
-  vector<string> sline;
-  while (getline(fof, line))
-  {
-    sline = split(line, ' ');
-    in += sline[0] + ",";
-  }
-  in.pop_back();
+  fof_t fof = parse_km_fof(_fof_path);
+  string in = all_files(fof);
   
   IBank* bank = Bank::open(in);
   LOCAL(bank);

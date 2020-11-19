@@ -23,6 +23,7 @@
 
 #include <kmtricks/logging.hpp>
 #include <kmtricks/lz4_stream.hpp>
+#include <kmtricks/utilities.hpp>
 #include <fmt/format.h>
 
 km::log_config km::LOG_CONFIG;
@@ -33,7 +34,6 @@ KmConvert::KmConvert(const string &mode) : Tool("km_output_convert")
   {
     setParser(new OptionsParser("km_output_convert from_merge"));
     getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks runtime directory", true));
-    getParser()->push_back(new OptionOneParam(STR_URI_FILE, "extract bitvectors only for the files contained in the fof", false, "0"));
     getParser()->push_back(new OptionOneParam(STR_NB_FILE, "number of reads files", true));
     getParser()->push_back(new OptionOneParam(STR_SPLIT, "output format: sdsl, howde", true));
     getParser()->push_back(new OptionOneParam(STR_KMER_SIZE, "size of a k-mer", true));
@@ -74,7 +74,6 @@ void KmConvert::parse_args()
     _kmer_size = getInput()->getInt(STR_KMER_SIZE);
     _nb_files = getInput()->getInt(STR_NB_FILE);
     _vlen = NMOD8(NBYTE(_nb_files));
-    _fof = getInput()->getStr(STR_URI_FILE);
   }
   else
   {
@@ -87,25 +86,17 @@ void KmConvert::init()
   _e = new Env(_run_dir, "");
   if (_from_merge)
   {
-    ifstream fof(_e->FOF_FILE);
-    string line;
-    char cop[256];
-    string fname;
-    string opath;
+    fof_t fof = parse_km_fof(_e->FOF_FILE);
     uint cnt = 0;
-    while ( getline(fof, line))
+    for (auto& elem: fof)
     {
-      _fof_pos[line] = cnt;
-      cnt++;
-      strcpy(cop, line.c_str());
-      fname = basename(cop);
+      string opath;
       if ( _howde )
-        opath = _e->STORE_HOWDE + "/" + fname + ".bf";
+        opath = _e->STORE_HOWDE + "/" + get<0>(elem) + ".bf";
       else
-        opath = _e->STORE_SDSL + "/" + fname + ".sdsl";
+        opath = _e->STORE_SDSL + "/" + get<0>(elem) + ".sdsl";
       _f_names.push_back(opath);
     }
-    fof.close();
   }
   ifstream hw(_e->HASHW_MAP, ios::binary | ios::in);
 
@@ -127,17 +118,6 @@ void KmConvert::init()
   _win_size = get<1>(_hash_windows[0]) + 1;
   _filter_size = get<1>(_hash_windows.back()) + 1;
 
-  if (_from_merge)
-  {
-    if ( _fof != "0" )
-    {
-      ifstream infof(_fof);
-      string f;
-      while (getline(infof, f))
-        _pos.push_back(_fof_pos[f]);
-      infof.close();
-    }
-  }
   _sync = _e->SYNCHRO_SP + END_TEMP_SP;
 }
 
@@ -145,10 +125,6 @@ void KmConvert::from_merge()
 {
   for (int i=0; i<_nb_files; i++)
   {
-    if ( _fof != "0")
-      if (!(std::find(_pos.begin(), _pos.end(), i) != _pos.end()))
-        continue;
-
     bitvector b(_filter_size, 0);
     char* data = (char*)b.data();
     ofstream bf(_f_names[i]);
@@ -166,7 +142,7 @@ void KmConvert::from_merge()
       bneeded = round_up_16(bneeded);
       uint32_t header_size = (uint32_t) bneeded;
       bffileheader* header = (bffileheader*)new char[header_size];
-      memset(header, 0, header_size);
+      std::memset(header, 0, header_size);
       header->magic = bffileheaderMagicUn;
       header->headerSize = (uint32_t) sizeof(bffileprefix);
       bf.write((char*)header, header_size);

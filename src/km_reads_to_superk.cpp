@@ -49,7 +49,7 @@ template<size_t span> struct Functor
     _config.load(_config_storage->getGroup(CONFIG_GRP));
     Repartitor* repartitor = new Repartitor(_repart_storage->getGroup(REPART_GRP));
 
-    string name = e->STORE_SUPERK + fmt::format(TEMP_S, prefix);
+    string name = e->STORE_SUPERK + fmt::format(TEMP_S, props->getStr(STR_EXP_ID));
     bool lz4 = props->getInt(STR_LZ4_OUT);
     SuperKmerBinFiles* _superKstorage = new SuperKmerBinFiles(name, "superKparts", _config._nb_partitions, lz4);
 
@@ -99,6 +99,8 @@ KmSuperK::KmSuperK() : Tool ("km_superk")
 {
   setParser(new OptionsParser("km_reads_to_superk"));
 
+  getParser()->push_back(new OptionOneParam(STR_EXP_ID,
+    "experience id", true));
   getParser()->push_back(new OptionOneParam(STR_URI_FILE,
     "path to read file", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_SIZE,

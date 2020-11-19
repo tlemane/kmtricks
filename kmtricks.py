@@ -34,7 +34,7 @@ from collections import defaultdict as ddict
 from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
 from signal import SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, Signals
 from types import FunctionType
-from shutil import rmtree
+from shutil import rmtree, copyfile
 from copy import deepcopy, copy
 
 __version__ = '0.0.0'
@@ -403,6 +403,7 @@ REPART_CLI_TEMPLATE = (
 SUPERK_PREFIX_ID = 'S'
 SUPERK_CLI_TEMPLATE = (
     f"{BIN_DIR}/km_reads_to_superk "
+    "-id {exp_id} "
     "-file {f} "
     "-kmer-size {kmer_size} "
     "-run-dir {run_dir} "
@@ -443,7 +444,6 @@ OUTPUT_PREFIX_ID = 'O'
 OUTPUT_CLI_TEMPLATE = (
     f"{BIN_DIR}/km_output_convert from_merge "
     "-run-dir {run_dir} "
-    "-file {file} "
     "-nb-files {nb_files} "
     "-split {split} "
     "-kmer-size {kmer_size}"
@@ -600,8 +600,8 @@ class MergeCommand(ICommand):
         path = f'{pdir}/partition{p}.fof'
         ext = '.kmer' if not self.args['lz4'] else '.kmer.lz4'
         with open(path, 'w') as f_out:
-            for _, f, _ in self.args['fof']:
-                f_out.write(f'{pdir}/{os.path.basename(f)}{ext}\n')
+            for _, _, _ , exp in self.args['fof']:
+                f_out.write(f'{pdir}/{exp}{ext}\n')
 
     def postprocess(self) -> None:
         if not self.args['keep_tmp']:
@@ -702,34 +702,34 @@ class Fof:
         self.lfiles:  list = []
         self.nb:      int = 0
     
-    def read(self, default_count: int=2) -> bool:
+    def parse(self, defaut_count: int) -> bool:
         self.fp.seek(0)
         has_ab = False
         for line in self.fp:
-            line = line.rstrip()
-            line_l = line.split(' ')
-            if len(line_l) > 2:
+            line = line.strip()
+            if not line: continue
+            line = line.split(':')
+            if len(line) != 2:
                 raise IOError(f'fof bad format: {self.fp.name}')
-            elif len(line_l) == 2:
-                path, count = line_l[0], int(line_l[1])
+            idx = line[0].strip()
+            line = line[1].split('!')
+            if len(line) not in (1, 2):
+                raise IOError(f'fof bad format: {self.fp.name}')
+            count = defaut_count
+            if len(line) == 2:
                 has_ab = True
-            else:
-                path, count = ''.join(line_l), default_count
-            self.files[path] = count
+                count = int(line[1])
+            files = [s.strip() for s in line[0].split(';')]
+            self.files[idx] = (','.join(files), count)
         self.lfiles = list(self.files)
         self.nb = len(self.lfiles)
         return has_ab
 
-    def get_id(self, file: str):
-        return self.lfiles.index(file)
+    def get_id(self, idx: str):
+        return self.lfiles.index(idx)
 
     def copy(self, path: str) -> None:
-        #self.fp.seek(0)
-        with open(path, 'w') as f_out:
-            for k, _ in self.files.items():
-                f_out.write(k+'\n')
-            #for line in self.fp:
-            #    f_out.write(line)
+        copyfile(self.path, path)
 
     def __iter__(self):
         return self
@@ -738,8 +738,8 @@ class Fof:
         try:
             if self.id > self.nb:
                 self.id = 0
-            f = self.lfiles[self.id]
-            return self.id, self.lfiles[self.id], self.files[f]
+            idx = self.lfiles[self.id]
+            return self.id, self.files[idx][0], self.files[idx][1], idx
         except IndexError:
             raise StopIteration
         finally:
@@ -859,7 +859,7 @@ def main():
             sys.exit(0)
 
     fof = Fof(args['file'])
-    ab_per_file = fof.read(args['abundance_min'])
+    ab_per_file = fof.parse(args['abundance_min'])
     fof_copy = f'{args["run_dir"]}/storage/fof.txt'
     fof.fp.close()
 
@@ -874,7 +874,6 @@ def main():
     global pool
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
 
-    
     fof.copy(fof_copy)
     if args['cmd'] == 'run':
         repart_commands = odict()
@@ -887,18 +886,18 @@ def main():
 
         superk_commands = odict()
         if (only == 2 or all_ and until > 1):
-            for i, f, _ in fof:
+            for i, f, _, exp in fof:
                 dargs = deepcopy(args)
                 log = f'{log_dir}/superk/superk_{i}.log'
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
-                    id=i, f=f, fof=fof, log=log, **dargs
+                    id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
                 )
             pool.push('S', superk_commands)
 
         count_commands = odict()
         if (only == 3 or all_ and until > 2):
             cbin = get_binary(BIN_DIR, 'count', args['kmer_size'], args['max_count'])
-            for i, f, c in fof:
+            for i, f, c, exp in fof:
                 dargs = deepcopy(args)
                 dargs['mode'] = mode_kh[dargs['mode']]
                 if ab_per_file:
@@ -906,7 +905,7 @@ def main():
                 for p in range(args['nb_partitions']):
                     log = f'{log_dir}/counter/counter{i}_{p}.log'
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
-                       f=f, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
+                       f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
                     )
             pool.push('C', count_commands)
 
@@ -935,10 +934,9 @@ def main():
                 output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
                 pool.push('O', output_commands)
             else:
-                for i, f, _ in fof:
-                    fb = os.path.basename(f)
-                    log = f'{log_dir}/split/split_{fb}.log'
-                    output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=f, fof=fof, file_id=i,file_basename=fb, log=log, **dargs)
+                for i, f, _, exp in fof:
+                    log = f'{log_dir}/split/split_{exp}.log'
+                    output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
                 pool.push('B', output_commands)
 
     with Timer() as total_time:

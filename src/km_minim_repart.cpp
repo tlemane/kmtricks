@@ -16,7 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
+#include <utility>
+#include <stdexcept>
+#include <exception>
 #include <kmtricks/logging.hpp>
+#include <kmtricks/utilities.hpp>
 #include "km_minim_repart.hpp"
 #include "signal_handling.hpp"
 
@@ -58,7 +62,9 @@ template<size_t span> struct Functor
     IProperties* props = parameter.props;
     
     Env* e = new Env(props->getStr(STR_RUN_DIR), "");
-    string in = get_str_fof(props->getStr(STR_URI_FILE));
+    fof_t fof = parse_km_fof(props->getStr(STR_URI_FILE));
+    string in = all_files(fof);
+    km::LOG(km::INFO) << in;
     IBank *bank = Bank::open(in);
     LOCAL (bank);
  

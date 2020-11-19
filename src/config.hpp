@@ -134,6 +134,7 @@ cs STR_NB_FILE      = "-nb-files";
 cs STR_HASHM        = "-hash-map";
 cs STR_LZ4_OUT      = "-lz4";
 cs STR_VEC_ONLY     = "-vec-only";
+cs STR_EXP_ID       = "-id";
 
 // commands
 cs PARTITIONER_CMD  = 
