@@ -84,14 +84,16 @@ private:
   inline int readb(size_t i);
 
 public:
-  vector<string> pfiles;
-  bool keep;
-  bool end;
-  K m_khash;
-  vector<C> counts;
-  size_t nb_files;
-  size_t vlen;
-  uchar *_bit_vector;
+  vector<string>   pfiles;
+  bool             keep;
+  bool             end;
+  K                m_khash;
+  vector<C>        counts;
+  size_t           nb_files;
+  size_t           vlen;
+  uchar            *_bit_vector;
+  vector<uint64_t> _non_solid;
+  vector<uint64_t> _saved;
 
 private:
   string _path;
@@ -111,12 +113,10 @@ private:
   vector<hshcount_t<K, C> *>  _hc;
   vector<uchar *>             _headers;
   vector<uint>                _abs_vec;
-  vector<uint64_t>            _non_solid;
-  vector<uint64_t>            _saved;
   vector<uint64_t>            _need_check;
 
-  bool _stats;
   uint _save_if;
+  bool _stats;
 };
 
 #ifndef _KM_LIB_INCLUDE_
@@ -137,6 +137,7 @@ Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint hea
     _m_k_set(false),
     _nm_kh_set(false),
     _vector(vector),
+    _save_if(save_if),
     _stats(stats)
 {
   init();
@@ -160,6 +161,7 @@ Merger<K, C>::Merger(string& fof_path, vector<uint>& abundances, uint recurrence
     _nm_kh_set(false),
     _vector(vector),
     _abs_vec(abundances),
+    _save_if(save_if),
     _stats(stats)
 {
   init();
@@ -199,7 +201,11 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
     _nm_kh_set(m._nm_kh_set),
     _vector(m._vector),
     _abs_vec(m._abs_vec),
-    _stats(m._stats)
+    _save_if(m._save_if),
+    _stats(m._stats),
+    _saved(m._saved),
+    _non_solid(m._non_solid),
+    _need_check(m._need_check)
 {
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -256,7 +262,11 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
   _nm_kh_set = m._nm_kh_set;
   _vector = m._vector;
   _abs_vec = m._abs_vec;
+  _save_if = m._save_if;
   _stats = m._stats;
+  _saved = m._saved;
+  _non_solid = m._non_solid;
+  _need_check = m._need_check;
 
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -350,16 +360,19 @@ int Merger<K, C>::init()
   end = false;
   counts.reserve(nb_files);
   
+  if (!_a_min)
+    if(_abs_vec.size() > 0 && _abs_vec.size() != nb_files)
+        throw runtime_error("Nb files != abundance_vec.size()");
+
   if (_save_if)
-  {
     _need_check.resize(nb_files);
-    if (_stats)
-    {
+  
+  if (_stats)
+  {
       _non_solid.resize(nb_files);
       _saved.resize(nb_files);
-    }
   }
-
+  
   for ( size_t i = 0; i < nb_files; i++ )
   {
     _hc.push_back(new hshcount_t<K, C>());
@@ -429,6 +442,8 @@ void Merger<K, C>::next()
           _non_solid[i]++;
         if (_save_if)
           _need_check.push_back(i);
+        else
+          counts[i] = 0;
       }
 
       if ( !readb(i))
