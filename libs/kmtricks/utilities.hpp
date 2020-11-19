@@ -21,6 +21,12 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
+#include <fstream>
+#include <tuple>
+#include <iterator>
+#include <stdexcept>
+#include <exception>
 
 /*! \defgroup Utilities
 */
@@ -46,6 +52,18 @@ void split(const std::string &s, char delim, X res)
     *res++ = item;
 }
 
+template<typename Callback>
+std::vector<std::string> split_strip(const std::string&s, char delim, Callback func)
+{
+  std::vector<std::string> elems;
+  std::istringstream iss(s);
+  std::string item;
+  auto res = std::back_inserter(elems);
+  while (std::getline(iss, item, delim))
+    *res++ = func(item);
+  return elems;
+}
+
 /*! \ingroup Utilities 
 *   \brief split string into std::vector<std::string>
 */
@@ -54,6 +72,51 @@ std::vector<std::string> split(const std::string &s, char delim)
   std::vector<std::string> elems;
   split(s, delim, std::back_inserter(elems));
   return elems;
+}
+
+using fof_t = std::vector<std::tuple<std::string, std::vector<std::string>, int>>;
+
+fof_t parse_km_fof(std::string fof_path)
+{
+  fof_t fof_vec;
+  std::ifstream in_fof(fof_path);
+  if (!in_fof.good()) throw std::runtime_error("Unable to open fof at " + fof_path + ".");
+  std::string line;
+  
+  while (getline(in_fof, line) && line.size() > 0)
+  {
+    auto rspace = [] (std::string s) -> std::string {
+      s.erase(remove(s.begin(), s.end(), ' '), s.end()); 
+      return s;
+    };
+    
+    if (rspace(line).size() == 0) continue;
+    std::vector<std::string> temp = split_strip(line, ':', rspace);
+    if (temp.size() != 2) throw std::runtime_error("Fof bad format1.");
+    std::string id = temp[0];
+    id.erase(remove(id.begin(), id.end(), ' '), id.end());
+
+    std::vector<std::string> temp2 = split_strip(temp[1], '!', rspace);
+    if (temp2.size() != 1 && temp2.size() != 2) throw std::runtime_error("Fof bad format2.");
+    int count = -1;
+    if (temp2.size() == 2) count = stoi(temp2[1]);
+    
+    std::vector<std::string> files = split_strip(temp2[0], ';', rspace);
+    fof_vec.push_back(make_tuple(id, files, count));
+  }
+  return fof_vec;
+}
+
+std::string all_files(fof_t& fof)
+{
+  std::vector<std::string> allv;
+  for (auto& elem: fof)
+    for (auto& f: std::get<1>(elem))
+      allv.push_back(f);
+  std::ostringstream alls;
+  const char* delim = ",";
+  std::copy(allv.begin(), allv.end(), std::ostream_iterator<std::string>(alls, delim));
+  return alls.str();
 }
 
 #ifdef __SIZEOF_INT128__
