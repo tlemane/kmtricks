@@ -87,6 +87,14 @@ const static map<string, int> output_format {
   {"bf_trp", 4}
 };
 
+const static map<int, string> output_format_str {
+  {0, "ascii"},
+  {1, "bin"},
+  {2, "pa"},
+  {3, "bf"},
+  {4, "bf_trp"}
+};
+
 const static map<string, int> exec_control {
   {"all", 0},
   {"part", 1},
@@ -135,7 +143,7 @@ cs STR_HASHM        = "-hash-map";
 cs STR_LZ4_OUT      = "-lz4";
 cs STR_VEC_ONLY     = "-vec-only";
 cs STR_EXP_ID       = "-id";
-
+cs STR_SAVE_IF      = "-save-if";
 // commands
 cs PARTITIONER_CMD  = 
   "{} {} -file {} -kmer-size {} -nb-cores {} -run-dir {} &> {} &";
