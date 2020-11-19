@@ -60,6 +60,7 @@ if (KMER_NB_BIT STREQUAL "ALL")
         set(KMER_NB_BIT 8 16 32 64 128)
     else()
         set(KMER_NB_BIT 8 16 32 64)
+    endif()
 endif()
 
 if (COUNT_NB_BIT STREQUAL "ALL")
