@@ -30,6 +30,7 @@ KmMerge::KmMerge() : Tool("km_merge")
   getParser()->push_back(new OptionOneParam(STR_PART_ID, "partition id", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min to keep a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min to keep a k-mer", true));
+  getParser()->push_back(new OptionOneParam(STR_SAVE_IF, "save a non-solid k-mer if it occurs in N other datasets", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
   getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "12"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
@@ -41,10 +42,24 @@ KmMerge::KmMerge() : Tool("km_merge")
 void KmMerge::parse_args()
 {
   _run_dir        = getInput()->getStr(STR_RUN_DIR);
-  _min_a          = getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
   _min_r          = getInput()->getInt(STR_REC_MIN);
   _id             = getInput()->getInt(STR_PART_ID);
   _mode           = output_format.at(getInput()->getStr(STR_MODE));
+  
+  string tmp      = getInput()->getStr(STR_KMER_ABUNDANCE_MIN);
+  if (System::file().doesExist(tmp))
+  {
+    ifstream in(tmp, ios::in);
+    string line;
+    while (getline(in, line))
+      _abs_vec.push_back(stoi(line));
+    _min_a = 0;
+  }
+  else
+    _min_a          = getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
+  
+  _save_if        = getInput()->getInt(STR_SAVE_IF);
+
   e = new Env(_run_dir, "");
   _fofpath = fmt::format(e->STORE_KMERS + PART_DIR + "/partition{}.fof", _id, _id);
 
@@ -165,6 +180,7 @@ void KmMerge::merge_to_bf_pa()
     current_hash++;
   }
   fout.close();
+
   string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
   IFile *sync_file = System::file().newFile(end_sign, "w");
   sync_file->flush();
@@ -193,11 +209,18 @@ void KmMerge::execute()
   bool setbv = _mode > 1;
 
   km::LOG(km::INFO) << "Fof:   " << _fofpath;
-  km::LOG(km::INFO) << "Mode:  " << _mode;
+  km::LOG(km::INFO) << "Mode:  " << output_format_str.at(_mode);
   km::LOG(km::INFO) << "A-min: " << _min_a;
   km::LOG(km::INFO) << "R-min: " << _min_r;
+  km::LOG(km::INFO) << "Save-if: " << _save_if;
 
-  _m = new Merger<kmtype_t, cntype_t>(_fofpath, _min_a, _min_r, hsize, setbv);
+  if (!_min_a && _abs_vec.size() > 0)
+    _m = new Merger<kmtype_t, cntype_t>(
+      _fofpath, _abs_vec, _min_r, hsize, setbv, _save_if, true);
+  else
+    _m = new Merger<kmtype_t, cntype_t>(
+      _fofpath, _min_a, _min_r, hsize, setbv, _save_if, true);
+  km::LOG(km::INFO) << "Save-if: " << _save_if;
   switch (_mode)
 {
   case 0:
@@ -220,6 +243,9 @@ void KmMerge::execute()
     break;
   }
 
+  km::LOG(km::INFO) << "ABS VEC: " << _abs_vec;
+  km::LOG(km::INFO) << "NON_SOLID: " << _m->_non_solid;
+  km::LOG(km::INFO) << "SAVED: " << _m->_saved;
   delete _m;
   delete e;
 }

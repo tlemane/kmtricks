@@ -53,5 +53,7 @@ private:
   string                _fofpath;
   uint8_t               _mode;
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
+  uint                  _save_if;
+  vector<uint>          _abs_vec;
 };
 
