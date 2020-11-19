@@ -23,6 +23,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <exception>
 #include <zlib.h>
 
@@ -62,7 +63,8 @@ template<typename K, typename C>
 class Merger
 {
 public:
-  Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector);
+  Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector,  uint save_if=0, bool stats=false);
+  Merger(string &fof_path, vector<uint>& abundances, uint recurrence, uint header_size, bool vector, uint save_if=0, bool stats=false);
 
   ~Merger();
 
@@ -105,14 +107,21 @@ private:
   bool _nm_kh_set;
   bool _vector;
 
-  vector<stream_t *> _st;
-  vector<hshcount_t<K, C> *> _hc;
-  vector<uchar *> _headers;
+  vector<stream_t *>          _st;
+  vector<hshcount_t<K, C> *>  _hc;
+  vector<uchar *>             _headers;
+  vector<uint>                _abs_vec;
+  vector<uint64_t>            _non_solid;
+  vector<uint64_t>            _saved;
+  vector<uint64_t>            _need_check;
+
+  bool _stats;
+  uint _save_if;
 };
 
 #ifndef _KM_LIB_INCLUDE_
 template<typename K, typename C>
-Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector)
+Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
   : keep(false),
     end(false),
     m_khash(0),
@@ -127,7 +136,31 @@ Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint hea
     _hsize(header_size),
     _m_k_set(false),
     _nm_kh_set(false),
-    _vector(vector)
+    _vector(vector),
+    _stats(stats)
+{
+  init();
+}
+
+template<typename K, typename C>
+Merger<K, C>::Merger(string& fof_path, vector<uint>& abundances, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
+  : keep(false),
+    end(false),
+    m_khash(0),
+    nb_files(0),
+    vlen(0),
+    _bit_vector(nullptr),
+    _path(fof_path),
+    _a_min(0),
+    _r_min(recurrence),
+    _nm_khash(0),
+    _buf_size((sizeof(K) + sizeof(C)) * 128),
+    _hsize(header_size),
+    _m_k_set(false),
+    _nm_kh_set(false),
+    _vector(vector),
+    _abs_vec(abundances),
+    _stats(stats)
 {
   init();
 }
@@ -164,7 +197,9 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
     _hsize(m._hsize),
     _m_k_set(m._m_k_set),
     _nm_kh_set(m._nm_kh_set),
-    _vector(m._vector)
+    _vector(m._vector),
+    _abs_vec(m._abs_vec),
+    _stats(m._stats)
 {
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -220,6 +255,8 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
   _m_k_set = m._m_k_set;
   _nm_kh_set = m._nm_kh_set;
   _vector = m._vector;
+  _abs_vec = m._abs_vec;
+  _stats = m._stats;
 
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -282,7 +319,6 @@ int Merger<K, C>::readb(size_t i)
   if ( _st[i]->begin >= _st[i]->end )
   {
     _st[i]->begin = 0;
-    //_st[i]->end = gzread(_st[i]->f, _st[i]->buf, _buf_size);
     _st[i]->f->read((char*)_st[i]->buf, _buf_size);
     _st[i]->end = _st[i]->f->gcount();
     if ( _st[i]->end == 0 )
@@ -290,8 +326,6 @@ int Merger<K, C>::readb(size_t i)
       _st[i]->eof = 1;
       return 0;
     }
-    //_st[i]->eof = _st[i]->f->eof();
-    //if (_st[i]->eof) return 0;
   }
   memcpy(&_hc[i]->khash, &_st[i]->buf[_st[i]->begin], sizeof(K));
   _st[i]->begin += sizeof(K);
@@ -315,13 +349,22 @@ int Merger<K, C>::init()
   _m_k_set = false;
   end = false;
   counts.reserve(nb_files);
+  
+  if (_save_if)
+  {
+    _need_check.resize(nb_files);
+    if (_stats)
+    {
+      _non_solid.resize(nb_files);
+      _saved.resize(nb_files);
+    }
+  }
 
   for ( size_t i = 0; i < nb_files; i++ )
   {
     _hc.push_back(new hshcount_t<K, C>());
     _st.push_back(new stream_t());
 
-    //_st[i]->f = gzopen(pfiles[i].c_str(), "r");
     _st[i]->f = new lz4_stream::istream(pfiles[i]);
     if ( !_st[i]->f )
       throw runtime_error("Unable to open " + pfiles[i]);
@@ -331,7 +374,6 @@ int Merger<K, C>::init()
     if ( _hsize > 0 )
     {
       _headers.push_back(new uchar[_hsize]());
-      //gzread(_st[i]->f, _headers[i], _hsize - 1);
       _st[i]->f->read((char*)_headers[i], _hsize-1);
       _headers[i][_hsize - 1] = '\0';
     }
@@ -340,7 +382,6 @@ int Merger<K, C>::init()
     {
       _hc[i]->khash_set = false;
       delete _st[i]->f;
-      //gzclose(_st[i]->f);
       delete[] _st[i]->buf;
     }
     else
@@ -360,11 +401,12 @@ template<typename K, typename C>
 void Merger<K, C>::next()
 {
   uint rec = 0;
+  uint solid_in = 0;
   keep = false;
   end = true;
   m_khash = _nm_khash;
   _nm_kh_set = false;
-
+  _need_check.clear();
   if ( _bit_vector )
     memset(_bit_vector, 0, vlen);
   for ( size_t i = 0; i < nb_files; i++ )
@@ -374,17 +416,25 @@ void Merger<K, C>::next()
       end = false;
       counts[i] = _hc[i]->count;
 
-      if ( _vector )
-        BITSET(_bit_vector, i);
-
-      if ( counts[i] >= _a_min )
+      if ( _a_min ? counts[i] >= _a_min : counts[i] >= _abs_vec[i] )
+      {
         rec++;
+        solid_in++;
+        if ( _vector )
+          BITSET(_bit_vector, i);
+      }
+      else
+      {
+        if (_stats)
+          _non_solid[i]++;
+        if (_save_if)
+          _need_check.push_back(i);
+      }
 
       if ( !readb(i))
       {
         _hc[i]->khash_set = false;
         delete _st[i]->f;
-        //gzclose(_st[i]->f);
         delete[] _st[i]->buf;
       }
     }
@@ -396,6 +446,17 @@ void Merger<K, C>::next()
       _nm_khash = _hc[i]->khash;
       _nm_kh_set = true;
     }
+  }
+  for (auto& p : _need_check)
+  {
+    if (solid_in >= _save_if)
+    {
+      _saved[p]++;
+      if (_vector)
+        BITSET(_bit_vector, p);
+    }
+    else
+      counts[p] = 0;
   }
   if ( rec >= _r_min )
     keep = true;
