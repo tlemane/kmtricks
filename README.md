@@ -6,8 +6,8 @@
 |------------------|-----------------|
 | [![Linux][1]][3] | [![osx][2]][3]  |
 
-[1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?use_travis_com=true
-[2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?use_travis_com=true
+[1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?
+[2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?
 [3]: https://travis-ci.com/github/tlemane/kmtricks
 
 
