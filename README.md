@@ -231,7 +231,7 @@ mkdir build ; cd build
 # Several example, use only one
 cmake .. # Default, here KMER_NB_BIT="32;64" and COUNT_NB_BIT="8;16;32"
 cmake .. -DKMER_NB_BIT="64;128" -DCOUNT_NB_BIT="32" # Select values
-cmake .. -DSIZE=ALL # All, corresponds to all available values
+cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL # All available values
 
 make -j8
 ```

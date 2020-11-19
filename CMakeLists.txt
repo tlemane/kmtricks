@@ -55,14 +55,17 @@ if (NOT COUNT_NB_BIT)
     set(COUNT_NB_BIT 8 16 32)
 endif()
 
-if (SIZE STREQUAL "ALL")
+if (KMER_NB_BIT STREQUAL "ALL")
     if (INT128_FOUND EQUAL 1)
         set(KMER_NB_BIT 8 16 32 64 128)
     else()
         set(KMER_NB_BIT 8 16 32 64)
-    endif()
-    set(COUNT_NB_BIT 8 16 32)
 endif()
+
+if (COUNT_NB_BIT STREQUAL "ALL")
+    set (COUNT_NB_BIT 8 16 32)
+endif()
+
 message("KMER NB BIT ${KMER_NB_BIT}")
 message("COUNT NB BIT ${COUNT_NB_BIT}")
 
