@@ -22,27 +22,28 @@ python3 ../../kmtricks.py run --file ${fof} --run-dir ./run_test --kmer-size ${k
 
 #check superkmers partitions
 echo -ne "Superkmers partitions ..."
-while IFS= read -r file
+for ((j=1; j<3; j++))
 do
     for (( i=0; i<${nbpart}; i++ ))
     do
-        file="$(basename -- $file)"
-        diff ./res/superkparts/${file}.superk/superKparts.${i} ./run_test/storage/superk_partitions/${file}.superk/superKparts.${i}
+        f1="./res/superkparts/D${j}.superk/superKparts.${i}"
+        f2="./run_test/storage/superk_partitions/D${j}.superk/superKparts.${i}"
+        diff ${f1} ${f2}
         check_exit_code
     done
-done < ${fof}
-echo -e "\rSuperkmers partitions ... ok"
+done
 
-#check hashes partitions
+echo -e "\rSuperkmers partitions ... ok"
+#
+##check hashes partitions
 echo -ne "Hash/Kmer partitions ..."
 for (( i=0; i<${nbpart}; i++ ))
 do
-    while IFS= read -r file
+    for ((j=1; j<3; j++)) 
     do
-        file="$(basename -- $file)"
-        diff ./res/kmerparts/partition_${i} ./run_test/storage/kmers_partitions/partition_${i}/${file}.kmer.lz4
+        diff ./res/kmerparts/partition_${i} ./run_test/storage/kmers_partitions/partition_${i}/D${j}.kmer.lz4
         check_exit_code
-    done < ${fof}
+    done
 done
 echo -e "\rHash/Kmer partitions ... ok"
 
