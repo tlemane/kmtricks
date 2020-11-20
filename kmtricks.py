@@ -692,20 +692,27 @@ class Timer():
         self.t2 = time.perf_counter()
         self.t = self.t2 - self.t1
     
-    def print(self, template: str='{}', r: int=2) -> int:
-        print(template.format(round(self.t, r)))
-        return round(self.t, r)
+    def print(self, prefix: str) -> int:
+        m, s = divmod(self.t, 60)
+        h, m = divmod(m, 60)
+        d, h = divmod(h, 24) 
+        print(prefix + f'{d:02.0f}:{h:02.0f}:{m:02.0f}:{s:02.2f}', 
+              file=sys.stderr)
 
 class Progress():
     def __init__(self, pattern: str=''):
         self.pattern: str = pattern
         self.keys:    dict = ddict(int)
         
-    def update(self, key: str=None):
+    def update(self, key: str=None) -> None:
         if key:
             self.keys[key] += 1
-        print(f'\r{self.pattern.format_map(self.keys)}', end='', file=sys.stderr)
+        if sys.stderr.isatty():
+            print(f'\r{self.pattern.format_map(self.keys)}', end='', file=sys.stderr)
 
+    def finish(self) -> None:
+        print(f'\r{self.pattern.format_map(self.keys)}', end='\n', file=sys.stderr)
+    
     def add(self, idx: str, nb:int):
         self.keys[idx] = 0
         self.keys[f'{idx}N'] = nb
@@ -771,6 +778,9 @@ class Pool:
         self.finish:    Set[ICommand] = set()
         self.finish_id: Set[str] = set(['E0'])
         self.running:   Set[ICommand] = set()
+        self.max_c:     Dict[str, int] = odict()
+        self.finish_c:  Dict[str, int] = odict()
+        self.curr_run:  Dict[str, int] = odict()
         self.cmds:      List[Tuple[str, odict]] = []
         self.nb:        Dict[str, int] = {}
         self.count:     int = 1
@@ -778,8 +788,11 @@ class Pool:
             self.log_cmd:   TextIO = open(log_cmd, 'a')
         self.progress:  Progress = progress
 
-    def push(self, idx: str, cmds: odict) -> None:
+    def push(self, idx: str, cmds: odict, max_concurrent: int) -> None:
         self.cmds.append((idx, cmds))
+        self.max_c[idx] = max_concurrent
+        self.curr_run[idx] = 0
+        self.finish_c[idx] = 0
         self.nb[idx] = len(cmds)
         self.count += self.nb[idx]
         self.progress.add(idx, self.nb[idx])
@@ -828,14 +841,37 @@ class Pool:
         return update
     
     def run_ready(self) -> None:
-        for cmd in copy(self.callable):
+        n = int(self.procs/10)
+        max_id = max(self.max_c)
+        cr = self.curr_run[max_id]
+        nb = n - cr
+        if nb > 0 and self.finish_c[max_id] < self.nb[max_id]:
+            largest = heapq.nlargest(nb, self.callable)
+            for cmd in largest:
+                cmd.run()
+                self.running.add(cmd)
+                self.available = max(self.available - cmd.cores, 0)
+                self.curr_run[cmd.idx] += 1
+                self.callable.remove(cmd)
+                if not self.available:
+                    break
+        heapq.heapify(self.callable)
+        
+        if not self.available:
+            return
+        
+        for _ in range(len(self.callable)):
+            cmd = heapq.heappop(self.callable)
+            if self.curr_run[cmd.idx] >= self.max_c[cmd.idx]:
+                heapq.heappush(self.callable, cmd)
+                break
             cmd.run()
             self.available = max(self.available - cmd.cores, 0)
             self.running.add(cmd)
-            self.callable.remove(cmd)
+            self.curr_run[cmd.idx] += 1
             if not self.available:
                 break
-    
+
     def check_finish(self) -> bool:
         finish = False
         for cmd in copy(self.running):
@@ -846,6 +882,8 @@ class Pool:
                 self.finish.add(cmd)
                 self.available += cmd.cores
                 self.running.remove(cmd)
+                self.curr_run[cmd.idx] -= 1
+                self.finish_c[cmd.idx] += 1
         return finish
 
     def killall(self) -> int:
@@ -901,7 +939,7 @@ def main():
             dargs['file'] = fof_copy
             log = f'{log_dir}/repartition.log'
             repart_commands['R'] = RepartitionCommand(log=log, **dargs)
-            pool.push('R', repart_commands)
+            pool.push('R', repart_commands, 1)
 
         superk_commands = odict()
         if (only == 2 or all_ and until > 1):
@@ -911,7 +949,7 @@ def main():
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
                     id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
                 )
-            pool.push('S', superk_commands)
+            pool.push('S', superk_commands, int(args['nb_cores']/4))
 
         count_commands = odict()
         if (only == 3 or all_ and until > 2):
@@ -926,7 +964,7 @@ def main():
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
                        f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
                     )
-            pool.push('C', count_commands)
+            pool.push('C', count_commands, args['nb_cores'])
 
         merge_commands = odict()
         if ((only == 4 or all_ and until > 3) and not args['skip_merge']):
@@ -937,7 +975,7 @@ def main():
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
                     part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs
                 )
-            pool.push('M', merge_commands)
+            pool.push('M', merge_commands, args['nb_cores'])
 
         output_commands = odict()
         bf_trp = args['mode'] == 'bf_trp'
@@ -949,17 +987,18 @@ def main():
                 dargs['file'] = fof_copy
                 log = f'{log_dir}/split/split.log'
                 output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
-                pool.push('O', output_commands)
+                pool.push('O', output_commands, 1)
             else:
                 for i, f, _, exp in fof:
                     log = f'{log_dir}/split/split_{exp}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
-                pool.push('B', output_commands)
+                pool.push('B', output_commands, args['nb_core']/2)
 
     with Timer() as total_time:
         pool.exec()
     
-    total_time.print('Done in {} s.')
+    progress_bar.finish()
+    total_time.print('Done in ')
 
 
 if __name__ == '__main__':
