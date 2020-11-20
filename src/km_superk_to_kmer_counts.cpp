@@ -52,9 +52,7 @@ struct Functor
     uint kmerSize = _config._kmerSize;
     uint max_memory = _config._max_memory;
 
-    char cop[256];
-    strcpy(cop, props->getStr(STR_URI_FILE).c_str()); // needed with osx as basename needs a non const char*
-    string prefix = basename(cop);
+    string prefix = props->getStr(STR_URI_FILE);
     uint min_abundance = props->getInt(STR_KMER_ABUNDANCE_MIN);
 
     vector<size_t> nbItemsPerBankPerPart; // vector of length > 1: offsets for multibank counting
@@ -168,7 +166,7 @@ KmCount::KmCount() : Tool("km_count")
     "max hash value", false, "0"));
 
   getParser()->push_back(new OptionOneParam(STR_URI_FILE,
-    "path to read file", true));
+    "dataset ID", true));
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR,
     "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN,

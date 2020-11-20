@@ -16,10 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-#include <fmt/format.h>
 #include <libgen.h>
+#include <fmt/format.h>
+#include <kmtricks/logging.hpp>
 #include "km_reads_to_superk.hpp"
 #include "signal_handling.hpp"
+
+km::log_config km::LOG_CONFIG;
 
 template<size_t span> struct Functor
 {
@@ -28,12 +31,11 @@ template<size_t span> struct Functor
     KmSuperK&       superk = parameter.superk;
     IProperties*  props = parameter.props;
 
+    string paths = props->getStr(STR_URI_FILE);
+    km::LOG(km::INFO) << "Paths: " << paths;
     IBank* bank = Bank::open(props->getStr(STR_URI_FILE));
     LOCAL (bank);
 
-    char cop[256];
-    strcpy(cop, props->getStr(STR_URI_FILE).c_str()); // needed with osx as basename needs a non const char*
-    string prefix = basename(cop);
     string _run_dir = props->getStr(STR_RUN_DIR);
 
     Env* e = new Env(_run_dir, "");
@@ -88,7 +90,7 @@ template<size_t span> struct Functor
     pInfo.saveInfoFile(name);
     _progress->finish();
 
-    string end_sign = e->SYNCHRO_S + fmt::format(END_TEMP_S, prefix);
+    string end_sign = e->SYNCHRO_S + fmt::format(END_TEMP_S, props->getStr(STR_EXP_ID));
     IFile* sync_file = System::file().newFile(end_sign, "w");
     sync_file->flush();
     delete e;
@@ -111,6 +113,9 @@ KmSuperK::KmSuperK() : Tool ("km_superk")
     "compress output super-k-mers files with lz4 compression", false, "0"), 0UL, false);
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
     "number of cores", true));
+
+  km::LOG_CONFIG.show_labels = true;
+  km::LOG_CONFIG.level = km::INFO;
 }
 
 void KmSuperK::execute()
