@@ -945,7 +945,7 @@ def main():
         if (only == 2 or all_ and until > 1):
             for i, f, _, exp in fof:
                 dargs = deepcopy(args)
-                log = f'{log_dir}/superk/superk_{i}.log'
+                log = f'{log_dir}/superk/superk_{exp}.log'
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
                     id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
                 )
