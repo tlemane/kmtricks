@@ -191,7 +191,7 @@ A1 : /path/to/fastq_A1_1
 B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2
 ```
 
-**Full example, with HowDeSBT compatibility**
+**Full example, with HowDeSBT compatibility TODO update**
 
 ```bash
 ls myreads1.fq.gz myreads2.fq.gz myreads3.fg.gz > file_of_files.txt # creates the file of files
