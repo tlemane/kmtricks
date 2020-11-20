@@ -949,7 +949,7 @@ def main():
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
                     id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
                 )
-            pool.push('S', superk_commands, int(args['nb_cores']/4))
+            pool.push('S', superk_commands, int(args['nb_cores']/2))
 
         count_commands = odict()
         if (only == 3 or all_ and until > 2):
