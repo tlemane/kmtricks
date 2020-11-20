@@ -27,6 +27,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <exception>
+#include <climits>
 
 /*! \defgroup Utilities
 */
