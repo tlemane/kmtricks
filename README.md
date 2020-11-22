@@ -8,7 +8,7 @@
 
 [1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?
 [2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?
-[3]: https://travis-ci.com/github/tlemane/kmtricks
+[3]: https://travis-ci.org/github/tlemane/kmtricks
 
 
 
