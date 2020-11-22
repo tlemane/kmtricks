@@ -6,6 +6,11 @@ set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+execute_process(COMMAND
+  git describe --always
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_SHA1)
+
 include(CheckTypeSize)
 set(INT128_FOUND 0)
 CHECK_TYPE_SIZE("__uint128_t" INT128)
@@ -160,6 +165,7 @@ file(APPEND ${INFOS} "COUNTTYPE: ${COUNTTYPE}\n")
 file(APPEND ${INFOS} "Debug: ${debug}\n")
 file(APPEND ${INFOS} "TEST: ${TEST}\n")
 file(APPEND ${INFOS} "TEST_VERBOSITY: ${TEST_VERBOSITY}\n")
+file(APPEND ${INFOS} "GIT SHA1: ${GIT_SHA1}\n")
 file(APPEND ${INFOS} "Binaries: ${PROJECT_SOURCE_DIR}/bin\n")
 file(APPEND ${INFOS} "kmtricks static library: ${PROJECT_SOURCE_DIR}/bin/lib\n")
 file(APPEND ${INFOS} "kmtricks ex snippets: ${PROJECT_SOURCE_DIR}/bin/snippets\n")

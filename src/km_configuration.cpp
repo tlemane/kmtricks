@@ -137,6 +137,7 @@ void Kmtricks::init()
   km::LOG(km::INFO, log_file) << "Max hash / hasher: " << _max_hash << " " << _hasher;
   km::LOG(km::INFO, log_file) << "Window size:       " << window_size;
   km::LOG(km::INFO, log_file) << "Minimizer size:    " << minimsize;
+  km::LOG(km::INFO, log_file) << "SHA1:              " << GIT_SHA1;
   log_file.close();
 }
 
@@ -148,6 +149,12 @@ void Kmtricks::execute()
 
 int main(int argc, char* argv[])
 {
+  if (argc && string(argv[1]) == "sha1")
+  {
+    cerr << GIT_SHA1 << endl;
+    exit(EXIT_SUCCESS);
+  }
+
   try 
   {
     Kmtricks().run(argc, argv);
