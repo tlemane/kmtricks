@@ -311,9 +311,7 @@ void Merger<K, C>::initp()
 {
   ifstream fof(_path, ios::in);
   if (!fof.good())
-  {
-    cerr << "Unable to open " + _path + "." << endl;
-  }
+    throw runtime_error("Unable to open " + _path + ".");
   string line;
   while ( getline(fof, line))
   {
