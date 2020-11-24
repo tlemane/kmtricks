@@ -978,7 +978,7 @@ def main():
             pool.push('M', merge_commands, args['nb_cores'])
 
         output_commands = odict()
-        bf_trp = args['mode'] == 'bf_trp'
+        bf_trp = args['mode'] == 'bf_trp' or (args['mode'] == 'bf' and args['skip_merge'])
         split = args['split'] != 'none'
         
         if ((only == 5 or all_ and until > 4) and bf_trp and split):
@@ -992,7 +992,7 @@ def main():
                 for i, f, _, exp in fof:
                     log = f'{log_dir}/split/split_{exp}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
-                pool.push('B', output_commands, args['nb_core']/2)
+                pool.push('B', output_commands, args['nb_cores']/2)
 
     with Timer() as total_time:
         pool.exec()
