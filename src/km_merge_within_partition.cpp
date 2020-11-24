@@ -32,7 +32,7 @@ KmMerge::KmMerge() : Tool("km_merge")
   getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min to keep a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_SAVE_IF, "save a non-solid k-mer if it occurs in N other datasets", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
-  getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "12"));
+  getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
 
   km::LOG_CONFIG.show_labels=true;
@@ -220,7 +220,7 @@ void KmMerge::execute()
   else
     _m = new Merger<kmtype_t, cntype_t>(
       _fofpath, _min_a, _min_r, hsize, setbv, _save_if, true);
-  km::LOG(km::INFO) << "Save-if: " << _save_if;
+  
   switch (_mode)
 {
   case 0:

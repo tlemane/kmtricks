@@ -47,9 +47,9 @@ public:
 
     : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4), _min_abundance(min_abundance), _out_part(out_part), _partId(partId), _window(window/8), _window_bits(window)
   {
-    strcpy(_head, "kmerPart");
-    sprintf(_b, "%03d", _partId);
-    strcat(_head, _b);
+    //strcpy(_head, "kmerPart");
+    //sprintf(_b, "%03d", _partId);
+    //strcat(_head, _b);
     _part_file.rdbuf()->pubsetbuf(_buffer, 8192);
     
     if (_window) _out_part += ".vec";
@@ -77,8 +77,8 @@ public:
 
     if (_window)
       _vec.resize(_window);
-    else
-      _writer->write(_head, strlen(_head));
+    //else
+    //  _writer->write(_head, strlen(_head));
   }
 
   ~CountProcessorDumpPart()
