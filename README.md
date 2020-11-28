@@ -2,15 +2,8 @@
 
 [![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
 
-| linux            | osx             |
-|------------------|-----------------|
-| [![Linux][1]][3] | [![osx][2]][3]  |
-
-[1]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/1?
-[2]: https://travis-matrix-badges.herokuapp.com/repos/tlemane/kmtricks/branches/master/2?
-[3]: https://travis-ci.org/github/tlemane/kmtricks
-
-
+![linux](https://github.com/tlemane/kmtricks/workflows/linux/badge.svg)
+![macOS](https://github.com/tlemane/kmtricks/workflows/macOS/badge.svg)
 
 kmtricks is a tool suite for counting kmers, and constructing bloom filters or counted kmer matrices from large and numerous read sets. 
 
