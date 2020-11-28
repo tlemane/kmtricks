@@ -44,6 +44,25 @@
 //!\ingroup Utilities
 #define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
 
+using fof_t = std::vector<std::tuple<std::string, std::vector<std::string>, int>>;
+
+template<typename X>
+void split(const std::string &s, char delim, X res);
+
+template<typename Callback>
+std::vector<std::string> split_strip(const std::string&s, char delim, Callback func);
+
+std::vector<std::string> split(const std::string &s, char delim);
+
+fof_t parse_km_fof(std::string fof_path);
+
+std::string all_files(fof_t& fof);
+
+#ifdef __SIZEOF_INT128__
+std::ostream& operator<<(std::ostream& dest, __uint128_t value);
+#endif
+
+#ifndef _KM_LIB_INCLUDE_
 template <typename X>
 void split(const std::string &s, char delim, X res)
 {
@@ -74,8 +93,6 @@ std::vector<std::string> split(const std::string &s, char delim)
   split(s, delim, std::back_inserter(elems));
   return elems;
 }
-
-using fof_t = std::vector<std::tuple<std::string, std::vector<std::string>, int>>;
 
 fof_t parse_km_fof(std::string fof_path)
 {
@@ -144,6 +161,7 @@ operator<<( std::ostream& dest, __uint128_t value )
     }
     return dest;
 }
+#endif
 #endif
 
 //! \cond HIDDEN_SYMBOLS
