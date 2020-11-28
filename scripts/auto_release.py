@@ -60,11 +60,17 @@ LINUX, OSX = system == 'Linux', system == 'Darwin'
 
 PACKAGE_NAME = f'kmtricks-{kmtricks_version}-bin-{system}.tar.gz'
 PACKAGE_PATH = f'{py_path}/../build/{PACKAGE_NAME}'
+try:
+    d = sys.argv[1]
+    PACKAGE_PATH = f'{d}/{PACKAGE_NAME}'
+except:
+    pass
+
 PACKAGE_EXISTS = os.path.exists(PACKAGE_PATH)
 
 GH_TOKEN = os.environ['GH_TOKEN']
 
-BUILD_INFO = 'Linux: Ubuntu 18.04, gcc 7.5' + '\n' + 'Darwin: OS X 10.13.6, Apple LLVM 9.1.0'
+BUILD_INFO = ''
 
 release_desc_path = f'{py_path}/../doc/releases/desc-{kmtricks_version}.txt'
 if os.path.exists(release_desc_path):
@@ -99,6 +105,8 @@ if not CURRENT_VERSION == [0,0,0]:
         if PACKAGE_EXISTS:
             release = lz4_repo.create_git_release(f'v{kmtricks_version}', f'Release v{kmtricks_version}', BUILD_INFO, False, prerelease=False)
             release.upload_asset(PACKAGE_PATH)
+        else:
+            print('Package bad version')
     elif CURRENT_VERSION == LATEST_VERSION:
         if PACKAGE_NAME not in assets_name:
             latest_release.upload_asset(PACKAGE_PATH)
