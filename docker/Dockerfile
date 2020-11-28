@@ -13,7 +13,7 @@ RUN cd /opt \
     && cd kmtricks \
     && mkdir build \
     && cd build \
-    && cmake .. -DSIZE=ALL \
+    && cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL \
     && make
 
 RUN cd /opt/kmtricks && chmod +x kmtricks.py
