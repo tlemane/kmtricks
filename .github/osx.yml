@@ -1,0 +1,51 @@
+name: macOS
+
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Env
+        run: cmake -E make_directory ${{runner.workspace}}/build
+      
+      - name: Configure
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DTEST=1 -DMAKE_RELEASE=1
+      
+      - name: Build
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: cmake --build . --config $BUILD_TYPE -j2
+
+      - name: Test
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: ctest -C $BUILD_TYPE
+
+      - name: Package
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: make package
+      
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+        
+      - name: Auto release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo $GH_TOKEN
+          ls $GITHUB_WORKSPACE
+          pwd
+          python -m pip install --upgrade pip
+          pip install PyGithub
+          python3 $GITHUB_WORKSPACE/scripts/auto_release.py ${{runner.workspace}}/build
