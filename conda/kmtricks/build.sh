@@ -20,7 +20,7 @@
 
 mkdir build-conda
 cd build-conda
-cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL
+cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL -DHOWDE=1
 make -j4
 cd .. 
 mkdir -p $PREFIX/bin
