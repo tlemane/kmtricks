@@ -94,7 +94,7 @@ public:
   //! \param m :
   //! \param lendian :
   //! \param def :
-  BitMatrix(size_t n, size_t m, bool lendian, bool def);
+  BitMatrix(size_t n, size_t m, bool lendian, bool def = false);
 
   //! \brief Constructor, matrix from file
   //! \param file :
@@ -212,7 +212,7 @@ BitMatrix::~BitMatrix()
 }
 
 
-BitMatrix::BitMatrix(size_t n, size_t m, bool lendian, bool def = false)
+BitMatrix::BitMatrix(size_t n, size_t m, bool lendian, bool def)
   : _n(n / 8),
     _m(m),
     _nb(n),

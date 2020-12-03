@@ -17,11 +17,12 @@
 *****************************************************************************/
 
 #pragma once
+#include "lz4_stream.hpp"
+#include "bitmatrix.hpp"
 #include "code.hpp"
 #include "sequences.hpp"
 #include "utilities.hpp"
 #include "merger.hpp"
 #include "repartition.hpp"
 #include "skreader.hpp"
-#include "lz4_stream.hpp"
 #include "logging.hpp"

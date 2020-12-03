@@ -24,12 +24,14 @@ template class Kmer<uint8_t>;
 template class Superk<uint8_t>;
 template class Hasher<uint8_t>;
 template class Validator<uint8_t>;
+template class SuperkReader<uint8_t>;
 
 template class Code<uint16_t>;
 template class Kmer<uint16_t>;
 template class Superk<uint16_t>;
 template class Hasher<uint16_t>;
 template class Validator<uint16_t>;
+template class SuperkReader<uint16_t>;
 
 template class Code<uint32_t>;
 template class Kmer<uint32_t>;
@@ -37,6 +39,7 @@ template class Superk<uint32_t>;
 template class Hasher<uint32_t>;
 template class Validator<uint32_t>;
 template class Minimizer<uint32_t>;
+template class SuperkReader<uint32_t>;
 
 template class Code<uint64_t>;
 template class Kmer<uint64_t>;
@@ -44,6 +47,7 @@ template class Superk<uint64_t>;
 template class Hasher<uint64_t>;
 template class Validator<uint64_t>;
 template class Minimizer<uint64_t>;
+template class SuperkReader<uint64_t>;
 
 template class Merger<uint8_t, uint8_t>;
 template class Merger<uint8_t, uint16_t>;
@@ -71,6 +75,7 @@ template class Kmer<__uint128_t>;
 template class Superk<__uint128_t>;
 template class Hasher<__uint128_t>;
 template class Validator<__uint128_t>;
+template class SuperkReader<__uint128_t>;
 
 template class Merger<uint8_t, __uint128_t>;
 template class Merger<uint16_t, __uint128_t>;
