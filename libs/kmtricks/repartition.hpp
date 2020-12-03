@@ -177,6 +177,7 @@ uint16_t RepartFile::get(uint64_t minimizer_value)
 {
   if (!is_load)
     load();
+  if (minimizer_value => _nb_minims) return 0;
   return _repart_table[minimizer_value];
 }
 #endif
