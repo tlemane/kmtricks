@@ -11,9 +11,6 @@
 [submodule "thirdparty/HowDeSBT"]
 	path = thirdparty/HowDeSBT
 	url = https://github.com/tlemane/HowDeSBT
-[submodule "thirdparty/Criterion"]
-	path = thirdparty/Criterion
-    url = https://github.com/Snaipe/Criterion
 [submodule "thirdparty/lz4"]
 	path = thirdparty/lz4
 	url = https://github.com/lz4/lz4
