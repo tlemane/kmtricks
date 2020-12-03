@@ -158,7 +158,7 @@ void KmConvert::from_merge()
       header->hashSeed1    = (uint64_t)0;
       header->hashSeed2    = (uint64_t)0;
       header->hashModulus  = (uint64_t)_filter_size;
-      header->numBits      = (uint64_t)2;
+      header->numBits      = (uint64_t)_filter_size;
       header->numVectors   = (int)1;
       header->setSizeKnown = false;
       header->setSize      = 0;
