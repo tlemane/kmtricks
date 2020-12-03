@@ -149,6 +149,7 @@ if (HOWDE)
             CMAKE_ARGS -DKMTRICKS_LIB=${PROJECT_SOURCE_DIR}/bin/lib/
             CMAKE_ARGS -DKMTRICKS_INC=${PROJECT_SOURCE_DIR}/libs/
             CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
+            CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND "")
     add_dependencies(howdesbt SDSL)
 else()
