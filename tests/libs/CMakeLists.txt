@@ -1,19 +1,17 @@
-file(GLOB TestFiles RELATIVE ${PROJECT_SOURCE_DIR}/tests/libs *.cpp)
-foreach( source_file ${TestFiles})
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs)
-    string ( REPLACE ".cpp" "" name ${source_file})
-    add_executable(${name} ${source_file})
-    add_dependencies(${name} Criterion LZ4)
-    target_include_directories(${name} PUBLIC ${CRITERION_INCLUDE} ${LZ_INCLUDE})
-    target_link_directories(${name} PUBLIC ${CRITERION_LIB_DIR} ${TESTTEST})
-    target_link_libraries(${name} criterion z ${OPENMP} ${TESTTESTL} lz4)
-    add_test(
-            NAME ${name}
-            COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./${name} ${CRITERION_VERBOSE}"
-    )
-endforeach( source_file ${TestFiles})
+file(GLOB TEST_FILES "test_*_g.cpp")
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs/)
+add_executable(kmtests "googletest_main.cpp" ${TEST_FILES})
+target_include_directories(kmtests PUBLIC ${GINCLUDE} ${LZ_INCLUDE})
+target_link_directories(kmtests PUBLIC ${GLIB_DIR} ${PROJECT_SOURCE_DIR}/bin/lib)
+target_link_libraries(kmtests gtest gtest_main pthread kmtricks lz4 ZLIB::ZLIB ${OPENMP})
+add_dependencies(kmtests googletest LZ4 kmtricks)
 
 add_test(
-        NAME lib_test
-        COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./run_test.sh"
+    NAME kmtests
+    COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./kmtests"
+)
+
+add_test(
+    NAME lib_test
+    COMMAND sh -c "cd ${PROJECT_SOURCE_DIR}/tests/libs/ ; ./run_test.sh"
 )

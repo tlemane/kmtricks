@@ -29,8 +29,8 @@ add_custom_target(copy_lz4
 )
 
 if (TEST)
-    ExternalProject_Add(Criterion
-            PREFIX Criterion
-            SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/Criterion
-            INSTALL_COMMAND "")
+    ExternalProject_Add(googletest
+        PREFIX googletest
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/googletest
+        INSTALL_COMMAND "")
 endif()

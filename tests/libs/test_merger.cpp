@@ -1,18 +1,19 @@
-#include <criterion/criterion.h>
+#include <gtest/gtest.h>
+#define _KM_LIB_INCLUDE_
 #include <kmtricks/merger.hpp>
 
 using namespace km;
 typedef uint64_t kt;
 typedef uint8_t  kc;
 
-Test(merger, merger_build)
+TEST(merger, merger_build)
 {
   string path = "./merge_data/fof.txt";
   Merger<kt, kc> m(path, 1, 1, 0, true);
-  cr_assert(m.nb_files == 2);
+  EXPECT_EQ(m.nb_files, 2);
 }
 
-Test(merger, merger_next)
+TEST(merger, merger_next)
 {
   string path = "./merge_data/fof.txt";
   Merger<kt, kc> m(path, 1, 2, 0, true);
@@ -27,15 +28,15 @@ Test(merger, merger_next)
     m.next();
     if (m.keep)
     {
-      cr_assert(m.m_khash == values[i]);
-      cr_assert(m.counts[0] == count1[i]);
-      cr_assert(m.counts[1] == count2[i]);
+      EXPECT_EQ(m.m_khash, values[i]);
+      EXPECT_EQ(m.counts[0], count1[i]);
+      EXPECT_EQ(m.counts[1], count2[i]);
       i++;
     }
   }
 }
 
-Test(merger, merger_get_kmer)
+TEST(merger, merger_get_kmer)
 {
   string path = "./merge_data/fof.txt";
   Merger<kt, kc> m(path, 1, 2, 0, true);
@@ -50,7 +51,7 @@ Test(merger, merger_get_kmer)
     {
       Kmer<kt> k(values[i], 32, false);
       Kmer<kt> k2 = m.get_kmer(32);
-      cr_assert(k == k2);
+      EXPECT_EQ(k, k2);
       i++;
     }
   }

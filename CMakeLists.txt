@@ -121,18 +121,10 @@ add_subdirectory(libs/snippets)
 enable_testing()
 set(TEST_VERBOSITY 0)
 if (TEST)
-    if (TEST_VERBOSITY EQUAL 1)
-        set(CRITERION_VERBOSE "--verbose")
-    else()
-        set(CRITERION_VERBOSE "")
-    endif()
-
-    set(CRITERION_DIR ${THIRDPARTY_DIR}/Criterion)
-    set(CRITERION_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/Criterion/src/Criterion-build)
-
-    set(CRITERION_INCLUDE ${CRITERION_DIR}/include)
-    set(CRITERION_LIB_DIR ${CRITERION_BUILD_DIR})
-
+    set(GDIR ${THIRDPARTY_DIR}/googletest)
+    set(GBUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty/googletest/src/googletest-build)
+    set(GINCLUDE ${GDIR}/googletest/include)
+    set(GLIB_DIR ${GBUILD_DIR}/lib)
     add_subdirectory(tests/libs) # kmtricks lib tests
     add_subdirectory(tests/kmtricks) # kmtricks pipeline test
 else()
@@ -142,15 +134,15 @@ endif()
 if (HOWDE)
     include(ExternalProject)
     ExternalProject_Add(howdesbt
-            PREFIX howdesbt
-            SOURCE_DIR ${THIRDPARTY_DIR}/HowDeSBT
-            CMAKE_ARGS -DSDSLINC=${SDSL_INCLUDE}
-            CMAKE_ARGS -DSDSLLIB=${SDSL_LIB_DIR}
-            CMAKE_ARGS -DKMTRICKS_LIB=${PROJECT_SOURCE_DIR}/bin/lib/
-            CMAKE_ARGS -DKMTRICKS_INC=${PROJECT_SOURCE_DIR}/libs/
-            CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
-            CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            INSTALL_COMMAND "")
+        PREFIX howdesbt
+        SOURCE_DIR ${THIRDPARTY_DIR}/HowDeSBT
+        CMAKE_ARGS -DSDSLINC=${SDSL_INCLUDE}
+        CMAKE_ARGS -DSDSLLIB=${SDSL_LIB_DIR}
+        CMAKE_ARGS -DKMTRICKS_LIB=${PROJECT_SOURCE_DIR}/bin/lib/
+        CMAKE_ARGS -DKMTRICKS_INC=${PROJECT_SOURCE_DIR}/libs/
+        CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        INSTALL_COMMAND "")
     add_dependencies(howdesbt SDSL)
 else()
     set(HOWDE 0)

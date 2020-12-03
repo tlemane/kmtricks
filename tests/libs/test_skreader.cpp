@@ -1,25 +1,26 @@
-#include <criterion/criterion.h>
+#include <gtest/gtest.h>
+#define _KM_LIB_INCLUDE_
 #include <kmtricks/skreader.hpp>
 #include <kmtricks/sequences.hpp>
 
 using namespace km;
 typedef uint64_t kt;
 
-Test(skstorage, skstorage_build)
+TEST(skstorage, skstorage_build)
 {
   string path = "./skreader_data/sk_part";
   string prefix = "superKparts.";
   SuperkStorage s(path, prefix, 4);
 
-  cr_assert(s.nb_files() == 4);
+  EXPECT_EQ(s.nb_files(), 4);
 
   for (int i=0; i<s.nb_files(); i++)
   {
-    cr_assert(s._parts[i].is_open());
+    EXPECT_TRUE(s._parts[i].is_open());
   }
 }
 
-Test(skstorage, skstorage_read_block)
+TEST(skstorage, skstorage_read_block)
 {
   string path = "./skreader_data/sk_part";
   string prefix = "superKparts.";
@@ -30,14 +31,14 @@ Test(skstorage, skstorage_read_block)
   uint  nb_bytes = 0;
 
   int r = s.read_block(&buffer, &size, &nb_bytes, 0);
-  cr_assert(r == 72);
-  cr_assert(*buffer == 4);
+  EXPECT_EQ(r, 72);
+  EXPECT_EQ(*buffer, 4);
 
   Superk<kt> superk(++buffer, 23, 20, true);
-  cr_assert(superk.str_value() == "CATACAGAGACAGCAGCAGAGCA");
+  EXPECT_EQ(superk.str_value(), "CATACAGAGACAGCAGCAGAGCA");
 }
 
-Test(skreader, skreader_build)
+TEST(skreader, skreader_build)
 {
   string path = "./skreader_data/sk_part";
   string prefix = "superKparts.";
@@ -47,7 +48,7 @@ Test(skreader, skreader_build)
   Superk<kt> superk(kmersize);
 }
 
-Test(skreader, skreader_next)
+TEST(skreader, skreader_next)
 {
   string path = "./skreader_data/sk_part";
   string prefix = "superKparts.";
@@ -56,7 +57,7 @@ Test(skreader, skreader_next)
   SuperkReader<kt> reader(&s, kmersize);
   Superk<kt> superk(kmersize);
   reader.next_superk(0, &superk);
-  cr_assert(superk.str_value() == "CATACAGAGACAGCAGCAGAGCA");
+  EXPECT_EQ(superk.str_value(), "CATACAGAGACAGCAGCAGAGCA");
   reader.next_superk(0, &superk);
-  cr_assert(superk.str_value() == "GAGCAGCACAAACGAGACACAAAAAAAGAG");
+  EXPECT_EQ(superk.str_value(), "GAGCAGCACAAACGAGACACAAAAAAAGAG");
 }
