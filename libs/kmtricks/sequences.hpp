@@ -488,6 +488,7 @@ public:
 private:
   void _minimizer_from_kmer();
   void _minimizer_from_superk();
+  K    _rev_comp(K& minimizer);
 
 private:
   Kmer<K>     *_kmer;
@@ -1350,6 +1351,20 @@ void Minimizer<K>::set_default(string minimizer)
   }
 }
 
+template<typename K>
+K Minimizer<K>::_rev_comp(K& minimizer)
+{
+  K res = 0;
+  K seq = minimizer;
+  K _mmer_mask = numeric_limits<K>::max() >> ((sizeof(K)*8)-(_msize*2));
+  for ( int c = _msize - 1; c >= 0; c-- )
+  {
+    res <<= 2;
+    res |= _code->_NToB[_code->_revC[seq & 3]];
+    seq >>= 2;
+  }
+  return res & _mmer_mask;
+}
 
 template<typename K>
 void Minimizer<K>::_minimizer_from_kmer()
@@ -1361,19 +1376,20 @@ void Minimizer<K>::_minimizer_from_kmer()
   K _bink = _kmer->value();
   int nb_mmers = _kmer->size() - _msize + 1;
   K tmp;
-
+  K rev;
   for (int i=nb_mmers-1; i>=0; i--)
   {
     tmp = (_bink >> (i*2)) & _mmer_mask;
+    rev = _rev_comp(tmp);
+    if (rev < tmp) tmp = rev;
     if (_check)
     {
       if ((*_is_valid_minimizer)(tmp, _msize) && tmp < _minimizer)
         _minimizer = tmp;
     }
     else
-    if (tmp < _minimizer) _minimizer = tmp;
+      if (tmp < _minimizer) _minimizer = tmp;
   }
-
   if (_minimizer == numeric_limits<K>::max())
     _minimizer = _default;
 }
