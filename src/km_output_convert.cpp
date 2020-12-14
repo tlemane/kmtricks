@@ -68,10 +68,10 @@ void KmConvert::parse_args()
   _split_str = getInput()->getStr(STR_SPLIT);
   _howde = filter_format.at(_split_str) != 1;
   _sdsl = true;
+  _kmer_size = getInput()->getInt(STR_KMER_SIZE);
   
   if (_from_merge)
   {
-    _kmer_size = getInput()->getInt(STR_KMER_SIZE);
     _nb_files = getInput()->getInt(STR_NB_FILE);
     _vlen = NMOD8(NBYTE(_nb_files));
   }
@@ -233,7 +233,7 @@ void KmConvert::from_count()
     header->hashSeed1    = (uint64_t)0;
     header->hashSeed2    = (uint64_t)0;
     header->hashModulus  = (uint64_t)_filter_size;
-    header->numBits      = (uint64_t)2;
+    header->numBits      = (uint64_t)_filter_size;
     header->numVectors   = (int)1;
     header->setSizeKnown = false;
     header->setSize      = 0;
