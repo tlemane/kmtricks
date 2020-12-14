@@ -1,4 +1,4 @@
-file(GLOB TEST_FILES "test_*_g.cpp")
+file(GLOB TEST_FILES "test_*.cpp")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/libs/)
 add_executable(kmtests "googletest_main.cpp" ${TEST_FILES})
 target_include_directories(kmtests PUBLIC ${GINCLUDE} ${LZ_INCLUDE})
