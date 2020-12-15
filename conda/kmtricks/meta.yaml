@@ -11,3 +11,5 @@ requirements:
     - zlib
     - make
     - cmake
+  run:
+    - zlib
