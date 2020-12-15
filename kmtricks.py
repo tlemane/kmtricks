@@ -37,9 +37,9 @@ from types import FunctionType
 from shutil import rmtree, copyfile
 from copy import deepcopy, copy
 
-__version__ = '0.0.0'
+__version__ = '0.0.1'
 
-MIN_PYTHON = (3, 5)
+MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
     sys.exit('Python {}.{} or later is required\n'.format(*MIN_PYTHON))
 
@@ -129,7 +129,7 @@ class OptionsParser:
         )
 
         self.global_parser.add_argument('--version', action='version',
-            version=f'kmtricks v{__version__}',
+            version=f'kmtricks v{__version__}, git_sha1 : {get_sha1()}',
             help='Display kmtricks version')
 
         self.global_parser.add_argument('-h', '--help', action='help',
@@ -390,6 +390,12 @@ if not os.path.exists(f'{BIN_DIR}/km_configuration'):
 
 BUILD_INFO = f'{os.path.dirname(os.path.abspath(__file__))}/build/build_infos.txt'
 
+def get_sha1():
+    p = subprocess.Popen([f'{BIN_DIR}/km_configuration', 'sha1'], 
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _, err = p.communicate()
+    return err.decode()
+
 ENV_PREFIX_ID = 'E'
 ENV_CLI_TEMPLATE = (
     f"{BIN_DIR}/km_configuration "
@@ -444,7 +450,6 @@ COUNT_CLI_TEMPLATE = (
     "-vec-only {skip_merge} "
     "-nb-cores {nb_cores}"
 )
-#VEC ONLY
 
 MERGE_PREFIX_ID = 'M'
 MERGE_CLI_TEMPLATE = (
