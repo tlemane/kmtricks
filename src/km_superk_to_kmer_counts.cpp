@@ -180,7 +180,7 @@ KmCount::KmCount() : Tool("km_count")
   getParser()->push_back(new OptionOneParam(STR_VEC_ONLY,
     "0: hash/count, 1: bit-vector -> when merge is not required", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_NB_CORES,
-    "not used, needed by gatb args parser", true));
+    "not used, needed by gatb args parser", true), 0UL, false);
   getParser()->push_back(new OptionOneParam(STR_KEEP_TMP,
     "keep superkmers files", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_LZ4_OUT,

@@ -149,9 +149,15 @@ void Kmtricks::execute()
 
 int main(int argc, char* argv[])
 {
-  if (argc && string(argv[1]) == "sha1")
+  if (argc > 1 && string(argv[1]) == "sha1")
   {
     cerr << GIT_SHA1 << endl;
+    exit(EXIT_SUCCESS);
+  }
+
+  if (argc > 1 && string(argv[1]) == "version")
+  {
+    cerr << "kmtricks v" << PROJECT_VER << endl;
     exit(EXIT_SUCCESS);
   }
 

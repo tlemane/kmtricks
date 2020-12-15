@@ -33,7 +33,7 @@ KmMerge::KmMerge() : Tool("km_merge")
   getParser()->push_back(new OptionOneParam(STR_SAVE_IF, "save a non-solid k-mer if it occurs in N other datasets", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
   getParser()->push_back(new OptionOneParam(STR_HSIZE, "file header size in byte", false, "0"));
-  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"));
+  getParser()->push_back(new OptionOneParam(STR_NB_CORES, "not used, needed by gatb args parser", false, "1"), 0UL, false);
 
   km::LOG_CONFIG.show_labels=true;
   km::LOG_CONFIG.level=km::INFO;

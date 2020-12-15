@@ -89,7 +89,7 @@ Example: `./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir m
 
 For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
 
-Example: `./bin/km_reads_to_superk -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
+Example: `./bin/km_reads_to_superk -id S1 -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
 
 #### Module `km_superk_to_kmer_counts`: from super kmers to counted elements 
 
@@ -109,7 +109,7 @@ Example: `./bin/km_merge_within_partition -run-dir my_directory_output_name -par
 
 Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
 
-Example: `./bin/km_output_convert -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
+Example: `./bin/km_output_convert from_merge -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
 
 ### kmtricks pipeline
 
