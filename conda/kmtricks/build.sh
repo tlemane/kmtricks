@@ -23,7 +23,13 @@ cd build-conda
 cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL -DHOWDE=1
 make -j4
 cd .. 
+
 mkdir -p $PREFIX/bin
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/include/kmtricks
+
 cp -r ./bin/* $PREFIX/bin
+cp ./bin/lib/* $PREFIX/lib
+cp ./libs/kmtricks/*.hpp $PREFIX/include/kmtricks
 cp ./kmtricks.py $PREFIX/bin
 chmod +x $PREFIX/bin/kmtricks.py

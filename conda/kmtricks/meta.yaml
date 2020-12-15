@@ -3,7 +3,7 @@ package:
   version: "0.0.0"
 
 source:
-  path: ../../
+  git_url: https://github.com/tlemane/kmtricks
 
 requirements:
   build:
