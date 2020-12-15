@@ -223,6 +223,7 @@ make -j8
 
 `kmtricks.py` pipeline automatically selects the binaries to be used according to parameters or provides compilation instructions if the required binaries are missing.
 
+A fork of HowDeSBT compatible with kmtricks bf is available. To compile it use: `-DHOWDE=1`. The index construction (i.e `howdesbt cluster` and `howdesbt build`) is equivalent to [classical HowDeSBT construction](https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial#3-create-a-tree-topology). However, query is different, use `howdesbt queryKm` instead of `howdesbt query`.
 ## Test
 
 ```bash
