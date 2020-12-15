@@ -200,6 +200,15 @@ All execution logs are stored in the `my_directory_output_name/logs` directory.
 In addition to modules, the `libs/kmtricks` directory contains headers. They provide a framework for creating independent tools. The `libs/snippets` directory provides usage examples of those librairies.
 
 ## Install
+<details><summary><strong>From conda</strong></summary>
+
+```bash
+conda install -c tlemane kmtricks
+```
+
+</details>
+
+<details><summary><strong>From source</strong></summary>
 
 Maximal size of k-mers and maximal stored counts must be set at compile time for some kmtricks binaries. 
 
@@ -224,6 +233,8 @@ make -j8
 `kmtricks.py` pipeline automatically selects the binaries to be used according to parameters or provides compilation instructions if the required binaries are missing.
 
 A fork of HowDeSBT compatible with kmtricks bf is available. To compile it use: `-DHOWDE=1`. The index construction (i.e `howdesbt cluster` and `howdesbt build`) is equivalent to [classical HowDeSBT construction](https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial#3-create-a-tree-topology). However, query is different, use `howdesbt queryKm` instead of `howdesbt query`.
+
+
 ## Test
 
 ```bash
@@ -231,7 +242,8 @@ cd build
 cmake .. -DTEST=1
 ctest CTestTestfile.cmake
 ```
-
+</details>
+<br>
 **Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
 
 ## Contacts
