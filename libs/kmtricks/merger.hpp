@@ -25,7 +25,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <exception>
+#include <unordered_map>
 #include <zlib.h>
+
 
 #include "utilities.hpp"
 #include "sequences.hpp"
@@ -94,6 +96,8 @@ public:
   uchar            *_bit_vector;
   vector<uint64_t> _non_solid;
   vector<uint64_t> _saved;
+  vector<uint>     total;
+  vector<uint>     total_w_saved;
 
 private:
   string _path;
@@ -205,7 +209,9 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
     _stats(m._stats),
     _saved(m._saved),
     _non_solid(m._non_solid),
-    _need_check(m._need_check)
+    _need_check(m._need_check),
+    total(m.total),
+    total_w_saved(m.total_w_saved)
 {
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -267,6 +273,8 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
   _saved = m._saved;
   _non_solid = m._non_solid;
   _need_check = m._need_check;
+  total = m.total;
+  total_w_saved = m.total_w_saved;
 
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -357,7 +365,9 @@ int Merger<K, C>::init()
   _m_k_set = false;
   end = false;
   counts.reserve(nb_files);
-  
+  total.resize(nb_files, 0);
+  total_w_saved.resize(nb_files, 0);
+
   if (!_a_min)
     if(_abs_vec.size() > 0 && _abs_vec.size() != nb_files)
         throw runtime_error("Nb files != abundance_vec.size()");
@@ -367,8 +377,8 @@ int Merger<K, C>::init()
   
   if (_stats)
   {
-      _non_solid.resize(nb_files);
-      _saved.resize(nb_files);
+    _non_solid.resize(nb_files);
+    _saved.resize(nb_files);
   }
   
   for ( size_t i = 0; i < nb_files; i++ )
@@ -433,6 +443,7 @@ void Merger<K, C>::next()
         solid_in++;
         if ( _vector )
           BITSET(_bit_vector, i);
+        total[i] += counts[i];
       }
       else
       {
@@ -465,6 +476,7 @@ void Merger<K, C>::next()
     if (solid_in >= _save_if)
     {
       _saved[p]++;
+      total_w_saved[p] += counts[p];
       if (_vector)
         BITSET(_bit_vector, p);
     }
