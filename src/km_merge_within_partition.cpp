@@ -246,6 +246,9 @@ void KmMerge::execute()
   km::LOG(km::INFO) << "ABS VEC: " << _abs_vec;
   km::LOG(km::INFO) << "NON_SOLID: " << _m->_non_solid;
   km::LOG(km::INFO) << "SAVED: " << _m->_saved;
+  km::LOG(km::INFO) << "TOTAL W/O: " << _m->total;
+  km::LOG(km::INFO) << "TOTAL W: " << _m->total_w_saved;
+  
   delete _m;
   delete e;
 }
