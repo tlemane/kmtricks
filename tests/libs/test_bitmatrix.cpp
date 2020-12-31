@@ -60,12 +60,11 @@ TEST(BitMatrix, bitmatrix_tog_byte)
 TEST(BitMatrix, bitmatrix_tranpose)
 {
   srand(time(NULL));
-  int i, j;
   BitMatrix mat(16, 2, true);
   for (int n=0; n<20; n++)
   {
-    i = rand() % 16;
-    j = rand() % 16;
+    int i = rand() % 16;
+    int j = rand() % 16;
     mat.set_bit(i, j, true);
   }
 

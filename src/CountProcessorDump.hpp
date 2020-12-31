@@ -39,17 +39,16 @@ public:
   CountProcessorDumpPart(
     size_t kmerSize,
     CountNumber min_abundance,
-    string out_part,
+    const string& out_part,
     uint partId,
     bool lz4,
     size_t nbPartsPerPass = 0,
     size_t window = 0)
 
-    : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4), _min_abundance(min_abundance), _out_part(out_part), _partId(partId), _window(window/8), _window_bits(window)
+    : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4),
+      _min_abundance(min_abundance), _out_part(out_part), _partId(partId),
+      _window(window/8), _window_bits(window), _hk(0), _hcount(0)
   {
-    //strcpy(_head, "kmerPart");
-    //sprintf(_b, "%03d", _partId);
-    //strcat(_head, _b);
     _part_file.rdbuf()->pubsetbuf(_buffer, 8192);
     
     if (_window) _out_part += ".vec";
@@ -77,8 +76,6 @@ public:
 
     if (_window)
       _vec.resize(_window);
-    //else
-    //  _writer->write(_head, strlen(_head));
   }
 
   ~CountProcessorDumpPart()
@@ -160,8 +157,6 @@ private:
   ofstream  _part_file;
   ostream   *_writer;
   char      _buffer[8192];
-  char      _b[4];
-  char      _head[12];
   kmtype_t  _hk;
   cntype_t  _hcount;
   uint      _partId;

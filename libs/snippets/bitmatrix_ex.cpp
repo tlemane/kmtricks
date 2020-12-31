@@ -20,13 +20,11 @@
 using namespace km;
 int main(int argc, char* argv[])
 {
-  int nb = 16; // nb line in bits
-  int m = 2;   // nb cols in bytes
-
   try
   {
+    int nb = 16; // nb line in bits
+    int m = 2;   // nb cols in bytes
     BitMatrix* mat = new BitMatrix(nb, m, true);
-
     for (int i=0; i<nb; i++)
       for (int j=0; j<m; j++)
       {

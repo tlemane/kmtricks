@@ -22,7 +22,13 @@
 
 km::log_config km::LOG_CONFIG;
 
-KmMerge::KmMerge() : Tool("km_merge")
+KmMerge::KmMerge()
+: Tool("km_merge"),
+  _m(nullptr),
+  e(nullptr),
+  _lower_hash(0),
+  _upper_hash(0),
+  _mode(0)
 {
   setParser(new OptionsParser("km_merge_within_partition"));
 
