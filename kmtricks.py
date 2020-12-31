@@ -723,11 +723,11 @@ class Timer():
         self.t = 0
         self.t1 = 0
         self.t2 = 0
-    
+
     def __enter__(self):
         self.t1 = time.perf_counter()
         return self
-    
+
     def __exit__(self, type, value, traceback):
         self.t2 = time.perf_counter()
         self.t = self.t2 - self.t1
