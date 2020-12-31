@@ -109,10 +109,10 @@ Usage:
 class LOG
 {
 public:
-    LOG (levels level, std::ostream&os = std::cerr)
+    explicit LOG (levels level, std::ostream&os = std::cerr)
         : level(level), cond(true), was_used(false), out(os) { init(); }
 
-    LOG (levels level, bool conditional, std::ostream&os = std::cerr)
+    explicit LOG (levels level, bool conditional, std::ostream&os = std::cerr)
         : level(level), cond(conditional), was_used(false), out(os) { init(); }
 
     void init()

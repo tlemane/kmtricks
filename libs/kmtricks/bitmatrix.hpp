@@ -270,13 +270,16 @@ BitMatrix::BitMatrix(const BitMatrix &b)
 
 BitMatrix &BitMatrix::operator=(const BitMatrix &b)
 {
-  _n = b._n;
-  _m = b._m;
-  _nb = b._nb;
-  _mb = b._mb;
-  _le = b._le;
-  matrix = new uchar[_nb * _m]();
-  copy(&b.matrix[0], &b.matrix[(_nb * _m) - 1], matrix);
+  if (this != &b)
+  {
+    _n = b._n;
+    _m = b._m;
+    _nb = b._nb;
+    _mb = b._mb;
+    _le = b._le;
+    matrix = new uchar[_nb * _m]();
+    copy(&b.matrix[0], &b.matrix[(_nb * _m) - 1], matrix);
+  }
   return *this;
 }
 

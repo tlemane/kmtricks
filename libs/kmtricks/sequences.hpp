@@ -71,7 +71,7 @@ public:
   XorHasher() { };
   ~XorHasher() { };
 
-  uint64_t operator()(K data, uint64_t seed)
+  uint64_t operator()(K data, uint64_t seed) override
   {
     uint64_t hash = seed;
     uint64_t key = static_cast<uint64_t>(data);
@@ -137,20 +137,20 @@ public:
   //! \brief Constructor, empty kmer
   //! \param canonical :
   //! \param encoding :
-  Kmer(bool canonical, Code<K> *encoding = nullptr);
+  explicit Kmer(bool canonical, Code<K> *encoding = nullptr);
 
   //! \brief Constructor, from string
   //! \param kmer : 
   //! \param canonical :
   //! \param encoding :
-  Kmer(string kmer, bool canonical, Code<K> *encoding = nullptr);
+  explicit Kmer(const string& kmer, bool canonical, Code<K> *encoding = nullptr);
 
   //! \brief Constructor, from unsigned int
   //! \param kmer :
   //! \param kmer_size :
   //! \param canonical :
   //! \param encoding :
-  Kmer(K kmer, size_t kmer_size, bool canonical, Code<K> *encoding = nullptr);
+  explicit Kmer(K kmer, size_t kmer_size, bool canonical, Code<K> *encoding = nullptr);
 
   //! \brief Destructor
   ~Kmer();
@@ -261,36 +261,36 @@ public:
   //! \brief less than operator
   //! \param value
   //! \return true if this < that
-  bool operator<(string value) const {return _bin_kmer < Kmer<K>(value, true).value();}
+  bool operator<(const string& value) const {return _bin_kmer < Kmer<K>(value, true).value();}
   //! \brief greater than operator
   //! \param value
   //! \return true if this > that
-  bool operator>(string value) const {return _bin_kmer > Kmer<K>(value, true).value();}
+  bool operator>(const string& value) const {return _bin_kmer > Kmer<K>(value, true).value();}
   //! \brief not equal than operator
   //! \param value
   //! \return true != this != that
-  bool operator!=(string value) const {return _bin_kmer != Kmer<K>(value, true).value();}
+  bool operator!=(const string& value) const {return _bin_kmer != Kmer<K>(value, true).value();}
   //! \brief equal operator
   //! \param value
   //! \return true if this == that
-  bool operator==(string value) const {return _bin_kmer == Kmer<K>(value, true).value();}
+  bool operator==(const string& value) const {return _bin_kmer == Kmer<K>(value, true).value();}
 
-  //! \brief less than operator
-  //! \param value
-  //! \return true if this < that
-  bool operator<(const char *value) const {return _bin_kmer < Kmer<K>(value, true).value();}
-  //! \brief greater than operator
-  //! \param value
-  //! \return true if this > that
-  bool operator>(const char *value) const {return _bin_kmer > Kmer<K>(value, true).value();}
-  //! \brief not equal than operator
-  //! \param value
-  //! \return true != this != that
-  bool operator!=(const char *value) const {return _bin_kmer != Kmer<K>(value, true).value();}
-  //! \brief equal operator
-  //! \param value
-  //! \return true if this == that
-  bool operator==(const char *value) const {return _bin_kmer == Kmer<K>(value, true).value();}
+  ////! \brief less than operator
+  ////! \param value
+  ////! \return true if this < that
+  //bool operator<(const char *value) const {return _bin_kmer < Kmer<K>(value, true).value();}
+  ////! \brief greater than operator
+  ////! \param value
+  ////! \return true if this > that
+  //bool operator>(const char *value) const {return _bin_kmer > Kmer<K>(value, true).value();}
+  ////! \brief not equal than operator
+  ////! \param value
+  ////! \return true != this != that
+  //bool operator!=(const char *value) const {return _bin_kmer != Kmer<K>(value, true).value();}
+  ////! \brief equal operator
+  ////! \param value
+  ////! \return true if this == that
+  //bool operator==(const char *value) const {return _bin_kmer == Kmer<K>(value, true).value();}
 
 private:
   Code<K> *_code;
@@ -320,13 +320,13 @@ public:
   //! \brief Constructor, empty superk
   //! \param kmer_size :
   //! \param encoding :
-  Superk(size_t kmer_size, Code<K> *encoding = nullptr);
+  explicit Superk(size_t kmer_size, Code<K> *encoding = nullptr);
   
   //! \brief Constructor, from string
   //! \param superkmer :
   //! \param kmer_size :
   //! \param encoding :
-  Superk(string superkmer, size_t kmer_size, Code<K> *encoding = nullptr);
+  explicit Superk(string superkmer, size_t kmer_size, Code<K> *encoding = nullptr);
   
   //! \brief Constructor, from buffer, 2-bit encoded array
   //! \param buffer :
@@ -334,7 +334,7 @@ public:
   //! \param kmer_size :
   //! \param gatb_format :
   //! \param encoding :
-  Superk(uchar* buffer, size_t superk_size, size_t kmer_size,
+  explicit Superk(uchar* buffer, size_t superk_size, size_t kmer_size,
          bool gatb_format = false, Code<K> *encoding = nullptr);
   
   //! \brief Destructor
@@ -367,15 +367,15 @@ public:
   bool operator!=(Superk<K> const &s) const {return str_value().compare(s.str_value()) != 0;}
   bool operator==(Superk<K> const &s) const {return str_value().compare(s.str_value()) == 0;}
 
-  bool operator<(const char *value) const {return str_value().compare(value) < 0;}
-  bool operator>(const char *value) const {return str_value().compare(value) > 0;}
-  bool operator!=(const char *value) const {return str_value().compare(value) != 0;}
-  bool operator==(const char *value) const {return str_value().compare(value) == 0;}
+  //bool operator<(const char *value) const {return str_value().compare(value) < 0;}
+  //bool operator>(const char *value) const {return str_value().compare(value) > 0;}
+  //bool operator!=(const char *value) const {return str_value().compare(value) != 0;}
+  //bool operator==(const char *value) const {return str_value().compare(value) == 0;}
 
-  bool operator<(string value) const {return str_value().compare(value) < 0;}
-  bool operator>(string value) const {return str_value().compare(value) > 0;}
-  bool operator!=(string value) const {return str_value().compare(value) != 0;}
-  bool operator==(string value) const {return str_value().compare(value) == 0;}
+  bool operator<(const string& value) const {return str_value().compare(value) < 0;}
+  bool operator>(const string& value) const {return str_value().compare(value) > 0;}
+  bool operator!=(const string& value) const {return str_value().compare(value) != 0;}
+  bool operator==(const string& value) const {return str_value().compare(value) == 0;}
 
   void operator++(int) {_kmer_index++;};
   void operator--(int) {_kmer_index--;}
@@ -475,20 +475,24 @@ public:
   bool operator!=(K const value) const {return _minimizer != value;}
   bool operator==(K const value) const {return _minimizer == value;}
 
-  bool operator<(string value) const {return _minimizer < _code->encode(value, value.size());}
-  bool operator>(string value) const {return _minimizer > _code->encode(value, value.size());}
-  bool operator!=(string value) const {return _minimizer != _code->encode(value, value.size());}
-  bool operator==(string value) const {return _minimizer == _code->encode(value, value.size());}
+  bool operator<(const string& value) const
+  {return _minimizer < _code->encode(value, value.size());}
+  bool operator>(const string& value) const
+  {return _minimizer > _code->encode(value, value.size());}
+  bool operator!=(const string& value) const
+  {return _minimizer != _code->encode(value, value.size());}
+  bool operator==(const string& value) const
+  {return _minimizer == _code->encode(value, value.size());}
 
-  bool operator<(const char *value) const {return _minimizer < _code->encode(value, strlen(value));}
-  bool operator>(const char *value) const {return _minimizer > _code->encode(value, strlen(value));}
-  bool operator!=(const char *value) const {return _minimizer != _code->encode(value, strlen(value));}
-  bool operator==(const char *value) const {return _minimizer == _code->encode(value, strlen(value));}
+  //bool operator<(const char *value) const {return _minimizer < _code->encode(value, strlen(value));}
+  //bool operator>(const char *value) const {return _minimizer > _code->encode(value, strlen(value));}
+  //bool operator!=(const char *value) const {return _minimizer != _code->encode(value, strlen(value));}
+  //bool operator==(const char *value) const {return _minimizer == _code->encode(value, strlen(value));}
 
 private:
   void _minimizer_from_kmer();
   void _minimizer_from_superk();
-  K    _rev_comp(K& minimizer);
+  K    _rev_comp(const K& minimizer);
 
 private:
   Kmer<K>     *_kmer;
@@ -535,7 +539,7 @@ Kmer<K>::Kmer(bool canonical, Code<K> *encoding)
 
 
 template<typename K>
-Kmer<K>::Kmer(string kmer, bool canonical, Code<K> *encoding)
+Kmer<K>::Kmer(const string& kmer, bool canonical, Code<K> *encoding)
   :
   _code(encoding),
   _custom_hash(false),
@@ -1092,16 +1096,15 @@ Kmer<K> Superk<K>::get_first()
 template<typename K>
 Kmer<K> Superk<K>::get_kmer(int n, bool canonical)
 {
-  int start, end, s;
   size_t tmp_size = 0;
   K value = 0;
-  start = n/4;
-  end = start+(_ksize/4)+1;
+  int start = n/4;
+  int end = start+(_ksize/4)+1;
 
   bool first = true;
   for ( int i = start; i <= end; i++ )
   {
-    s = 6;
+    int s = 6;
     if (first)
     {
       s = 6-(2*(n%4));
@@ -1121,28 +1124,24 @@ Kmer<K> Superk<K>::get_kmer(int n, bool canonical)
       }
     }
     if (tmp_size == 0)
-    {
-      return Kmer<K>(value, _ksize, canonical, _code);
-    }
+      break;
   }
-  return 0;
+  return Kmer<K>(value, _ksize, canonical, _code);
 }
 
 
 template<typename K>
 void Superk<K>::get_kmer(int n, Kmer<K> *kmer)
 {
-  int start, end, s;
-  bool first;
   size_t tmp_size = 0;
   K value = 0;
-  start = n/4;
-  end = start+(_ksize/4)+1;
+  int start = n/4;
+  int end = start+(_ksize/4)+1;
 
-  first = true;
+  bool first = true;
   for ( int i = start; i <= end; i++ )
   {
-    s = 6;
+    int s = 6;
     if (first)
     {
       s = 6-(2*(n%4));
@@ -1197,6 +1196,7 @@ template<typename K>
 Minimizer<K>::Minimizer(size_t msize, K default_minim, Validator<K> *validator)
 : _kmer(nullptr),
   _superk(nullptr),
+  _code(nullptr),
   _msize(msize),
   _default(default_minim),
   _is_valid_minimizer(validator),
@@ -1352,7 +1352,7 @@ void Minimizer<K>::set_default(string minimizer)
 }
 
 template<typename K>
-K Minimizer<K>::_rev_comp(K& minimizer)
+K Minimizer<K>::_rev_comp(const K& minimizer)
 {
   K res = 0;
   K seq = minimizer;
@@ -1375,12 +1375,10 @@ void Minimizer<K>::_minimizer_from_kmer()
   K _mmer_mask = numeric_limits<K>::max() >> ((sizeof(K)*8)-(_msize*2));
   K _bink = _kmer->value();
   int nb_mmers = _kmer->size() - _msize + 1;
-  K tmp;
-  K rev;
   for (int i=nb_mmers-1; i>=0; i--)
   {
-    tmp = (_bink >> (i*2)) & _mmer_mask;
-    rev = _rev_comp(tmp);
+    K tmp = (_bink >> (i*2)) & _mmer_mask;
+    K rev = _rev_comp(tmp);
     if (rev < tmp) tmp = rev;
     if (_check)
     {
@@ -1405,11 +1403,10 @@ void Minimizer<K>::_minimizer_from_superk()
   K _mmer_mask = numeric_limits<K>::max() >> ((sizeof(K)*8)-(_msize*2));
   K _bink = kmer.value();
   int nb_mmers = kmer.size() - _msize + 1;
-  K tmp;
 
   for (int i=nb_mmers-1; i>=0; i--)
   {
-    tmp = (_bink >> (i*2)) & _mmer_mask;
+    K tmp = (_bink >> (i*2)) & _mmer_mask;
     if (_check)
     {
       if ((*_is_valid_minimizer)(tmp, _msize) && tmp < _minimizer)

@@ -87,12 +87,12 @@ public:
   *   \param nt_to_bits : array that maps nt char to 2-bit value
   *   \param revc : array that maps nt (2-bit) to rev_nt (nt char)
   */
-  Code(uchar *bits_to_nt, uchar *nt_to_bits, uchar *revc);
+  explicit Code(uchar *bits_to_nt, uchar *nt_to_bits, uchar *revc);
 
   /*! \brief Constructor, nt_to_bits and revc are deducted from bits_to_nt
   *   \param bits_to_nt : array that maps 2-bit value to nt char
   */
-  Code(uchar *bits_to_nt);
+  explicit Code(uchar *bits_to_nt);
 
   /*! \brief Destructor.
   */
