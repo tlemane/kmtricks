@@ -96,7 +96,6 @@ void KmConvert::init()
   if (_from_merge)
   {
     fof_t fof = parse_km_fof(_e->FOF_FILE);
-    uint cnt = 0;
     for (auto& elem: fof)
     {
       string opath;
@@ -177,7 +176,7 @@ void KmConvert::from_merge()
       header->info[0].offset = bw;
 
       size_t numBytes = sdsl::serialize(b, bf);
-      bw += numBytes;
+      //bw += numBytes;
       header->info[0].numBytes = numBytes;
       header->info[0].filterInfo = (uint64_t)0;
 
@@ -252,7 +251,7 @@ void KmConvert::from_count()
     header->info[0].offset = bw;
 
     size_t numBytes = sdsl::serialize(b, out);
-    bw += numBytes;
+    //bw += numBytes;
     header->info[0].numBytes = numBytes;
     header->info[0].filterInfo = (uint64_t)0;
 

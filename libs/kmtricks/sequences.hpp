@@ -930,11 +930,9 @@ void Superk<K>::_build_from_gatb_format(uchar *buffer)
 {
   uchar *ptr = buffer;
   uint8_t nbK = _superksize-_ksize+1;
-  uchar newbyte = 0;
+  uchar newbyte;
 
   int rem_size = _ksize;
-
-  K first_kmer = 0;
   K Tnewbyte;
 
   int nbr = 0;
@@ -945,7 +943,6 @@ void Superk<K>::_build_from_gatb_format(uchar *buffer)
     newbyte = *ptr; ptr++;
     _bin_superk[index] = newbyte; index--;
     Tnewbyte = newbyte;
-    first_kmer = first_kmer | (Tnewbyte << (8*nbr));
     rem_size -= 4; nbr++;
   }
 
@@ -956,12 +953,10 @@ void Superk<K>::_build_from_gatb_format(uchar *buffer)
     newbyte = *ptr ; ptr++;
     _bin_superk[index] = newbyte;
     Tnewbyte = newbyte;
-    first_kmer = first_kmer | (Tnewbyte << (8*nbr));
     uid = rem_size;
   }
 
   uint8_t rem = nbK;
-  uchar newnt = 0;
 
   size_t curr_offset = _ksize/4;
   size_t shift_size = _ksize % 4 ? (6-(2*((_ksize%4)-1))) : 6 ;
@@ -978,7 +973,7 @@ void Superk<K>::_build_from_gatb_format(uchar *buffer)
       Tnewbyte = newbyte;
       uid = 0;
     }
-    newnt = (Tnewbyte >> (2*uid)) & 3; uid++;
+    uchar newnt = (Tnewbyte >> (2*uid)) & 3; uid++;
     _bin_superk[curr_offset] <<= 2;
     _bin_superk[curr_offset] |= newnt;
     nbnt++;
