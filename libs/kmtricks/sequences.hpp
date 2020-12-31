@@ -413,7 +413,7 @@ public:
   //! \param msize :
   //! \param default_minim :
   //! \param validator :
-  Minimizer(size_t msize, K default_minim = DEFAULT_MINIMIZER, Validator<K> *validator = nullptr);
+  explicit Minimizer(size_t msize, K default_minim = DEFAULT_MINIMIZER, Validator<K> *validator = nullptr);
 
   //! \brief Constructor, from kmer with default validator
   //! \see Kmer
@@ -421,7 +421,7 @@ public:
   //! \param msize :
   //! \param check_validity :
   //! \param default_minim :
-  Minimizer(Kmer<K> *kmer, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
+  explicit Minimizer(Kmer<K> *kmer, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
   
   //! \brief Constructor, from kmer with custom validator
   //! \see Kmer
@@ -429,7 +429,7 @@ public:
   //! \param msize :
   //! \param validator :
   //! \param default_minim :
-  Minimizer(Kmer<K> *kmer, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
+  explicit Minimizer(Kmer<K> *kmer, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
 
   //! \brief Constructor, from superk with default validator
   //! \see Superk
@@ -437,7 +437,7 @@ public:
   //! \param msize :
   //! \param check_validity :
   //! \param default_minim :
-  Minimizer(Superk<K> *superk, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
+  explicit Minimizer(Superk<K> *superk, size_t msize, bool check_validity, K default_minim = DEFAULT_MINIMIZER);
 
   //! \brief Constructor, from superk with custom validator
   //! \see Superk
@@ -445,7 +445,7 @@ public:
   //! \param msize :
   //! \param validator :
   //! \param default_minim :
-  Minimizer(Superk<K> *superk, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
+  explicit Minimizer(Superk<K> *superk, size_t msize, Validator<K> *validator = nullptr, K default_minim = DEFAULT_MINIMIZER);
 
   //! \brief Destructor
   ~Minimizer();
@@ -954,13 +954,12 @@ void Superk<K>::_build_from_gatb_format(uchar *buffer)
   if (rem_size>0)
   {
     newbyte = *ptr ; ptr++;
-    _bin_superk[index] = newbyte; index--;
+    _bin_superk[index] = newbyte;
     Tnewbyte = newbyte;
     first_kmer = first_kmer | (Tnewbyte << (8*nbr));
     uid = rem_size;
   }
 
-  first_kmer = first_kmer & _kmer_mask;
   uint8_t rem = nbK;
   uchar newnt = 0;
 
@@ -1198,6 +1197,7 @@ Minimizer<K>::Minimizer(size_t msize, K default_minim, Validator<K> *validator)
   _superk(nullptr),
   _code(nullptr),
   _msize(msize),
+  _check(false),
   _default(default_minim),
   _is_valid_minimizer(validator),
   _out_valid(false)

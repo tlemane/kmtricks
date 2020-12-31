@@ -48,7 +48,7 @@ public:
    *
    * @param sink The stream to write compressed data to
    */
-  basic_ostream(std::ostream& sink)
+  explicit basic_ostream(std::ostream& sink)
     : std::ostream(new output_buffer(sink)),
       buffer_(dynamic_cast<output_buffer*>(rdbuf())) {
     assert(buffer_);
@@ -77,7 +77,7 @@ private:
     output_buffer(const output_buffer &) = delete;
     output_buffer& operator= (const output_buffer &) = delete;
 
-    output_buffer(std::ostream &sink)
+    explicit output_buffer(std::ostream &sink)
       : sink_(sink),
       // original author has a todo here: "No need to recalculate the dest_buf_ size on each construction"
         dest_buf_(LZ4F_compressBound(src_buf_.size(), nullptr)),
@@ -185,7 +185,7 @@ public:
    *
    * @param source The stream to read LZ4 compressed data from
    */
-  basic_istream(std::istream& source, bool uncompressed = false)
+  explicit basic_istream(std::istream& source, bool uncompressed = false)
     : std::istream(new input_buffer(source, uncompressed)),
       buffer_(dynamic_cast<input_buffer*>(rdbuf())) {
     assert(buffer_);
@@ -193,7 +193,7 @@ public:
 
   /* same but takes a filename as input
    */
-  basic_istream(const string filename)
+  explicit basic_istream(const string& filename)
     : std::istream(new input_buffer(filename, determine_uncompressed(filename))),
       buffer_(dynamic_cast<input_buffer*>(rdbuf())) {
     assert(buffer_);
@@ -225,7 +225,7 @@ private:
       init_input_buffer();
     }
 
-    input_buffer(const string filename, bool uncompressed)
+    input_buffer(const string& filename, bool uncompressed)
       : stream_(new ifstream(filename, ios::in|ios::binary)),
         source_(*stream_),
         offset_(0),

@@ -38,7 +38,7 @@ public:
   //! \brief Constructor
   //! \param m_path
   //! \param f_path 
-  RepartFile(string m_path, string f_path = "");
+  explicit RepartFile(const string& m_path, const string& f_path = "");
 
   //! \brief Destructor
   ~RepartFile();
@@ -78,7 +78,7 @@ extern const uint32_t MAGIC_NUMBER;
 #ifndef _KM_LIB_INCLUDE_
 const uint32_t MAGIC_NUMBER = 0x12345678;
 
-RepartFile::RepartFile(string m_path, string f_path)
+RepartFile::RepartFile(const string& m_path, const string& f_path)
 : _path(m_path),
   _path_freq(f_path),
   _nb_part(0),
@@ -104,6 +104,7 @@ RepartFile::RepartFile(const RepartFile &r)
   _path_freq(r._path_freq),
   _nb_part(r._nb_part),
   _nb_minims(r._nb_minims),
+  _nb_pass(r._nb_pass),
   _has_minim_freq(r._has_minim_freq),
   _magic(r._magic),
   _freq_order(nullptr),
@@ -120,20 +121,24 @@ RepartFile::RepartFile(const RepartFile &r)
 
 RepartFile& RepartFile::operator=(const RepartFile &r)
 {
-  _path = r._path;
-  _path_freq = r._path_freq;
-  _nb_part = r._nb_part;
-  _nb_minims = r._nb_minims;
-  _has_minim_freq = r._has_minim_freq;
-  _magic = r._magic;
-  _freq_order = nullptr;
-  _repart_table = r._repart_table;
-  is_load = r.is_load;
-
-  if (r._freq_order)
+  if (this != &r)
   {
-    _freq_order = new uint32_t[_nb_minims];
-    copy(&r._freq_order[0], &r._freq_order[_nb_minims-1], _freq_order);
+    _path = r._path;
+    _path_freq = r._path_freq;
+    _nb_part = r._nb_part;
+    _nb_minims = r._nb_minims;
+    _nb_pass = r._nb_pass;
+    _has_minim_freq = r._has_minim_freq;
+    _magic = r._magic;
+    _freq_order = nullptr;
+    _repart_table = r._repart_table;
+    is_load = r.is_load;
+
+    if (r._freq_order)
+    {
+      _freq_order = new uint32_t[_nb_minims];
+      copy(&r._freq_order[0], &r._freq_order[_nb_minims-1], _freq_order);
+    }
   }
   return *this;
 }
@@ -157,13 +162,13 @@ void RepartFile::load()
 
   if (_has_minim_freq && !_path_freq.empty())
   {
-    ifstream fin(_path_freq, ios::binary | ios::in);
+    ifstream fin_freq(_path_freq, ios::binary | ios::in);
     _freq_order = new uint32_t[_nb_minims];
-    fin.read((char*)_freq_order, sizeof(uint32_t)*_nb_minims);
-    fin.read((char*)&_magic, sizeof(_magic));
+    fin_freq.read((char*)_freq_order, sizeof(uint32_t)*_nb_minims);
+    fin_freq.read((char*)&_magic, sizeof(_magic));
     if (_magic != MAGIC_NUMBER)
       throw runtime_error("Unable to load " + _path + ", possibly due to bad format.");
-    fin.close();
+    fin_freq.close();
   }
   else
   {
