@@ -24,16 +24,13 @@ import abc
 import time
 import argparse
 import subprocess
-import io
 import heapq
-import logging
 import traceback
 from math import ceil, log
 from collections import OrderedDict as odict
 from collections import defaultdict as ddict
 from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
 from signal import SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, Signals
-from types import FunctionType
 from shutil import rmtree, copyfile
 from copy import deepcopy, copy
 
@@ -75,10 +72,12 @@ def WARN(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 class asInteger(argparse.Action):
+    """store_true argparse.Action as integer"""
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, 1)
 
 class CustomHelpFormatter(argparse.HelpFormatter):
+    """custom help formatter"""
     def _format_action_invocation(self, action):
         if not action.option_strings or action.nargs == 0:
             return super()._format_action_invocation(action)
@@ -103,6 +102,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
         return help
 
 class OptionsParser:
+    """kmtricks cli"""
     def __init__(self):
         self.global_parser: argparse.ArgumentParser = None
         self.subparser: argparse._SubParsersAction = None
@@ -289,6 +289,7 @@ class OptionsParser:
         return args
 
 class BinaryNotFoundError(Exception):
+    """raise if a kmtricks binary is not found"""
     pass
 
 nf_temp = (
@@ -313,6 +314,7 @@ def get_binary(dir: str, t: str, vk: int, vc: int = 255) -> str:
     raise BinaryNotFoundError(nf_temp.format(vk, vc, pattern, k, c))
 
 class ICommand:
+    """The command interface"""
     def __init__(
         self, run_directory: str, cli_template: str,
         args: dict, depends: set, idx: str, sync_id: str,
@@ -509,6 +511,7 @@ str_command = {
 }
 
 class EnvCommand(ICommand):
+    """km_configuration"""
     def __init__(self, **kwargs):
         super().__init__(
             run_directory=kwargs['run_dir'],
@@ -530,6 +533,7 @@ class EnvCommand(ICommand):
         pass
 
 class RepartitionCommand(ICommand):
+    """km_minim_repart"""
     def __init__(self, **kwargs):
         super().__init__(
             run_directory=kwargs['run_dir'],
@@ -555,6 +559,7 @@ class RepartitionCommand(ICommand):
         pass
 
 class SuperkCommand(ICommand):
+    """km_reads_to_superk"""
     def __init__(self, **kwargs):
         deps = {REPART_PREFIX_ID + "0"} if kwargs['only'] != 'superk' else set()
         super().__init__(
@@ -579,6 +584,7 @@ class SuperkCommand(ICommand):
         pass
 
 class CountCommand(ICommand):
+    """km_superk_to_kmer_counts"""
     def __init__(self, **kwargs):
         if kwargs['only'] != 'count':
             deps = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))}
@@ -608,12 +614,13 @@ class CountCommand(ICommand):
         ext = '.kmer.lz4' if self.args['lz4'] else '.kmer'
         kmer_file = f'{pdir}/{f}{ext}'
         if os.path.exists(kmer_file):
-            raise FileExistsError (f'{kmer_file} already exists')
+            raise FileExistsError(f'{kmer_file} already exists')
 
     def postprocess(self) -> None:
         pass
 
 class MergeCommand(ICommand):
+    """km_merge_within_partition"""
     def __init__(self, **kwargs):
         deps = set()
         if kwargs['only'] != 'merge':
@@ -645,8 +652,11 @@ class MergeCommand(ICommand):
 
     def postprocess(self) -> None:
         if not self.args['keep_tmp']:
-            rmtree(f'{self.run_directory}/storage/kmers_partitions/partition_{self.args["part_id"]}')
+            pi = self.args['part_id']
+            rmtree(f'{self.run_directory}/storage/kmers_partitions/partition_{pi}')
+
 class OutputCommand(ICommand):
+    """km_output_command from_merge"""
     def __init__(self, **kwargs):
         deps = set()
         if kwargs['only'] != 'split':
@@ -675,6 +685,7 @@ class OutputCommand(ICommand):
                     rmtree(d)
 
 class OutputCommandFromCount(ICommand):
+    """km_output_command from_count"""
     def __init__(self, **kwargs):
         deps = set()
         if kwargs['only'] != 'split':
@@ -700,12 +711,14 @@ class OutputCommandFromCount(ICommand):
         if not self.args['keep_tmp']:
             for i in range(self.args['nb_partitions']):
                 ext = 'kmer.vec' if not self.args['lz4'] else '.kmer.vec.lz4'
-                fpath = f'{self.args["run_dir"]}/storage/kmers_partitions/partition_{i}/{self.args["file_basename"]}{ext}'
+                run = self.args['run_dir']
+                fname = self.args['file_basename']
+                fpath = f'{run}/storage/kmers_partitions/partition_{i}/{fname}{ext}'
                 if os.path.isfile(fpath):
                     os.remove(fpath)
 
-
 class Timer():
+    """A timer as a context manager"""
     def __enter__(self):
         self.t1 = time.perf_counter()
         return self
@@ -721,11 +734,12 @@ class Timer():
               file=sys.stderr)
 
 class Progress():
-    def __init__(self, pattern: str=''):
+    """A progress indicator"""
+    def __init__(self, pattern: str = ''):
         self.pattern: str = pattern
-        self.keys:    dict = ddict(int)
+        self.keys: dict = ddict(int)
 
-    def update(self, key: str=None) -> None:
+    def update(self, key: str = None) -> None:
         if key:
             self.keys[key] += 1
         if sys.stderr.isatty():
@@ -734,26 +748,28 @@ class Progress():
     def finish(self) -> None:
         print(f'\r{self.pattern.format_map(self.keys)}', end='\n', file=sys.stderr)
 
-    def add(self, idx: str, nb:int):
+    def add(self, idx: str, nb: int):
         self.keys[idx] = 0
         self.keys[f'{idx}N'] = nb
 
 class Fof:
+    """kmtricks input fof"""
     def __init__(self, path: str):
-        self.path:    str = path
-        self.fp:      TextIO = open(path, 'r')
-        self.files:   odict = odict()
+        self.path: str = path
+        self.fp: TextIO = open(path, 'r')
+        self.files: odict = odict()
         self.is_read: bool = False
-        self.id:      int = 0
-        self.lfiles:  list = []
-        self.nb:      int = 0
+        self.id: int = 0
+        self.lfiles: list = []
+        self.nb: int = 0
 
     def parse(self, defaut_count: int) -> bool:
         self.fp.seek(0)
         has_ab = False
         for line in self.fp:
             line = line.strip()
-            if not line: continue
+            if not line:
+                continue
             line = line.split(':')
             if len(line) != 2:
                 raise IOError(f'fof bad format: {self.fp.name}')
@@ -792,21 +808,22 @@ class Fof:
             self.id += 1
 
 class Pool:
-    def __init__(self, progress: Progress, log_cmd: str, nb_procs: int=8):
-        self.procs:     int = nb_procs
+    """A pool of ICommand"""
+    def __init__(self, progress: Progress, log_cmd: str, nb_procs: int = 8):
+        self.procs: int = nb_procs
         self.available: int = int(self.procs)
-        self.callable:  List[ICommand] = []
-        self.finish:    Set[ICommand] = set()
+        self.callable: List[ICommand] = []
+        self.finish: Set[ICommand] = set()
         self.finish_id: Set[str] = set(['E0'])
-        self.running:   Set[ICommand] = set()
-        self.max_c:     Dict[str, int] = odict()
-        self.finish_c:  Dict[str, int] = odict()
-        self.curr_run:  Dict[str, int] = odict()
-        self.cmds:      List[Tuple[str, odict]] = []
-        self.nb:        Dict[str, int] = {}
-        self.count:     int = 1
+        self.running: Set[ICommand] = set()
+        self.max_c: Dict[str, int] = odict()
+        self.finish_c: Dict[str, int] = odict()
+        self.curr_run: Dict[str, int] = odict()
+        self.cmds: List[Tuple[str, odict]] = []
+        self.nb: Dict[str, int] = {}
+        self.count: int = 1
         if log_cmd:
-            self.log_cmd:   TextIO = open(log_cmd, 'a')
+            self.log_cmd: TextIO = open(log_cmd, 'a')
         self.progress:  Progress = progress
 
     def push(self, idx: str, cmds: odict, max_concurrent: int) -> None:
@@ -1007,12 +1024,14 @@ def main():
             if not args['skip_merge']:
                 dargs['file'] = fof_copy
                 log = f'{log_dir}/split/split.log'
-                output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(nb_files=fof.nb, log=log, **dargs)
+                output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(
+                    nb_files=fof.nb, log=log, **dargs)
                 pool.push('O', output_commands, 1)
             else:
                 for i, f, _, exp in fof:
                     log = f'{log_dir}/split/split_{exp}.log'
-                    output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
+                    output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(
+                        f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
                 pool.push('B', output_commands, args['nb_cores']/2)
 
     with Timer() as total_time:
