@@ -26,7 +26,11 @@ km::log_config km::LOG_CONFIG;
 
 Kmtricks::Kmtricks()
   : Tool("kmtricks"),
-  _min_hash(0) 
+    _progress(nullptr),
+    e(nullptr),
+    _k_size(0),
+    _min_hash(0),
+    _max_hash(0)
 {
   setParser(new OptionsParser("kmtricks: build runtime environment"));
 

@@ -28,7 +28,16 @@
 
 km::log_config km::LOG_CONFIG;
 
-KmConvert::KmConvert(const string &mode) : Tool("km_output_convert")
+KmConvert::KmConvert(const string &mode) 
+  : Tool("km_output_convert"),
+    _e(nullptr),
+    _howde(false),
+    _sdsl(false),
+    _vlen(0),
+    _filter_size(0),
+    _nb_parts(0),
+    _win_size(0),
+    _kmer_size(0)
 {
   if (mode == "from_merge")
   {

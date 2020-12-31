@@ -37,5 +37,3 @@ struct Parameter
   IProperties* props;
 };
 
-string get_str_fof(string fof_path);
-

@@ -65,7 +65,7 @@ vector<string> split_str(string s, string t)
 class SignalHandler
 {
 public:
-  explicit SignalHandler(string exec_name = "", int file_id = 0, int part_id = 0)
+  explicit SignalHandler(const string& exec_name = "", int file_id = 0, int part_id = 0)
     : _exec_name(exec_name), _fid(file_id), _pid(part_id)
   {
 

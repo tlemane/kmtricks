@@ -26,17 +26,6 @@
 
 km::log_config km::LOG_CONFIG;
 
-string get_str_fof(string fof_path)
-{
-  string s;
-  string line;
-  ifstream in_fof(fof_path);
-
-  while ( getline (in_fof, line) ) { s += line + ","; }
-  s.pop_back();
-  return s;
-}
-
 Repart::Repart() : Tool ("km_part")
 {
   setParser(new OptionsParser("km_minim_repart"));

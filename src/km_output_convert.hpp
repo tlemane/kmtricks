@@ -38,7 +38,7 @@ typedef sdsl::bit_vector bitvector;
 class KmConvert : public Tool
 {
 public:
-  KmConvert (const string &mode);
+  explicit KmConvert (const string &mode);
 
 private:
   void execute();
@@ -48,22 +48,22 @@ private:
   void init();
 
 private:
-  Env*    _e;
-  string  _run_dir;
-  string  _split_str;
-  string  _hm_path;
-  string  _f_basename;
-  bool    _howde;
-  bool    _sdsl;
-  bool    _from_merge;
-  uint64_t _vlen;
-  uint64_t    _filter_size;
-  uint    _nb_files;
-  uint32_t   _nb_parts;
-  uint64_t _win_size;
-  uint32_t _kmer_size;
-  string _fof;
-  string _sync;
+  Env*      _e;
+  string    _run_dir;
+  string    _split_str;
+  string    _hm_path;
+  string    _f_basename;
+  bool      _howde;
+  bool      _sdsl;
+  bool      _from_merge;
+  uint64_t  _vlen;
+  uint64_t  _filter_size;
+  uint      _nb_files;
+  uint32_t  _nb_parts;
+  uint64_t  _win_size;
+  uint32_t  _kmer_size;
+  string    _fof;
+  string    _sync;
   vector<string>   _f_names;
   vector<ifstream> _matrices;
   vector<tuple<uint64_t, uint64_t>> _hash_windows;

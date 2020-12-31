@@ -189,7 +189,7 @@ cs RUN_INFOS        = "./km_backtrace/{}-{}";
 class Env
 {
 public:
-  Env(string main_dir, string binaries_dir);
+  Env(const string& main_dir, const string& binaries_dir);
   ~Env();
   void build();
   void build_p(uint p);
@@ -243,7 +243,7 @@ public:
 
 };
 
-Env::Env(string main_dir, string binaries_dir)
+Env::Env(const string& main_dir, const string& binaries_dir)
   : DIR(main_dir), BIN(binaries_dir)
 {
   SYNCHRO          = DIR + "/synchro";
