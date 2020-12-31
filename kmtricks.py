@@ -85,10 +85,10 @@ class CustomHelpFormatter(argparse.HelpFormatter):
         default = self._get_default_metavar_for_optional(action)
         args_string = self._format_args(action, default)
         return ', '.join(action.option_strings) + ' ' + args_string
-    
+
     def _get_help_string(self, action):
         REQUIRED = ('--file', '--run-dir')
-        NOARGS   = ('--keep-tmp', '--lz4', '--skip-merge')
+        NOARGS = ('--keep-tmp', '--lz4', '--skip-merge')
         help = action.help
         if '%(default)' not in action.help:
             if action.default is not argparse.SUPPRESS:
@@ -99,7 +99,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
                     elif action.option_strings[0] in NOARGS:
                         help += ' [no arg]'
                     else:
-                        help += ' [default: %(default)s]' 
+                        help += ' [default: %(default)s]'
         return help
 
 class OptionsParser:
@@ -140,8 +140,8 @@ class OptionsParser:
         desc = 'Build kmtricks runtime environment'
         subparser: argparse.ArgumentParser = self.subparser.add_parser(
             'env', description=desc,
-            formatter_class=lambda prog: CustomHelpFormatter(prog, max_help_position=40, width=100), add_help=False
-        )
+            formatter_class=lambda prog: CustomHelpFormatter(
+                prog, max_help_position=40, width=100), add_help=False)
 
         glb = subparser.add_argument_group('global')
         adv = subparser.add_argument_group('advanced performance tweaks')
@@ -161,7 +161,7 @@ class OptionsParser:
             help='max abundance threshold for solid kmers', default=int(3e9))
         glb.add_argument('--max-memory', metavar='INT', type=int,
             help='max memory available in megabytes', default=8000)
-        
+
         adv.add_argument('--minimizer-type', metavar='INT', type=int,
             help='minimizer type (0=lexi, 1=freq)', default=0)
         adv.add_argument('--minimizer-size', metavar='INT', type=int,
@@ -170,7 +170,7 @@ class OptionsParser:
             help='minimizer repartition (0=unordered, 1=ordered)', default=0)
         adv.add_argument('--nb-partitions', metavar='INT', type=int,
             help='number of partitions (0=auto)', default=0)
-        
+
         hmd.add_argument('--hasher', metavar='STR', type=str,
             help='hash function: sabuhash, xor', default='xor')
         hmd.add_argument('--max-hash', metavar='INT', type=int,
@@ -183,8 +183,8 @@ class OptionsParser:
         desc = 'kmtricks pipeline'
         subparser: argparse.ArgumentParser = self.subparser.add_parser(
             'run', description=desc,
-            formatter_class=lambda prog: CustomHelpFormatter(prog, max_help_position=40, width=100), add_help=False
-        )
+            formatter_class=lambda prog: CustomHelpFormatter(
+                prog, max_help_position=40, width=100), add_help=False)
 
         glb = subparser.add_argument_group('global')
         rar = subparser.add_argument_group('merge options, see kmtricks README')
@@ -241,7 +241,7 @@ class OptionsParser:
             help='minimizer repartition (0=unordered, 1=ordered)', default=0)
         adv.add_argument('--nb-partitions', metavar='INT', type=int,
             help='number of partitions (0=auto)', default=0)
-        
+
         hmd.add_argument('--hasher', metavar='STR', type=str,
             help='hash function: sabuhash, xor', default='xor')
         hmd.add_argument('--max-hash', metavar='INT', type=int,
@@ -258,7 +258,9 @@ class OptionsParser:
             help='Show this message and exit')
 
     def _get_subs(cls) -> List:
-        return [getattr(cls, name) for name in dir(cls) if callable(getattr(cls, name)) and name.startswith('_sub')]
+        return [getattr(cls, name) for name in dir(cls)
+                if callable(getattr(cls, name))
+                and name.startswith('_sub')]
 
     def _init_subparsers(self) -> None:
         self.subcommands = list(map(lambda x: x.__name__.split('_')[-1], self._get_subs()))
@@ -271,7 +273,9 @@ class OptionsParser:
         for sub in self.subparsers:
             sub()
 
-    def parse_args(self, as_dict: bool=True, arglist: list=None) -> Union[argparse.Namespace, Dict]:
+    def parse_args(
+        self, as_dict: bool = True, arglist: list = None
+    ) -> Union[argparse.Namespace, Dict]:
         args = self.global_parser.parse_args(arglist)
         if args.cmd not in self.subcommands:
             self.global_parser.parse_args(['-h'])
@@ -296,7 +300,7 @@ def get_k_c(kmer_max: int, count_max: int) -> Tuple[int, int]:
     round_c = lambda x: ceil(log(x+1, 2))
     return round_k(kmer_max), round_k(round_c(count_max)/2)
 
-def get_binary(dir: str, t: str, vk: int, vc: int=255) -> str:
+def get_binary(dir: str, t: str, vk: int, vc: int = 255) -> str:
     k, c = get_k_c(vk, vc)
     if t == 'merge':
         pattern = f'km_merge_within_partition-k{k}c{c}'
@@ -310,36 +314,36 @@ def get_binary(dir: str, t: str, vk: int, vc: int=255) -> str:
 
 class ICommand:
     def __init__(
-        self, run_directory: str, cli_template: str, 
+        self, run_directory: str, cli_template: str,
         args: dict, depends: set, idx: str, sync_id: str,
         log_path: str, wait: bool
     ):
-        self.run_directory: str = run_directory 
-        self.cli_template:  str = cli_template
-        self.args:          dict = args
-        self.p:             subprocess.Popen = None
-        self.depends:       set = depends
-        self.cores:         int = None
-        self.idx:           str = idx
-        self.wait:          bool = wait
-        self.sync_id:       str = sync_id
-        self.sf:            str = None
-        self.log_path:      str = log_path
-    
+        self.run_directory: str = run_directory
+        self.cli_template: str = cli_template
+        self.args: dict = args
+        self.p: subprocess.Popen = None
+        self.depends: set = depends
+        self.cores: int = None
+        self.idx: str = idx
+        self.wait: bool = wait
+        self.sync_id: str = sync_id
+        self.sf: str = None
+        self.log_path: str = log_path
+
     @abc.abstractmethod
     def preprocess(self) -> None:
         pass
-    
+
     @abc.abstractmethod
     def postprocess(self) -> None:
         pass
 
     def log_cmd(self, f: TextIO) -> None:
         f.write(f'{self.get_str_cmd()}\n')
-        
+
     def get_str_cmd(self) -> str:
         return self.cli_template.format(**self.args)
-    
+
     def run(self) -> None:
         self.preprocess()
         #self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
@@ -353,13 +357,13 @@ class ICommand:
 
         if self.wait:
             while not self.is_done:
-                time.sleep(1) 
+                time.sleep(1)
 
     def ready(self, finished: set) -> bool:
         if self.is_done:
             return False
         return self.depends.issubset(finished)
-    
+
     def __lt__(self, that: "ICommand"):
         return self.idx < that.idx
 
@@ -368,14 +372,13 @@ class ICommand:
         if self.sf:
             return os.path.exists(self.sf)
         return True
-                
 
     @property
     def exit_code(self) -> Optional[int]:
         if self.is_done:
             return self.p.returncode
         return None
-    
+
     @property
     def is_done(self) -> bool:
         if self.p:
@@ -391,7 +394,7 @@ if not os.path.exists(f'{BIN_DIR}/km_configuration'):
 BUILD_INFO = f'{os.path.dirname(os.path.abspath(__file__))}/build/build_infos.txt'
 
 def get_sha1():
-    p = subprocess.Popen([f'{BIN_DIR}/km_configuration', 'sha1'], 
+    p = subprocess.Popen([f'{BIN_DIR}/km_configuration', 'sha1'],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     _, err = p.communicate()
     return err.decode()
@@ -414,7 +417,7 @@ ENV_CLI_TEMPLATE = (
 )
 
 REPART_PREFIX_ID = 'R'
-LOG_PARTITIONER  = 'partitioner.log'
+LOG_PARTITIONER = 'partitioner.log'
 REPART_CLI_TEMPLATE = (
     f"{BIN_DIR}/km_minim_repart "
     "-file {file} "
@@ -481,11 +484,19 @@ OUTPUT_CLI_TEMPLATE_C = (
     "-kmer-size {kmer_size}"
 )
 
-progress_template = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {O}/{ON}'
-progress_template2 = '\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN}, Merge: {M}/{MN}, Output: {B}/{BN}'
-
-ERROR_MSG = '\nSignal {sig} received from {cmd} with the following arguments:\n{args}.\n All children are killed. Check your inputs. If the problem persists, please contact us with a description of your run and the following files: {backtrace} and {build}.\n'
-
+progress_template = (
+    "\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN},"
+    " Merge: {M}/{MN}, Output: {O}/{ON}"
+)
+progress_template2 = (
+    "\rRepartition: {R}/1, Superkmer: {S}/{SN}, Count: {C}/{CN},"
+    " Merge: {M}/{MN}, Output: {B}/{BN}"
+)
+ERROR_MSG = (
+    "\nSignal {sig} received from {cmd} with the following arguments:\n{args}.\n"
+    "All children are killed. Check your inputs. If the problem persists, please contact "
+    "us with a description of your run and the following files: {backtrace} and {build}.\n"
+)
 SIGNALS = (SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM)
 
 str_command = {
@@ -500,44 +511,46 @@ str_command = {
 class EnvCommand(ICommand):
     def __init__(self, **kwargs):
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = ENV_CLI_TEMPLATE,
-            args = kwargs,
-            depends = None,
-            idx = None,
-            sync_id = None,
-            wait = True,
-            log_path = None
+            run_directory=kwargs['run_dir'],
+            cli_template=ENV_CLI_TEMPLATE,
+            args=kwargs,
+            depends=None,
+            idx=None,
+            sync_id=None,
+            wait=True,
+            log_path=None
         )
         self.cores = 1
 
     def preprocess(self):
         if os.path.exists(self.run_directory):
             WARN(f'Warning: {self.run_directory} already exists.')
-    
+
     def postprocess(self):
         pass
 
 class RepartitionCommand(ICommand):
     def __init__(self, **kwargs):
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = REPART_CLI_TEMPLATE,
-            args = kwargs,
-            depends = {'E0'},
-            idx = 'R',
-            sync_id = 'R0',
-            wait = True,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=REPART_CLI_TEMPLATE,
+            args=kwargs,
+            depends={'E0'},
+            idx='R',
+            sync_id='R0',
+            wait=True,
+            log_path=kwargs['log']
         )
         self.cores = 1
 
     def preprocess(self) -> None:
         if not os.path.exists(self.run_directory):
             raise FileExistsError(f'{self.run_directory} doesn\'t exists.')
-        if os.path.exists(f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'):
+        if os.path.exists(
+            f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'
+        ):
             self.cli_template = 'echo {nb_cores} >> /dev/null 2>&1'
-    
+
     def postprocess(self) -> None:
         pass
 
@@ -545,14 +558,14 @@ class SuperkCommand(ICommand):
     def __init__(self, **kwargs):
         deps = {REPART_PREFIX_ID + "0"} if kwargs['only'] != 'superk' else set()
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = SUPERK_CLI_TEMPLATE,
-            args = kwargs,
-            depends = deps,
-            idx = 'S',
-            sync_id = f'{SUPERK_PREFIX_ID}{kwargs["id"]}',
-            wait = False,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=SUPERK_CLI_TEMPLATE,
+            args=kwargs,
+            depends=deps,
+            idx='S',
+            sync_id=f'{SUPERK_PREFIX_ID}{kwargs["id"]}',
+            wait=False,
+            log_path=kwargs['log']
         )
         self.cores = 1
         self.args['nb_cores'] = self.cores
@@ -561,22 +574,26 @@ class SuperkCommand(ICommand):
         repart_file = f'{self.run_directory}/storage/partition_storage_gatb/minimRepart.minimRepart'
         if not os.path.exists(repart_file):
             raise FileExistsError(f'{repart_file} doesn\'t exists.')
-    
+
     def postprocess(self) -> None:
         pass
 
 class CountCommand(ICommand):
     def __init__(self, **kwargs):
-        deps = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))} if kwargs['only'] != 'count' else set()
+        if kwargs['only'] != 'count':
+            deps = {SUPERK_PREFIX_ID + str(kwargs['fof'].get_id(kwargs['f']))}
+        else:
+            deps = set()
+
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = COUNT_CLI_TEMPLATE,
-            args = kwargs,
-            depends = deps,
-            idx = 'C',
-            sync_id = f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{kwargs["part_id"]}',
-            wait = False,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=COUNT_CLI_TEMPLATE,
+            args=kwargs,
+            depends=deps,
+            idx='C',
+            sync_id=f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{kwargs["part_id"]}',
+            wait=False,
+            log_path=kwargs['log']
         )
         self.cores = 1
         self.args['nb_cores'] = self.cores
@@ -586,7 +603,7 @@ class CountCommand(ICommand):
         superkstorage = f'{self.run_directory}/storage/superk_partitions/{f}'
         if not os.path.exists(f'{superkstorage}.superk'):
             raise FileExistsError(f'{superkstorage} doesn\'t exists.')
-        
+
         pdir = f'{self.run_directory}/storage/kmers_partitions/partition_{self.args["part_id"]}'
         ext = '.kmer.lz4' if self.args['lz4'] else '.kmer'
         kmer_file = f'{pdir}/{f}{ext}'
@@ -603,14 +620,14 @@ class MergeCommand(ICommand):
             for i in range(kwargs['fof'].nb):
                 deps.add(f'{COUNT_PREFIX_ID}_{i}_{kwargs["part_id"]}')
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = MERGE_CLI_TEMPLATE,
-            args = kwargs,
-            depends = deps,
-            idx = 'M',
-            sync_id = f'{MERGE_PREFIX_ID}{kwargs["part_id"]}',
-            wait = False,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=MERGE_CLI_TEMPLATE,
+            args=kwargs,
+            depends=deps,
+            idx='M',
+            sync_id=f'{MERGE_PREFIX_ID}{kwargs["part_id"]}',
+            wait=False,
+            log_path=kwargs['log']
         )
         self.cores = 1
         self.args['nb_cores'] = self.cores
@@ -623,13 +640,12 @@ class MergeCommand(ICommand):
         path = f'{pdir}/partition{p}.fof'
         ext = '.kmer' if not self.args['lz4'] else '.kmer.lz4'
         with open(path, 'w') as f_out:
-            for _, _, _ , exp in self.args['fof']:
+            for _, _, _, exp in self.args['fof']:
                 f_out.write(f'{pdir}/{exp}{ext}\n')
 
     def postprocess(self) -> None:
         if not self.args['keep_tmp']:
             rmtree(f'{self.run_directory}/storage/kmers_partitions/partition_{self.args["part_id"]}')
-
 class OutputCommand(ICommand):
     def __init__(self, **kwargs):
         deps = set()
@@ -637,14 +653,14 @@ class OutputCommand(ICommand):
             for i in range(kwargs['nb_partitions']):
                 deps.add(f'M{i}')
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = OUTPUT_CLI_TEMPLATE,
-            args = kwargs,
-            depends = deps,
-            idx = 'O',
-            sync_id = 'O',
-            wait = True,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=OUTPUT_CLI_TEMPLATE,
+            args=kwargs,
+            depends=deps,
+            idx='O',
+            sync_id='O',
+            wait=True,
+            log_path=kwargs['log']
         )
         self.cores = 1
         self.args['nb_cores'] = self.cores
@@ -665,14 +681,14 @@ class OutputCommandFromCount(ICommand):
             for i in range(kwargs['nb_partitions']):
                 deps.add(f'{COUNT_PREFIX_ID}_{kwargs["fof"].get_id(kwargs["f"])}_{i}')
         super().__init__(
-            run_directory = kwargs['run_dir'],
-            cli_template = OUTPUT_CLI_TEMPLATE_C,
-            args = kwargs,
-            depends = deps,
-            idx = OUTPUT_PREFIX_ID_C,
-            sync_id = f'{OUTPUT_PREFIX_ID_C}{kwargs["file_id"]}',
-            wait = True,
-            log_path = kwargs['log']
+            run_directory=kwargs['run_dir'],
+            cli_template=OUTPUT_CLI_TEMPLATE_C,
+            args=kwargs,
+            depends=deps,
+            idx=OUTPUT_PREFIX_ID_C,
+            sync_id=f'{OUTPUT_PREFIX_ID_C}{kwargs["file_id"]}',
+            wait=True,
+            log_path=kwargs['log']
         )
         self.cores = 1
         self.args['nb_cores'] = self.cores
@@ -696,19 +712,19 @@ class Timer():
     def __exit__(self, type, value, traceback):
         self.t2 = time.perf_counter()
         self.t = self.t2 - self.t1
-    
+
     def print(self, prefix: str) -> int:
         m, s = divmod(self.t, 60)
         h, m = divmod(m, 60)
-        d, h = divmod(h, 24) 
-        print(prefix + f'{d:02.0f}:{h:02.0f}:{m:02.0f}:{s:02.2f}', 
+        d, h = divmod(h, 24)
+        print(prefix + f'{d:02.0f}:{h:02.0f}:{m:02.0f}:{s:02.2f}',
               file=sys.stderr)
 
 class Progress():
     def __init__(self, pattern: str=''):
         self.pattern: str = pattern
         self.keys:    dict = ddict(int)
-        
+
     def update(self, key: str=None) -> None:
         if key:
             self.keys[key] += 1
@@ -717,7 +733,7 @@ class Progress():
 
     def finish(self) -> None:
         print(f'\r{self.pattern.format_map(self.keys)}', end='\n', file=sys.stderr)
-    
+
     def add(self, idx: str, nb:int):
         self.keys[idx] = 0
         self.keys[f'{idx}N'] = nb
@@ -731,7 +747,7 @@ class Fof:
         self.id:      int = 0
         self.lfiles:  list = []
         self.nb:      int = 0
-    
+
     def parse(self, defaut_count: int) -> bool:
         self.fp.seek(0)
         has_ab = False
@@ -777,7 +793,7 @@ class Fof:
 
 class Pool:
     def __init__(self, progress: Progress, log_cmd: str, nb_procs: int=8):
-        self.procs:     int = nb_procs 
+        self.procs:     int = nb_procs
         self.available: int = int(self.procs)
         self.callable:  List[ICommand] = []
         self.finish:    Set[ICommand] = set()
@@ -844,7 +860,7 @@ class Pool:
                     heapq.heappush(self.callable, pool_cmds[k])
                     del pool_cmds[k]
         return update
-    
+
     def run_ready(self) -> None:
         n = int(self.procs/10)
         max_id = max(self.max_c)
@@ -861,10 +877,10 @@ class Pool:
                 if not self.available:
                     break
         heapq.heapify(self.callable)
-        
+
         if not self.available:
             return
-        
+
         for _ in range(len(self.callable)):
             cmd = heapq.heappop(self.callable)
             if self.curr_run[cmd.idx] >= self.max_c[cmd.idx]:
@@ -901,7 +917,7 @@ pool = Pool(Progress(), '')
 
 def main():
     global VERBOSE, DEBUG
-    
+
     cli = OptionsParser()
     args = cli.parse_args()
     VERBOSE, DEBUG = args['verbose'], args['debug']
@@ -912,11 +928,11 @@ def main():
         only = control[args['only']]
         until = control[args['until']]
         all_ = only == 6
-    
+
     if all_ or args['cmd'] == 'env':
         env_cmd = EnvCommand(**args)
         env_cmd.run()
-        if args['cmd'] == 'env': 
+        if args['cmd'] == 'env':
             print(f'kmtricks runtime env build at: {args["run_dir"]}')
             sys.exit(0)
 
@@ -932,7 +948,7 @@ def main():
     log_cmd_path = f'{log_dir}/cmds.log'
 
     progress_bar = Progress(progress_template if not args['skip_merge'] else progress_template2)
-    
+
     global pool
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
 
@@ -985,7 +1001,7 @@ def main():
         output_commands = odict()
         bf_trp = args['mode'] == 'bf_trp' or (args['mode'] == 'bf' and args['skip_merge'])
         split = args['split'] != 'none'
-        
+
         if ((only == 5 or all_ and until > 4) and bf_trp and split):
             dargs = deepcopy(args)
             if not args['skip_merge']:
@@ -1001,7 +1017,7 @@ def main():
 
     with Timer() as total_time:
         pool.exec()
-    
+
     progress_bar.finish()
     total_time.print('Done in ')
 
