@@ -26,7 +26,8 @@ import argparse
 import subprocess
 import heapq
 import traceback
-from math import ceil, log
+from math import ceil
+from math import log as mlog
 from collections import OrderedDict as odict
 from collections import defaultdict as ddict
 from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
@@ -290,15 +291,14 @@ class OptionsParser:
 
 class BinaryNotFoundError(Exception):
     """raise if a kmtricks binary is not found"""
-    pass
 
 nf_temp = (
     "k={} and c={} require {} but it seems to be missing, "
     "use -DKMER_NB_BIT={} -DCOUNT_NB_BIT={} OR -DSIZE=ALL"
 )
 def get_k_c(kmer_max: int, count_max: int) -> Tuple[int, int]:
-    round_k = lambda x: 2**(int(ceil(log(2*x)/log(2))))
-    round_c = lambda x: ceil(log(x+1, 2))
+    round_k = lambda x: 2**(int(ceil(mlog(2*x)/mlog(2))))
+    round_c = lambda x: ceil(mlog(x+1, 2))
     return round_k(kmer_max), round_k(round_c(count_max)/2)
 
 def get_binary(dir: str, t: str, vk: int, vc: int = 255) -> str:
@@ -719,9 +719,15 @@ class OutputCommandFromCount(ICommand):
 
 class Timer():
     """A timer as a context manager"""
+    def __init__(self):
+        self.t = 0
+        self.t1 = 0
+        self.t2 = 0
+    
     def __enter__(self):
         self.t1 = time.perf_counter()
         return self
+    
     def __exit__(self, type, value, traceback):
         self.t2 = time.perf_counter()
         self.t = self.t2 - self.t1
@@ -824,7 +830,7 @@ class Pool:
         self.count: int = 1
         if log_cmd:
             self.log_cmd: TextIO = open(log_cmd, 'a')
-        self.progress:  Progress = progress
+        self.progress: Progress = progress
 
     def push(self, idx: str, cmds: odict, max_concurrent: int) -> None:
         self.cmds.append((idx, cmds))
@@ -1031,7 +1037,7 @@ def main():
                 for i, f, _, exp in fof:
                     log = f'{log_dir}/split/split_{exp}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(
-                        f=exp, fof=fof, file_id=i,file_basename=exp, log=log, **dargs)
+                        f=exp, fof=fof, file_id=i, file_basename=exp, log=log, **dargs)
                 pool.push('B', output_commands, args['nb_cores']/2)
 
     with Timer() as total_time:
