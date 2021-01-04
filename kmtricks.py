@@ -348,14 +348,15 @@ class ICommand:
 
     def run(self) -> None:
         self.preprocess()
-        #self.p = subprocess.Popen('exec ' + self.get_str_cmd(), shell=True)
         if self.log_path:
             with open(self.log_path, 'w') as log_file:
                 self.p = subprocess.Popen(
                     self.get_str_cmd().split(' '), stdout=log_file, stderr=subprocess.STDOUT
                 )
         else:
-            self.p = subprocess.Popen(self.get_str_cmd().split(' '))
+            self.p = subprocess.Popen(
+                self.get_str_cmd().split(' '), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
 
         if self.wait:
             while not self.is_done:
@@ -976,12 +977,14 @@ def main():
     pool = Pool(progress_bar, log_cmd_path, args['nb_cores'])
 
     fof.copy(fof_copy)
+    log = None
     if args['cmd'] == 'run':
         repart_commands = odict()
         if (only == 1 or all_):
             dargs = deepcopy(args)
             dargs['file'] = fof_copy
-            log = f'{log_dir}/repartition.log'
+            if DEBUG:
+                log = f'{log_dir}/repartition.log'
             repart_commands['R'] = RepartitionCommand(log=log, **dargs)
             pool.push('R', repart_commands, 1)
 
@@ -989,7 +992,8 @@ def main():
         if (only == 2 or all_ and until > 1):
             for i, f, _, exp in fof:
                 dargs = deepcopy(args)
-                log = f'{log_dir}/superk/superk_{exp}.log'
+                if DEBUG:
+                    log = f'{log_dir}/superk/superk_{exp}.log'
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
                     id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
                 )
@@ -1004,7 +1008,8 @@ def main():
                 if ab_per_file:
                     dargs['abundance_min'] = c
                 for p in range(args['nb_partitions']):
-                    log = f'{log_dir}/counter/counter{i}_{p}.log'
+                    if DEBUG:
+                        log = f'{log_dir}/counter/counter{i}_{p}.log'
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
                        f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
                     )
@@ -1015,7 +1020,8 @@ def main():
             mbin = get_binary(BIN_DIR, 'merge', args['kmer_size'], args['max_count'])
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
-                log = f'{log_dir}/merger/merger{p}.log'
+                if DEBUG:
+                    log = f'{log_dir}/merger/merger{p}.log'
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
                     part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs
                 )
@@ -1029,13 +1035,15 @@ def main():
             dargs = deepcopy(args)
             if not args['skip_merge']:
                 dargs['file'] = fof_copy
-                log = f'{log_dir}/split/split.log'
+                if DEBUG:
+                    log = f'{log_dir}/split/split.log'
                 output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(
                     nb_files=fof.nb, log=log, **dargs)
                 pool.push('O', output_commands, 1)
             else:
                 for i, f, _, exp in fof:
-                    log = f'{log_dir}/split/split_{exp}.log'
+                    if DEBUG:
+                        log = f'{log_dir}/split/split_{exp}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(
                         f=exp, fof=fof, file_id=i, file_basename=exp, log=log, **dargs)
                 pool.push('B', output_commands, args['nb_cores']/2)
