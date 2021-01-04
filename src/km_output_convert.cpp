@@ -186,9 +186,9 @@ void KmConvert::from_merge()
       delete[] header;
     }
   }
-  IFile* sync_file =  System::file().newFile(_sync, "w");
-  sync_file->flush();
-  delete sync_file;
+  //IFile* sync_file =  System::file().newFile(_sync, "w");
+  //sync_file->flush();
+  //delete sync_file;
 }
 
 void KmConvert::from_count()

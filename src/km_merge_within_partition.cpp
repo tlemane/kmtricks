@@ -99,10 +99,10 @@ void KmMerge::merge_to_pa_matrix()
     }
   }
   fout.close();
-  string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  IFile *sync_file = System::file().newFile(end_sign, "w");
-  sync_file->flush();
-  delete sync_file;
+  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
+  //IFile *sync_file = System::file().newFile(end_sign, "w");
+  //sync_file->flush();
+  //delete sync_file;
 }
 
 void KmMerge::merge_to_bin()
@@ -123,10 +123,10 @@ void KmMerge::merge_to_bin()
     }
   }
   fout.close();
-  string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  IFile *sync_file = System::file().newFile(end_sign, "w");
-  sync_file->flush();
-  delete sync_file;
+  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
+  //IFile *sync_file = System::file().newFile(end_sign, "w");
+  //sync_file->flush();
+  //delete sync_file;
 }
 
 void KmMerge::merge_to_ascii()
@@ -150,10 +150,10 @@ void KmMerge::merge_to_ascii()
     }
   }
   fout.close();
-  string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  IFile *sync_file = System::file().newFile(end_sign, "w");
-  sync_file->flush();
-  delete sync_file;
+  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
+  //IFile *sync_file = System::file().newFile(end_sign, "w");
+  //sync_file->flush();
+  //delete sync_file;
 }
 
 void KmMerge::merge_to_bf_pa()
@@ -187,10 +187,10 @@ void KmMerge::merge_to_bf_pa()
   }
   fout.close();
 
-  string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  IFile *sync_file = System::file().newFile(end_sign, "w");
-  sync_file->flush();
-  delete sync_file;
+  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
+  //IFile *sync_file = System::file().newFile(end_sign, "w");
+  //sync_file->flush();
+  //delete sync_file;
 }
 
 void KmMerge::transpose()

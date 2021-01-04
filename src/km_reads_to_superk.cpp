@@ -90,9 +90,9 @@ template<size_t span> struct Functor
     pInfo.saveInfoFile(name);
     _progress->finish();
 
-    string end_sign = e->SYNCHRO_S + fmt::format(END_TEMP_S, props->getStr(STR_EXP_ID));
-    IFile* sync_file = System::file().newFile(end_sign, "w");
-    sync_file->flush();
+    //string end_sign = e->SYNCHRO_S + fmt::format(END_TEMP_S, props->getStr(STR_EXP_ID));
+    //IFile* sync_file = System::file().newFile(end_sign, "w");
+    //sync_file->flush();
     delete e;
   }
 };

@@ -139,17 +139,17 @@ struct Functor
     km::LOG(km::INFO) << "Algo: " << (hash_mem ? "ByHash" : "ByVector");
 
     cmds[0]->execute();
-    string sign = prefix+"_"+to_string(part_id);
-    string end_sign = e->SYNCHRO_C + fmt::format(END_TEMP_C, sign);
-    IFile *sync_file = System::file().newFile(end_sign, "w");
-    sync_file->flush();
+    //string sign = prefix+"_"+to_string(part_id);
+    //string end_sign = e->SYNCHRO_C + fmt::format(END_TEMP_C, sign);
+    //IFile *sync_file = System::file().newFile(end_sign, "w");
+    //sync_file->flush();
 
     if (!keep_tmp)
       System::file().remove(e->STORE_SUPERK + "/" + prefix + ".superk" + "/superKparts." + to_string(part_id));
     pool.free_all();
     _superKstorage->closeFiles();
     _progress->finish();
-    delete sync_file;
+    //delete sync_file;
     delete e;
     delete dumper;
   }

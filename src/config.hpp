@@ -294,14 +294,14 @@ Env::~Env() {};
 void Env::build()
 {
   System::file().mkdir(DIR, -1);
-  System::file().mkdir(SYNCHRO, -1);
+  //System::file().mkdir(SYNCHRO, -1);
   System::file().mkdir(STORE, -1);
   System::file().mkdir(LOG, -1);
-  System::file().mkdir(SYNCHRO_P, -1);
-  System::file().mkdir(SYNCHRO_S, -1);
-  System::file().mkdir(SYNCHRO_C, -1);
-  System::file().mkdir(SYNCHRO_M, -1);
-  System::file().mkdir(SYNCHRO_SP, -1);
+  //System::file().mkdir(SYNCHRO_P, -1);
+  //System::file().mkdir(SYNCHRO_S, -1);
+  //System::file().mkdir(SYNCHRO_C, -1);
+  //System::file().mkdir(SYNCHRO_M, -1);
+  //System::file().mkdir(SYNCHRO_SP, -1);
   System::file().mkdir(STORE_SUPERK, -1);
   System::file().mkdir(STORE_KMERS, -1);
   System::file().mkdir(STORE_MATRIX, -1);
