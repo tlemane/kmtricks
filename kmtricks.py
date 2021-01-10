@@ -215,6 +215,8 @@ class OptionsParser:
         glb.add_argument('--mode', metavar='STR', type=str,
             choices=mt_format, default='bin',
             help=f'output matrix format: [{"|".join(mt_format)}]')
+        glb.add_argument('--log-files', metavar='STR', type=str,
+            help=f'log file: [{"|".join(steps)}]', default='')
         glb.add_argument('--nb-cores', metavar='INT', type=int,
             help='number of cores', default=8)
 
@@ -945,6 +947,12 @@ def main():
     cli = OptionsParser()
     args = cli.parse_args()
     VERBOSE, DEBUG = args['verbose'], args['debug']
+    
+    log_in_files = {s: s in args['log_files'].split(',') for s in control}
+    
+    if log_in_files['all']:
+        DEBUG = True
+
     args['abundance_min'] = args['count_abundance_min']
 
     all_ = None
@@ -983,7 +991,7 @@ def main():
         if (only == 1 or all_):
             dargs = deepcopy(args)
             dargs['file'] = fof_copy
-            if DEBUG:
+            if DEBUG or log_in_files['repart']:
                 log = f'{log_dir}/repartition.log'
             repart_commands['R'] = RepartitionCommand(log=log, **dargs)
             pool.push('R', repart_commands, 1)
@@ -992,7 +1000,7 @@ def main():
         if (only == 2 or all_ and until > 1):
             for i, f, _, exp in fof:
                 dargs = deepcopy(args)
-                if DEBUG:
+                if DEBUG or log_in_files['superk']:
                     log = f'{log_dir}/superk/superk_{exp}.log'
                 superk_commands[f'{SUPERK_PREFIX_ID}{i}'] = SuperkCommand(
                     id=i, f=f, fof=fof, log=log, exp_id=exp, **dargs
@@ -1008,7 +1016,7 @@ def main():
                 if ab_per_file:
                     dargs['abundance_min'] = c
                 for p in range(args['nb_partitions']):
-                    if DEBUG:
+                    if DEBUG or log_in_files['count']:
                         log = f'{log_dir}/counter/counter{i}_{p}.log'
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
                        f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
@@ -1020,7 +1028,7 @@ def main():
             mbin = get_binary(BIN_DIR, 'merge', args['kmer_size'], args['max_count'])
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
-                if DEBUG:
+                if DEBUG or log_in_files['merge']:
                     log = f'{log_dir}/merger/merger{p}.log'
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
                     part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs
@@ -1035,14 +1043,14 @@ def main():
             dargs = deepcopy(args)
             if not args['skip_merge']:
                 dargs['file'] = fof_copy
-                if DEBUG:
+                if DEBUG or log_in_files['split']:
                     log = f'{log_dir}/split/split.log'
                 output_commands[f'{OUTPUT_PREFIX_ID}0'] = OutputCommand(
                     nb_files=fof.nb, log=log, **dargs)
                 pool.push('O', output_commands, 1)
             else:
                 for i, f, _, exp in fof:
-                    if DEBUG:
+                    if DEBUG or log_in_files['split']:
                         log = f'{log_dir}/split/split_{exp}.log'
                     output_commands[f'{OUTPUT_PREFIX_ID_C}{i}'] = OutputCommandFromCount(
                         f=exp, fof=fof, file_id=i, file_basename=exp, log=log, **dargs)
