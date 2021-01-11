@@ -1,0 +1,13 @@
+name: km_reproduce
+channels:
+  - tlemane
+  - bioconda
+  - conda-forge
+dependencies:
+  - kmer-jellyfish==2.3.0
+  - howdesbt==2.00.02
+  - mccortex==1.0
+  - zlib==1.2.11
+  - sra-tools==2.10.8
+  - parallel-fastq-dump==0.0.6
+  - kmtricks==0.0.1
