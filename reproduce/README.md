@@ -1,5 +1,4 @@
-# Environment
+Bench and reproducibility information are in the following git repository: 
 
-```bash
-conda env create -p km_reproduce --file environment.yml
-```
+https://github.com/pierrepeterlongo/kmtricks_benchmarks
+
