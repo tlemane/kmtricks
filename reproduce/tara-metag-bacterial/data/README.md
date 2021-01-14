@@ -27,14 +27,6 @@ In short, there are about 266 billion distinct kmers, among which 174 billion oc
 
 ### Estimation per station:
 
-Command:
-
-```bash
-while IFS=' ' read -r line1 line2; do  ~/ntcard-1.2.2/ntcard -t 2 -k 20 -p ${line1}_count_k20 $line2; done < bact_metaG.subfof_kmtricks
-```
-
-Each station provides a file `station_name.hist`. 
-
 Results: [estimated_kmer_counts_metaG_bact](estimated_kmer_counts_metaG_bact)
 
 Analysed with script `analyse_hist_tara.py`
