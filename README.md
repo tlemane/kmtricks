@@ -52,27 +52,25 @@ kmtricks is composed of 5 independent modules
 
 ```
 my_run_directory/  
- ├── logs  
- │   ├── cmds.log  
- │   ├── counter  
- │   ├── merger  
- │   ├── superk  
- │   └── split  
- └── storage
-     ├── config_storage_gatb // gatb config
-     │   └── config.config
-     ├── fof.txt        
-     ├── hash_window.vec     
-     ├── kmers_partitions    // km_superk_to_kmer_count output
-     │   ├── partition_0
-     │   └── partition_1
-     ├── matrix              // km_merge_within_partition output
-     │   ├── partition_0
-     │   └── partition_1
-     ├── superk_partitions   // km_reads_to_superk output
-     └── vectors             // km_output_convert output 
-         ├── howde
-         └── sdsl
+├── config.log # log about general parameter, git sha1, ect...
+├── logs #enable all log with --debug or --log-files [repart,superk,count,merge,split]
+│   ├── cmds.log # summary of module calls
+│   ├── counter
+│   ├── merger
+│   ├── split
+│   └── superk
+└── storage
+    ├── config_storage_gatb         # (0) GATB configuration files (kmtricks.py env)
+    ├── partition_storage_gatb      # (1) --until repart (queryable using repartition.hpp)
+    │   └── minimRepart.minimRepart # minimizers repartition (required for queries)
+    ├── superk_partitions           # (2) --until superk (readable using skreader.hpp)
+    ├── kmers_partitions            # (3) --until count  (stream matrix from here using merger.hpp)
+    ├── matrix                      # (4) --until merge --mode [ascii|bin|bf|bf_trp]
+    ├── vectors                     # (5) full pipeline in bf output mode (--mode bf_trp)
+    │   ├── howde                   # with --mode bf_trp --split howde
+    │   └── sdsl                    # with --mode bf_trp --split sdsl
+    ├── fof.txt                     # copy of input fof (--file)
+    └── hash_window.vec             # info about partitioned bf (required for queries)
 ```
 
 **Note2:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
