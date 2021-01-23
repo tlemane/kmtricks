@@ -56,3 +56,5 @@ tests/libs/test_merger
 tests/libs/test_skreader
 tests/libs/kmtests
 **/html/
+
+/python/
