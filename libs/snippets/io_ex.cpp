@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
   {
     BitVectorFile<IN> bv(
       "BitVec.vec");
-    bv.write(inb);
+    bv.read(inb);
   }
 
   {

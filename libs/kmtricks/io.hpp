@@ -870,6 +870,8 @@ public:
   //! \brief
   //! \param :
   //! \param :
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, os>{}, S>::type>
   bool write(std::vector<char>& bit_vector)
   {
     if (!is_rw)
@@ -884,6 +886,8 @@ public:
   //! \brief
   //! \param :
   //! \param :
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, is>{}, S>::type>
   bool read(std::vector<char>& bit_vector)
   {
     if (bit_vector.size() != this->header.partition_size)
@@ -896,6 +900,8 @@ public:
     return false;
   }
 
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, is>{}, S>::type>
   bool read(char* bit_vector, size_t len)
   {
     if (len != this->header.partition_size)
@@ -911,6 +917,8 @@ public:
   //! \brief
   //! \param :
   //! \param :
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, is>{}, void>::type>
   std::vector<char> read()
   {
     if (!is_rw)
