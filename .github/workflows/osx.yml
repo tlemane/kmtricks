@@ -42,6 +42,9 @@ jobs:
           python-version: '3.7'
         
       - name: Auto release
+        if: |
+          github.ref == 'refs/heads/master' &&
+          contains(github.event.head_commit.message, '[auto]')
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
