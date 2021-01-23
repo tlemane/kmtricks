@@ -67,7 +67,7 @@ my_run_directory/
     ├── kmers_partitions            # (3) --until count  (stream matrix from here using merger.hpp)
     ├── matrix                      # (4) --until merge --mode [ascii|bin|bf|bf_trp]
     ├── vectors                     # (5) full pipeline in bf output mode (--mode bf_trp)
-    │   ├── howde                   # with --mode bf_trp --split howde
+    │   ├── howde                   # with --mode bf_trp --split howde (input BFs for HowDeSBT cluster/build)
     │   └── sdsl                    # with --mode bf_trp --split sdsl
     ├── fof.txt                     # copy of input fof (--file)
     └── hash_window.vec             # info about partitioned bf (required for queries)
