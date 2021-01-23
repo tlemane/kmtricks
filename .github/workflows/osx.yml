@@ -29,7 +29,7 @@ jobs:
       - name: Test
         shell: bash
         working-directory: ${{runner.workspace}}/build
-        run: ctest -C $BUILD_TYPE
+        run: ctest -C $BUILD_TYPE --verbose
 
       - name: Package
         shell: bash
