@@ -43,6 +43,8 @@
 #define BITSLOT(b) ((b) / CHAR_BIT)
 //!\ingroup Utilities
 #define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
+//!\ingroup Utilities
+#define BITCHECK(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
 
 using fof_t = std::vector<std::tuple<std::string, std::vector<std::string>, int>>;
 

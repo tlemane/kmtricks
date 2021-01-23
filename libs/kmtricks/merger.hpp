@@ -26,12 +26,11 @@
 #include <stdexcept>
 #include <exception>
 #include <unordered_map>
-#include <zlib.h>
-
 
 #include "utilities.hpp"
 #include "sequences.hpp"
 #include "lz4_stream.hpp"
+#include "io.hpp"
 
 typedef unsigned int  uint;
 typedef unsigned char uchar;
@@ -41,38 +40,33 @@ using namespace std;
 namespace km
 {
 
-//! \cond HIDDEN_SYMBOLS
-struct stream_t
-{
-  uchar *buf;
-  int begin, end, eof, iskhash;
-  istream *f;
-};
-//! \endcond
-
-//! \cond HIDDEN_SYMBOLS
-template<typename K, typename C>
-struct hshcount_t
-{
-  K khash;
-  C count;
-  bool khash_set;
-};
-//! \endcond
-
-
-template<typename K, typename C>
+template<typename K, typename C, typename F>
 class Merger
 {
+public:
+
+  struct hshcount_t
+  {
+    K khash;
+    C count;
+    bool khash_set;
+  };
+
+  struct stream_t
+  {
+    int eof, iskhash;
+    F *f;
+  };
+
 public:
   Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector,  uint save_if=0, bool stats=false);
   Merger(string &fof_path, vector<uint>& abundances, uint recurrence, uint header_size, bool vector, uint save_if=0, bool stats=false);
 
   ~Merger();
 
-  Merger(const Merger<K, C> &m);
+  Merger(const Merger<K, C, F> &m);
 
-  Merger<K, C> &operator=(const Merger<K, C> &m);
+  Merger<K, C, F> &operator=(const Merger<K, C, F> &m);
 
   int init();
 
@@ -114,7 +108,7 @@ private:
   bool _vector;
 
   vector<stream_t *>          _st;
-  vector<hshcount_t<K, C> *>  _hc;
+  vector<hshcount_t *>  _hc;
   vector<uchar *>             _headers;
   vector<uint>                _abs_vec;
   vector<uint64_t>            _need_check;
@@ -124,8 +118,8 @@ private:
 };
 
 #ifndef _KM_LIB_INCLUDE_
-template<typename K, typename C>
-Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
+template<typename K, typename C, typename F>
+Merger<K, C, F>::Merger(string &fof_path, uint abundance, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
   : keep(false),
     end(false),
     m_khash(0),
@@ -147,8 +141,8 @@ Merger<K, C>::Merger(string &fof_path, uint abundance, uint recurrence, uint hea
   init();
 }
 
-template<typename K, typename C>
-Merger<K, C>::Merger(string& fof_path, vector<uint>& abundances, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
+template<typename K, typename C, typename F>
+Merger<K, C, F>::Merger(string& fof_path, vector<uint>& abundances, uint recurrence, uint header_size, bool vector, uint save_if, bool stats)
   : keep(false),
     end(false),
     m_khash(0),
@@ -172,8 +166,8 @@ Merger<K, C>::Merger(string& fof_path, vector<uint>& abundances, uint recurrence
 }
 
 
-template<typename K, typename C>
-Merger<K, C>::~Merger()
+template<typename K, typename C, typename F>
+Merger<K, C, F>::~Merger()
 {
   for ( size_t i = 0; i < nb_files; i++ )
   {
@@ -184,17 +178,19 @@ Merger<K, C>::~Merger()
   }
   if ( _bit_vector )
     delete[] _bit_vector;
+  // useless
 }
 
 
-template<typename K, typename C>
-Merger<K, C>::Merger(const Merger<K, C> &m)
+template<typename K, typename C, typename F>
+Merger<K, C, F>::Merger(const Merger<K, C, F> &m)
   : keep(m.keep),
     end(m.end),
     m_khash(m.m_khash),
     nb_files(m.nb_files),
     vlen(m.vlen),
     _bit_vector(nullptr),
+    //_bit_vector(m._bit_vector)
     _path(m._path),
     _a_min(m._a_min),
     _r_min(m._r_min),
@@ -218,15 +214,12 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
 
   for ( size_t i = 0; i < nb_files; i++ )
   {
-    _hc[i] = new hshcount_t<K, C>();
+    _hc[i] = new hshcount_t();
     _hc[i]->khash = m._hc[i]->khash;
     _hc[i]->count = m._hc[i]->count;
     _hc[i]->khash_set = m._hc[i]->khash_set;
 
     _st[i] = new stream_t();
-    _st[i]->buf = m._st[i]->buf;
-    _st[i]->begin = m._st[i]->begin;
-    _st[i]->end = m._st[i]->end;
     _st[i]->eof = m._st[i]->eof;
     _st[i]->iskhash = m._st[i]->iskhash;
     _st[i]->f = m._st[i]->f;
@@ -250,8 +243,8 @@ Merger<K, C>::Merger(const Merger<K, C> &m)
 }
 
 
-template<typename K, typename C>
-Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
+template<typename K, typename C, typename F>
+Merger<K, C, F> &Merger<K, C, F>::operator=(const Merger<K, C, F> &m)
 {
   keep = m.keep;
   end = m.end;
@@ -281,15 +274,12 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
 
   for ( size_t i = 0; i < nb_files; i++ )
   {
-    _hc[i] = new hshcount_t<K, C>();
+    _hc[i] = new hshcount_t();
     _hc[i]->khash = m._hc[i]->khash;
     _hc[i]->count = m._hc[i]->count;
     _hc[i]->khash_set = m._hc[i]->khash_set;
 
     _st[i] = new stream_t();
-    _st[i]->buf = m._st[i]->buf;
-    _st[i]->begin = m._st[i]->begin;
-    _st[i]->end = m._st[i]->end;
     _st[i]->eof = m._st[i]->eof;
     _st[i]->iskhash = m._st[i]->iskhash;
     _st[i]->f = m._st[i]->f;
@@ -314,8 +304,8 @@ Merger<K, C> &Merger<K, C>::operator=(const Merger<K, C> &m)
 }
 
 
-template<typename K, typename C>
-void Merger<K, C>::initp()
+template<typename K, typename C, typename F>
+void Merger<K, C, F>::initp()
 {
   ifstream fof(_path, ios::in);
   if (!fof.good())
@@ -329,42 +319,32 @@ void Merger<K, C>::initp()
 }
 
 
-template<typename K, typename C>
-int Merger<K, C>::readb(size_t i)
+template<typename K, typename C, typename F>
+int Merger<K, C, F>::readb(size_t i)
 {
-  if ( _st[i]->begin >= _st[i]->end )
+  bool ret = _st[i]->f->read(_hc[i]->khash, _hc[i]->count);
+  if (!ret)
   {
-    _st[i]->begin = 0;
-    _st[i]->f->read((char*)_st[i]->buf, _buf_size);
-    _st[i]->end = _st[i]->f->gcount();
-    if ( _st[i]->end == 0 )
-    {
-      _st[i]->eof = 1;
-      return 0;
-    }
+    _st[i]->eof = 1;
+    return 0;
   }
-  memcpy(&_hc[i]->khash, &_st[i]->buf[_st[i]->begin], sizeof(K));
-  _st[i]->begin += sizeof(K);
-
-  memcpy(&_hc[i]->count, &_st[i]->buf[_st[i]->begin], sizeof(C));
-  _st[i]->begin += sizeof(C);
-
   return 1;
 }
 
 
-template<typename K, typename C>
-int Merger<K, C>::init()
+template<typename K, typename C, typename F>
+int Merger<K, C, F>::init()
 {
   initp();
   if ( _vector )
   {
-    vlen = NMOD8(NBYTE(nb_files));
+    vlen = NBYTE(nb_files);
     _bit_vector = new uchar[vlen]();
   }
   _m_k_set = false;
   end = false;
-  counts.reserve(nb_files);
+
+  counts.resize(nb_files, 0);
   total.resize(nb_files, 0);
   total_w_saved.resize(nb_files, 0);
 
@@ -383,27 +363,22 @@ int Merger<K, C>::init()
   
   for ( size_t i = 0; i < nb_files; i++ )
   {
-    _hc.push_back(new hshcount_t<K, C>());
+    _hc.push_back(new hshcount_t());
     _st.push_back(new stream_t());
 
-    _st[i]->f = new lz4_stream::istream(pfiles[i]);
-    if ( !_st[i]->f )
-      throw runtime_error("Unable to open " + pfiles[i]);
+    _st[i]->f = new F(pfiles[i]);
 
-    _st[i]->buf = new uchar[_buf_size]();
-
-    if ( _hsize > 0 )
-    {
-      _headers.push_back(new uchar[_hsize]());
-      _st[i]->f->read((char*)_headers[i], _hsize-1);
-      _headers[i][_hsize - 1] = '\0';
-    }
+    //if ( _hsize > 0 )
+    //{
+    //  _headers.push_back(new uchar[_hsize]());
+    //  _st[i]->f->read((char*)_headers[i], _hsize-1);
+    //  _headers[i][_hsize - 1] = '\0';
+    //}
 
     if ( !readb(i))
     {
       _hc[i]->khash_set = false;
       delete _st[i]->f;
-      delete[] _st[i]->buf;
     }
     else
       _hc[i]->khash_set = true;
@@ -418,8 +393,8 @@ int Merger<K, C>::init()
 }
 
 
-template<typename K, typename C>
-void Merger<K, C>::next()
+template<typename K, typename C, typename F>
+void Merger<K, C, F>::next()
 {
   uint rec = 0;
   uint solid_in = 0;
@@ -430,6 +405,7 @@ void Merger<K, C>::next()
   _need_check.clear();
   if ( _bit_vector )
     memset(_bit_vector, 0, vlen);
+  
   for ( size_t i = 0; i < nb_files; i++ )
   {
     if ( _hc[i]->khash_set && _hc[i]->khash == m_khash )
@@ -459,7 +435,6 @@ void Merger<K, C>::next()
       {
         _hc[i]->khash_set = false;
         delete _st[i]->f;
-        delete[] _st[i]->buf;
       }
     }
     else
@@ -488,8 +463,8 @@ void Merger<K, C>::next()
 }
 
 
-template<typename K, typename C>
-km::Kmer<K> Merger<K, C>::get_kmer(size_t ksize)
+template<typename K, typename C, typename F>
+km::Kmer<K> Merger<K, C, F>::get_kmer(size_t ksize)
 {
   return km::Kmer<K>(m_khash, ksize, false);
 }

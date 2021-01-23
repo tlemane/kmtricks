@@ -33,7 +33,7 @@ typedef unsigned char uchar;
 //! \defgroup Matrix
 
 //! \namespace km
-//!  The kmtricks library namespac
+//!  The kmtricks library namespace
 namespace km
 {
 
@@ -101,7 +101,7 @@ public:
   //! \param n :
   //! \param m :
   //! \param lendian :
-  BitMatrix(string &file, size_t n, size_t m, bool lendian);
+  BitMatrix(string &file, size_t n, size_t m, bool lendian) __attribute__((deprecated));
 
   //! \brief Constructor, matrix from memory
   //! \param mat :
@@ -163,12 +163,18 @@ public:
   //! \return column as uchar*
   uchar *get_cols(size_t j);
 
+  size_t get_size_in_byte();
+
+  size_t get_nb_lines();
+
+  size_t get_nb_cols();
+
   //! \brief clear matrix, set all bits to 0
   void clear();
 
   //! \brief dump matrix to file
   //! \param file : path to file
-  void dump(string file);
+  void dump(string file) __attribute__((deprecated)) ;
 
   //! \brief print matrix as hex bytes
   void print_bytes();
@@ -354,6 +360,21 @@ void BitMatrix::clear()
   memset(matrix, 0, _nb * _m);
 }
 
+
+size_t BitMatrix::get_size_in_byte()
+{
+  return _nb * _m;
+}
+
+size_t BitMatrix::get_nb_lines()
+{
+  return _nb;
+}
+
+size_t BitMatrix::get_nb_cols()
+{
+  return _mb;
+}
 
 void BitMatrix::dump(string file)
 {

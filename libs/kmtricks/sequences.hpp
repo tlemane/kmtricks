@@ -222,6 +222,10 @@ public:
   //! \see Code
   Code<K> *get_encoding();
 
+  //! \brief get bin data
+  //! \return ptr to data
+  K* get_data();
+
   //! \brief less than operator
   //! \param k
   //! \return true if this < that
@@ -673,6 +677,12 @@ template<typename K>
 Code<K>* Kmer<K>::get_encoding()
 {
   return _code;
+}
+
+template<typename K>
+K* Kmer<K>::get_data()
+{
+  return &_bin_kmer;
 }
 
 

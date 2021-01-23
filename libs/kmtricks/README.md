@@ -9,6 +9,7 @@ These headers allow to interact with some kmtricks files. Example are provided [
 * repartition.hpp : request minimizer repartition
 * merger.hpp : k-way merger
 * bitmatrix.hpp : bit matrix representation with tranposition support
+* io.hpp : Read/Write kmtricks files (KmerFile, CountMatrixFile, BitMatrixFile, ...)
 * logging.hpp : very basic logging
 * kmlib.hpp : shortcut to include everything
 

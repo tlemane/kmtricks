@@ -49,25 +49,25 @@ template class Validator<uint64_t>;
 template class Minimizer<uint64_t>;
 template class SuperkReader<uint64_t>;
 
-template class Merger<uint8_t, uint8_t>;
-template class Merger<uint8_t, uint16_t>;
-template class Merger<uint8_t, uint32_t>;
-template class Merger<uint8_t, uint64_t>;
+template class Merger<uint8_t, uint8_t, KmerFile<IN, uint8_t, uint8_t>>;
+template class Merger<uint8_t, uint16_t, KmerFile<IN, uint8_t, uint16_t>>;
+template class Merger<uint8_t, uint32_t, KmerFile<IN, uint8_t, uint32_t>>;
+template class Merger<uint8_t, uint64_t, KmerFile<IN, uint8_t, uint64_t>>;
 
-template class Merger<uint16_t, uint8_t>;
-template class Merger<uint16_t, uint16_t>;
-template class Merger<uint16_t, uint32_t>;
-template class Merger<uint16_t, uint64_t>;
+template class Merger<uint16_t, uint8_t, KmerFile<IN, uint16_t, uint8_t>>;
+template class Merger<uint16_t, uint16_t, KmerFile<IN, uint16_t, uint16_t>>;
+template class Merger<uint16_t, uint32_t, KmerFile<IN, uint16_t, uint32_t>>;
+template class Merger<uint16_t, uint64_t, KmerFile<IN, uint16_t, uint64_t>>;
 
-template class Merger<uint32_t, uint8_t>;
-template class Merger<uint32_t, uint16_t>;
-template class Merger<uint32_t, uint32_t>;
-template class Merger<uint32_t, uint64_t>;
+template class Merger<uint32_t, uint8_t, KmerFile<IN, uint32_t, uint8_t>>;
+template class Merger<uint32_t, uint16_t, KmerFile<IN, uint32_t, uint16_t>>;
+template class Merger<uint32_t, uint32_t, KmerFile<IN, uint32_t, uint32_t>>;
+template class Merger<uint32_t, uint64_t, KmerFile<IN, uint32_t, uint64_t>>;
 
-template class Merger<uint64_t, uint8_t>;
-template class Merger<uint64_t, uint16_t>;
-template class Merger<uint64_t, uint32_t>;
-template class Merger<uint64_t, uint64_t>;
+template class Merger<uint64_t, uint8_t, KmerFile<IN, uint64_t, uint8_t>>;
+template class Merger<uint64_t, uint16_t, KmerFile<IN, uint64_t, uint16_t>>;
+template class Merger<uint64_t, uint32_t, KmerFile<IN, uint64_t, uint32_t>>;
+template class Merger<uint64_t, uint64_t, KmerFile<IN, uint64_t, uint64_t>>;
 
 #ifdef __SIZEOF_INT128__
 template class Code<__uint128_t>;
@@ -77,14 +77,14 @@ template class Hasher<__uint128_t>;
 template class Validator<__uint128_t>;
 template class SuperkReader<__uint128_t>;
 
-template class Merger<uint8_t, __uint128_t>;
-template class Merger<uint16_t, __uint128_t>;
-template class Merger<uint32_t, __uint128_t>;
-template class Merger<uint64_t, __uint128_t>;
-template class Merger<__uint128_t, uint8_t>;
-template class Merger<__uint128_t, uint16_t>;
-template class Merger<__uint128_t, uint32_t>;
-template class Merger<__uint128_t, uint64_t>;
-template class Merger<__uint128_t, __uint128_t>;
+template class Merger<uint8_t, __uint128_t, KmerFile<IN, uint8_t, __uint128_t>>;
+template class Merger<uint16_t, __uint128_t, KmerFile<IN, uint16_t, __uint128_t>>;
+template class Merger<uint32_t, __uint128_t, KmerFile<IN, uint32_t, __uint128_t>>;
+template class Merger<uint64_t, __uint128_t, KmerFile<IN, uint64_t, __uint128_t>>;
+template class Merger<__uint128_t, uint8_t, KmerFile<IN, __uint128_t, uint8_t>>;
+template class Merger<__uint128_t, uint16_t, KmerFile<IN, __uint128_t, uint16_t>>;
+template class Merger<__uint128_t, uint32_t, KmerFile<IN, __uint128_t, uint32_t>>;
+template class Merger<__uint128_t, uint64_t, KmerFile<IN, __uint128_t, uint64_t>>;
+template class Merger<__uint128_t, __uint128_t, KmerFile<IN, __uint128_t, __uint128_t>>;
 #endif
 }

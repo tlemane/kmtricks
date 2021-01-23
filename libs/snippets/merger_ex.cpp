@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     string fof = argv[1];
     int amin = atoi(argv[2]);
     int rmin = atoi(argv[3]);
-    Merger<KType, CType> m(fof, amin, rmin, 0, true); // fof, min abundance, min recurrence, header size (0 for headerless file)
+    Merger<KType, CType, KmerFile<IN, KType, CType>> m(fof, amin, rmin, 0, true); // fof, min abundance, min recurrence, header size (0 for headerless file)
     while(!m.end)
     {
       m.next();
