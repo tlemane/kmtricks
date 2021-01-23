@@ -19,6 +19,7 @@
 #include <kmtricks/logging.hpp>
 #include "km_merge_within_partition.hpp"
 #include "signal_handling.hpp"
+#include <kmtricks/io.hpp>
 
 km::log_config km::LOG_CONFIG;
 
@@ -86,125 +87,89 @@ void KmMerge::parse_args()
 
 void KmMerge::merge_to_pa_matrix()
 {
-  ofstream fout;
   string opath = e->STORE_MATRIX + fmt::format(PA_TEMP, _id, _id);
-  fout.open(opath, ios::binary);
+  PAMatrixFile<OUT, kmtype_t> pam(
+    opath, _id, _m->nb_files, 20, 0, 0);
   while (!_m->end)
   {
     _m->next();
     if (_m->keep)
-    {
-      fout.write((char*)&_m->m_khash, sizeof(kmtype_t));
-      fout.write((char*)_m->_bit_vector, _m->vlen);
-    }
+      pam.write(_m->m_khash, _m->_bit_vector, _m->vlen);
   }
-  fout.close();
-  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  //IFile *sync_file = System::file().newFile(end_sign, "w");
-  //sync_file->flush();
-  //delete sync_file;
 }
 
 void KmMerge::merge_to_bin()
 {
-  ofstream fout;
   string opath = e->STORE_MATRIX + fmt::format(CO_TEMP, _id, _id);
-  fout.open(opath, ios::binary | ios::out);
+  CountMatrixFile<OUT, kmtype_t, cntype_t, matrix_t::BIN> mat(
+    opath, _id, _m->nb_files, 20, 0, 0);
   while (!_m->end)
   {
     _m->next();
     if (_m->keep)
-    {
-      fout.write((char*)&_m->m_khash, sizeof(kmtype_t));
-      for (size_t i=0; i<_m->nb_files; i++)
-      {
-        fout.write((char*)&_m->counts[i], sizeof(cntype_t));
-      }
-    }
+      mat.write(_m->m_khash, _m->counts);
   }
-  fout.close();
-  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  //IFile *sync_file = System::file().newFile(end_sign, "w");
-  //sync_file->flush();
-  //delete sync_file;
 }
 
 void KmMerge::merge_to_ascii()
 {
   string opath = e->STORE_MATRIX + fmt::format(AS_TEMP, _id, _id);
-  ofstream fout;
-  fout.open(opath, ios::out);
-  while (!_m->end)
+  km::Kmer<kmtype_t> k(true);
+  CountMatrixFile<OUT, kmtype_t, cntype_t, matrix_t::ASCII> mat(
+    opath, _id, _m->nb_files, 20, 0, 0);
+  while(!_m->end)
   {
     _m->next();
     if (_m->keep)
     {
-#if KTYPE == 128
-      fout << _m->m_khash;
-#else
-      fout << to_string(_m->m_khash);
-#endif
-      for (size_t vi=0; vi<_m->nb_files; vi++)
-        fout << " " << to_string(_m->counts[vi]);
-      fout << "\n";
+      k.set_kmer(_m->m_khash, 20);
+      mat.write(k, _m->counts);
     }
   }
-  fout.close();
-  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  //IFile *sync_file = System::file().newFile(end_sign, "w");
-  //sync_file->flush();
-  //delete sync_file;
 }
 
 void KmMerge::merge_to_bf_pa()
 {
-  ofstream fout;
   string opath = e->STORE_MATRIX + fmt::format(BF_NT_TEMP, _id, _id);
-  fout.open(opath, ios::binary);
-  uchar* empty = new uchar[_m->vlen]();
-  uint64_t current_hash = _lower_hash;
+  vector<char> empty_vec (_m->vlen);
+  BitMatrixFile<OUT, matrix_t::BF> bfmat(
+    opath, _id, _upper_hash-_lower_hash+1, _m->nb_files, 0);
+  uint64_t current = _lower_hash;
 
-  while(!_m->end)
+  while (!_m->end)
   {
     _m->next();
-    while(_m->m_khash > current_hash)
+    while(_m->m_khash > current)
     {
-      fout.write((char*)empty, _m->vlen);
-      current_hash++;
+      bfmat.write(empty_vec);
+      current++;
     }
-
     if (_m->keep)
     {
-      fout.write((char*)_m->_bit_vector, _m->vlen);
-      current_hash = _m->m_khash+1;
+      bfmat.write(_m->_bit_vector, _m->vlen);
+      current = _m->m_khash+1;
     }
   }
-
-  while (current_hash <= _upper_hash)
+  while (current <= _upper_hash)
   {
-    fout.write((char*)empty, _m->vlen);
-    current_hash++;
+    bfmat.write(empty_vec);
+    current++;
   }
-  fout.close();
-
-  //string end_sign = e->SYNCHRO_M + fmt::format(END_TEMP_M, _id);
-  //IFile *sync_file = System::file().newFile(end_sign, "w");
-  //sync_file->flush();
-  //delete sync_file;
 }
 
 void KmMerge::transpose()
 {
-  string path_mat = e->STORE_MATRIX + fmt::format(BF_NT_TEMP, _id, _id);
-  uint n = _upper_hash - _lower_hash + 1;
-  uint m = NMOD8(NBYTE(_m->nb_files));
-  BitMatrix *mat = new BitMatrix(path_mat, n, m, true);
-  BitMatrix *trp = mat->transpose();
-  string outp = e->STORE_MATRIX + fmt::format(BF_T_TEMP, _id, _id);
-  remove(path_mat.c_str());
-  trp->dump(outp);
-  delete mat;
-  delete trp;
+  {
+    string path_mat = e->STORE_MATRIX + fmt::format(BF_NT_TEMP, _id, _id);
+    BitMatrixFile<IN, matrix_t::BIT> mat_file(path_mat);
+    BitMatrix mat(mat_file.infos()->nb_rows_use, mat_file.infos()->nb_cols_use/8, true);
+    mat_file.load(mat);
+    BitMatrix *trp = mat.transpose();
+    string out_path = e->STORE_MATRIX + fmt::format(BF_T_TEMP, _id, _id);
+    BitMatrixFile<OUT, matrix_t::BIT> mat_file2(
+      out_path, _id, trp->get_nb_lines(), trp->get_nb_cols(), 0);
+    mat_file2.dump(*trp);
+  }
 }
 
 void KmMerge::execute()
@@ -221,10 +186,10 @@ void KmMerge::execute()
   km::LOG(km::INFO) << "Save-if: " << _save_if;
 
   if (!_min_a && _abs_vec.size() > 0)
-    _m = new Merger<kmtype_t, cntype_t>(
+    _m = new Merger<kmtype_t, cntype_t, KmerFile<IN, kmtype_t, cntype_t>>(
       _fofpath, _abs_vec, _min_r, hsize, setbv, _save_if, true);
   else
-    _m = new Merger<kmtype_t, cntype_t>(
+    _m = new Merger<kmtype_t, cntype_t, KmerFile<IN, kmtype_t, cntype_t>>(
       _fofpath, _min_a, _min_r, hsize, setbv, _save_if, true);
   
   switch (_mode)

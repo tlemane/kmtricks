@@ -27,6 +27,7 @@
 #include <sdsl/bit_vectors.hpp>
 #include <HowDeSBT/bloom_filter_file.h>
 #include "config.hpp"
+#include <kmtricks/io.hpp>
 
 using namespace std;
 using namespace sdsl;
@@ -65,7 +66,8 @@ private:
   string    _fof;
   string    _sync;
   vector<string>   _f_names;
-  vector<ifstream> _matrices;
+  //vector<ifstream> _matrices;
+  vector<km::BitMatrixFile<km::IN, km::matrix_t::BF>*> _matrices;
   vector<tuple<uint64_t, uint64_t>> _hash_windows;
   map<string, uint> _fof_pos;
   vector<uint>      _pos;

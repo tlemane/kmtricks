@@ -120,7 +120,7 @@ void KmConvert::init()
     if (_from_merge)
     {
       mpath = _e->STORE_MATRIX + fmt::format(BF_T_TEMP, i, i);
-      _matrices.push_back(ifstream(mpath, ios::in | ios::binary));
+      _matrices.push_back(new km::BitMatrixFile<km::IN, km::matrix_t::BF>(mpath));
     }
   }
   _win_size = get<1>(_hash_windows[0]) + 1;
@@ -139,7 +139,7 @@ void KmConvert::from_merge()
     uint64_t offset = 0;
     for (int p=0; p<_nb_parts; p++)
     {
-      _matrices[p].read((char*)&data[offset], _win_size/8);
+      _matrices[p]->read<char>(&data[offset], _win_size/8);
       offset += _win_size/8;
     }
     if (!_howde)
@@ -186,9 +186,6 @@ void KmConvert::from_merge()
       delete[] header;
     }
   }
-  //IFile* sync_file =  System::file().newFile(_sync, "w");
-  //sync_file->flush();
-  //delete sync_file;
 }
 
 void KmConvert::from_count()
@@ -202,18 +199,21 @@ void KmConvert::from_count()
   ofstream out(output_path, ios::binary | ios::out);
   string in_path;
   string ext = ".kmer.vec";
+  bool islz4 = false;
   string path_template = _e->STORE_KMERS + "/partition_{}/{}";
   if (!ifstream(fmt::format(path_template, 0, _f_basename+ext)).good())
+  {
     ext = ".kmer.vec.lz4";
-
+    islz4 = true;
+  }
   bitvector b(_filter_size, 0);
   char* data = (char*)b.data();
   uint64_t offset = 0;
   for (int i=0; i<_nb_parts; i++)
   {
     in_path = fmt::format(path_template, i, _f_basename+ext);
-    lz4_stream::istream in(in_path);
-    in.read((char*)&data[offset], _win_size/8);
+    km::BitVectorFile<km::IN> in(in_path);
+    in.read(&data[offset], _win_size/8);
     offset += _win_size/8;
   }
 
@@ -276,6 +276,8 @@ void KmConvert::execute()
   km::LOG(km::INFO) << "Mode: " << (_howde ? "howde" : "sdsl");
   km::LOG(km::INFO) << "Size: " << _filter_size;
   
+  for (int i=0; i<_matrices.size(); i++)
+    delete _matrices[i];
   delete _e;
 }
 

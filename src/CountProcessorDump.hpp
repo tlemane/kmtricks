@@ -26,6 +26,7 @@
 #include <gatb/gatb_core.hpp>
 #include <kmtricks/lz4_stream.hpp>
 #include <kmtricks/utilities.hpp>
+#include <kmtricks/io.hpp>
 #include "config.hpp"
 
 
@@ -42,33 +43,63 @@ public:
     const string& out_part,
     uint partId,
     bool lz4,
+    km::KmerFile<km::OUT, kmtype_t, cntype_t>* cmf,
     size_t nbPartsPerPass = 0,
     size_t window = 0)
 
     : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4),
       _min_abundance(min_abundance), _out_part(out_part), _partId(partId),
-      _window(window/8), _window_bits(window), _hk(0), _hcount(0)
+      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _cmf(cmf)
   {
-    _part_file.rdbuf()->pubsetbuf(_buffer, 8192);
+    //_part_file.rdbuf()->pubsetbuf(_buffer, 8192);
     
-    if (_window) _out_part += ".vec";
-    
-    if (_lz4_output)
+    if (_window)
     {
-      _part_file.open(_out_part+".lz4", std::ios::app | std::ios::binary);
-      _lzstream = new lz4_stream::ostream(_part_file);
-      _writer = _lzstream;
+      _out_part += ".vec";
+      _vec.resize(_window);
     }
-    else
-    {
-      _part_file.open(_out_part, std::ios::app | std::ios::binary);
-      _writer = &_part_file;
-    }
+    //if (_lz4_output)
+    //{
+      //_part_file.open(_out_part+".lz4", std::ios::app | std::ios::binary);
+      //_lzstream = new lz4_stream::ostream(_part_file);
+      //_writer = _lzstream;
+    //}
+    //else
+    //{
+      //_part_file.open(_out_part, std::ios::app | std::ios::binary);
+      //_writer = &_part_file;
+    //}
 
-    if (!_part_file)
+    //if (!_part_file)
+    //{
+    //  cout << "Unable to open " + _out_part << endl;
+    //  exit(EXIT_FAILURE);
+    //}
+    
+    model = new typename Kmer<span>::ModelCanonical(kmerSize);
+    _mc = maxc.at(sizeof(cntype_t));
+
+    if (_window)
+      _vec.resize(_window);
+  }
+
+  CountProcessorDumpPart(
+    size_t kmerSize,
+    CountNumber min_abundance,
+    const string& out_part,
+    uint partId,
+    bool lz4,
+    km::BitVectorFile<km::OUT>* bvf,
+    size_t nbPartsPerPass = 0,
+    size_t window = 0)
+
+    : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4),
+      _min_abundance(min_abundance), _out_part(out_part), _partId(partId),
+      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _bvf(bvf)
+  {
+    if (_window)
     {
-      cout << "Unable to open " + _out_part << endl;
-      exit(EXIT_FAILURE);
+      _vec.resize(_window);
     }
     
     model = new typename Kmer<span>::ModelCanonical(kmerSize);
@@ -82,10 +113,6 @@ public:
   {
     if (_window)
       flush();
-    if (_lzstream)
-      _lzstream->close();
-    _part_file.close();
-
   }
 
   void begin(const Configuration &config)
@@ -96,7 +123,12 @@ public:
 
   CountProcessorAbstract<span> *clone()
   {
-    return new CountProcessorDumpPart(_kmerSize, _min_abundance, _out_part, _partId, _window, _lz4_output);
+    if (_window)
+      return new CountProcessorDumpPart(
+        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _bvf, _nbPartsPerPass, _window_bits);
+    else
+      return new CountProcessorDumpPart(
+        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _cmf, _nbPartsPerPass, _window_bits);
   }
 
   void finishClones(vector<ICountProcessor<span> *> &clones)
@@ -136,8 +168,7 @@ public:
       else
       {
         _hcount = kmer_count >= _mc ? _mc : (cntype_t)kmer_count;
-        _writer->write((char*)&_hk, sizeof(kmtype_t));
-        _writer->write((char *)&_hcount, sizeof(cntype_t));
+        _cmf->write(_hk, _hcount);
       }
     }
     return true;
@@ -145,7 +176,7 @@ public:
 
   void flush()
   {
-    std::copy(_vec.begin(), _vec.end(), std::ostream_iterator<uint8_t>(*_writer));
+    _bvf->write(_vec);
   }
 
 private:
@@ -154,17 +185,15 @@ private:
   size_t    _min_abundance;
   size_t    _nbPartsPerPass;
   string    _out_part;
-  ofstream  _part_file;
-  ostream   *_writer;
-  char      _buffer[8192];
   kmtype_t  _hk;
   cntype_t  _hcount;
   uint      _partId;
   bool      _lz4_output;
   size_t    _window;
   size_t    _window_bits;
-  lz4_stream::ostream *_lzstream;
   map<string, size_t> _namesOccur;
-  vector<uint8_t>     _vec;
+  vector<char>     _vec;
   uint64_t  _mc;
+  km::BitVectorFile<km::OUT>* _bvf;
+  km::KmerFile<km::OUT, kmtype_t, cntype_t>* _cmf;
 };

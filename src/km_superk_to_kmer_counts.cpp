@@ -25,6 +25,7 @@
 #include "CountProcessorDump.hpp"
 #include "km_superk_to_kmer_counts.hpp"
 #include "signal_handling.hpp"
+#include <thread>
 
 km::log_config km::LOG_CONFIG;
 
@@ -103,7 +104,26 @@ struct Functor
     vector<ICommand*> cmds;
     string path = e->STORE_KMERS + fmt::format(PART_TEMP_K, part_id, prefix);
     uint64_t vec_size = props->getInt(STR_VEC_ONLY) ? window_size : 0;
-    CountProcessorDumpPart<span>* dumper = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions, vec_size);
+    CountProcessorDumpPart<span>* dumper;// = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions, vec_size);
+
+    km::BitVectorFile<km::OUT> *bvf = nullptr;
+    km::KmerFile<km::OUT, kmtype_t, cntype_t> *cmf = nullptr;
+    if (vec_size)
+    {
+      path += ".vec";
+      if (lz4) path += ".lz4";
+      bvf = new km::BitVectorFile<km::OUT>(path, 0, part_id, window_size, lz4);
+      dumper = new CountProcessorDumpPart<span>(
+        kmerSize, min_abundance, path, part_id, lz4, bvf, nb_partitions, vec_size);
+    }
+    else
+    {
+      if (lz4) path += ".lz4";
+      cmf = new km::KmerFile<km::OUT, kmtype_t, cntype_t>(path, 0, part_id, kmerSize, hash_mode, lz4);
+      dumper = new CountProcessorDumpPart<span>(
+        kmerSize, min_abundance, path, part_id, lz4, cmf, nb_partitions, vec_size);
+    } 
+
 
     string hasher = props->getStr(STR_HASHER);
     bool sabuhash = false;
@@ -139,19 +159,16 @@ struct Functor
     km::LOG(km::INFO) << "Algo: " << (hash_mem ? "ByHash" : "ByVector");
 
     cmds[0]->execute();
-    //string sign = prefix+"_"+to_string(part_id);
-    //string end_sign = e->SYNCHRO_C + fmt::format(END_TEMP_C, sign);
-    //IFile *sync_file = System::file().newFile(end_sign, "w");
-    //sync_file->flush();
 
     if (!keep_tmp)
       System::file().remove(e->STORE_SUPERK + "/" + prefix + ".superk" + "/superKparts." + to_string(part_id));
     pool.free_all();
     _superKstorage->closeFiles();
     _progress->finish();
-    //delete sync_file;
     delete e;
     delete dumper;
+    delete cmf;
+    delete bvf;
   }
 };
 

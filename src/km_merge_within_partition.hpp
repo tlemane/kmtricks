@@ -42,7 +42,7 @@ private:
   void        transpose();
 
 private:
-  Merger<kmtype_t, cntype_t>  *_m;
+  Merger<kmtype_t, cntype_t, KmerFile<IN, kmtype_t, cntype_t>> *_m;
   Env*                  e;
   uint                  _min_a;
   uint                  _min_r;
