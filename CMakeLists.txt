@@ -21,11 +21,22 @@ endif()
 
 configure_file("./config.h.in" ${PROJECT_BINARY_DIR}/include/kmconfig.hpp)
 
-find_package(ZLIB)
+option(STATIC_BUILD "Static build (disable openmp, gomp_init_target load shared at runtime)" OFF)
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    set(OPENMP OpenMP::OpenMP_CXX)
+if (STATIC_BUILD)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
+
+option(BUILD_SHARED_LIBS "Build kmtricks shared library" OFF)
+
+find_package(ZLIB REQUIRED)
+
+if (NOT STATIC_BUILD)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        set(OPENMP OpenMP::OpenMP_CXX)
+    endif()
 endif()
 
 set (debug 0)
@@ -138,6 +149,8 @@ if (HOWDE)
         SOURCE_DIR ${THIRDPARTY_DIR}/HowDeSBT
         CMAKE_ARGS -DSDSLINC=${SDSL_INCLUDE}
         CMAKE_ARGS -DSDSLLIB=${SDSL_LIB_DIR}
+        CMAKE_ARGS -DLZ4INC=${LZ_INCLUDE}
+        CMAKE_AGRS -DLZ4LIB=${LZ_LIB_DIR}
         CMAKE_ARGS -DKMTRICKS_LIB=${PROJECT_SOURCE_DIR}/bin/lib/
         CMAKE_ARGS -DKMTRICKS_INC=${PROJECT_SOURCE_DIR}/libs/
         CMAKE_ARGS -DOUTPUT=${PROJECT_SOURCE_DIR}/bin/
