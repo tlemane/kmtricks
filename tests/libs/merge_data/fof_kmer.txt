@@ -1,0 +1,2 @@
+merge_data/toy1_kmer.txt.bin
+merge_data/toy2_kmer.txt.bin

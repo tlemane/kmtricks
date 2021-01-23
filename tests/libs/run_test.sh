@@ -1,8 +1,8 @@
 #!/bin/bash
 
-../../bin/snippets/merger_ex ./merge_data/fof.txt 1 1 > tmp11.txt
-../../bin/snippets/merger_ex ./merge_data/fof.txt 1 2 > tmp12.txt
-../../bin/snippets/merger_ex ./merge_data/fof.txt 2 1 > tmp21.txt
+../../bin/snippets/merger_ex ./merge_data/fof_kmer.txt 1 1 > tmp11.txt
+../../bin/snippets/merger_ex ./merge_data/fof_kmer.txt 1 2 > tmp12.txt
+../../bin/snippets/merger_ex ./merge_data/fof_kmer.txt 2 1 > tmp21.txt
 
 diff ./merge_data/merge_a1r1.txt tmp11.txt
 if [ $? -ne 0 ]; then
