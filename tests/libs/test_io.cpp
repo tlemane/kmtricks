@@ -4,11 +4,7 @@
 #include <cstdio>
 #include <gtest/gtest.h>
 #define _KM_LIB_INCLUDE_
-#define LALALALA
-#define LALA
 #include <kmtricks/io.hpp>
-
-
 
 using ktype = uint64_t;
 using cntype = uint16_t;

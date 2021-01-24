@@ -55,6 +55,7 @@ TEST(kmer, kmer_custom_hash)
   EXPECT_EQ(kmer.hash(), 0x1234);
   kmer.set_default_hasher();
   EXPECT_EQ(kmer.hash(), 0x4BC4D2729806CDF8);
+  delete hasher;
 }
 
 TEST(kmer, kmer_custom_encoding)
