@@ -220,7 +220,11 @@ protected:
   void set_second_layer(bool compress)
   {
     this->second_layer = this->template add_compression_layer<compression_stream_t>(compress);
+
+#ifndef __APPLE__
+    // Dirty fix, I don't know why but this line cause a segfault on Apple clang > 10.1
     this->second_layer->rdbuf()->pubsetbuf(buf.data(), buf.size());
+#endif
   }
 
 protected:
