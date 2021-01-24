@@ -173,6 +173,7 @@ Merger<K, C, F>::~Merger()
   {
     if ( _headers.size())
       delete[] _headers[i];
+    if ( _st[i]->f ) delete _st[i]->f;
     delete _st[i];
     delete _hc[i];
   }
@@ -379,6 +380,7 @@ int Merger<K, C, F>::init()
     {
       _hc[i]->khash_set = false;
       delete _st[i]->f;
+      _st[i]->f = nullptr;
     }
     else
       _hc[i]->khash_set = true;
@@ -435,6 +437,7 @@ void Merger<K, C, F>::next()
       {
         _hc[i]->khash_set = false;
         delete _st[i]->f;
+        _st[i]->f = nullptr;
       }
     }
     else

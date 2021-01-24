@@ -147,21 +147,26 @@ typedef struct pa_matrix_file_header paheader_t;
 typedef struct count_matrix_file_header cmheader_t;
 typedef struct kmer_file_header kheader_t;
 
-#ifdef _KM_LIB_INCLUDE_
-extern kheader_t  kheader_d;
-extern cmheader_t cmheader_d;
-extern paheader_t paheader_d;
-extern bvheader_t bvheader_d;
-extern bmheader_t bmheader_d;
-#endif
-
-#ifndef _KM_LIB_INCLUDE_
-kheader_t  kheader_d  = {magic1, 0, 0, 0, 0, 0, 0, 0, magic2};
-cmheader_t cmheader_d = {magic1, matrix_t::ASCII, 0, 0, 0, 0, 0, 0, 0, magic2};
-paheader_t paheader_d = {magic1, matrix_t::PA, 0, 0, 0, 0, 0, 0, 0, magic2};
-bvheader_t bvheader_d = {magic1, 0, 0, 0, 0, 0, magic2};
-bmheader_t bmheader_d = {magic1, matrix_t::BF, 0, 0, 0, 0, 0, 0, 0, magic2};
-#endif
+const static kheader_t  kheader_d  = {magic1, 0, 0, 0, 0, 0, 0, 0, magic2};
+const static cmheader_t cmheader_d = {magic1, matrix_t::ASCII, 0, 0, 0, 0, 0, 0, 0, magic2};
+const static paheader_t paheader_d = {magic1, matrix_t::PA, 0, 0, 0, 0, 0, 0, 0, magic2};
+const static bvheader_t bvheader_d = {magic1, 0, 0, 0, 0, 0, magic2};
+const static bmheader_t bmheader_d = {magic1, matrix_t::BF, 0, 0, 0, 0, 0, 0, 0, magic2};
+//#ifdef _KM_LIB_INCLUDE_
+//extern kheader_t  kheader_d;
+//extern cmheader_t cmheader_d;
+//extern paheader_t paheader_d;
+//extern bvheader_t bvheader_d;
+//extern bmheader_t bmheader_d;
+//#endif
+//
+//#ifndef _KM_LIB_INCLUDE_
+//kheader_t  kheader_d  = {magic1, 0, 0, 0, 0, 0, 0, 0, 0, magic2};
+//cmheader_t cmheader_d = {magic1, matrix_t::ASCII, 0, 0, 0, 0, 0, 0, 0, magic2};
+//paheader_t paheader_d = {magic1, matrix_t::PA, 0, 0, 0, 0, 0, 0, 0, magic2};
+//bvheader_t bvheader_d = {magic1, 0, 0, 0, 0, 0, magic2};
+//bmheader_t bmheader_d = {magic1, matrix_t::BF, 0, 0, 0, 0, 0, 0, 0, magic2};
+//#endif
 
 //! \ingroup IO
 //! \class IFile
@@ -171,7 +176,7 @@ template<typename header_t,
          size_t   buf_size>
 class IFile
 {
-  using stream_t  = std::unique_ptr<stream>;
+  using stream_t = std::unique_ptr<stream>;
   using buffer_t = std::array<char, buf_size>;
 
 public:
@@ -182,6 +187,9 @@ public:
   {
     if (!this->first_layer->good())
       throw std::runtime_error("Unable to open " + path);
+    memset(&header, 0, sizeof(header));
+    header.first_magic = magic1;
+    header.second_magic = magic2;
   }
   IFile (IFile const &) = delete;
   IFile& operator= (IFile const &) = delete;
@@ -282,7 +290,7 @@ public:
     this->header.is_hashes     = is_hashes;
     this->header.ktsize        = sizeof(KmerType);
     this->header.ctsize        = sizeof(CountType);
-
+    
     this->first_layer->write(reinterpret_cast<char*>(&this->header), sizeof(this->header)); 
     this->first_layer->flush();
     this->template set_second_layer<ocstream>(this->header.is_compressed);
