@@ -103,7 +103,7 @@ hash mode configuration:
   * hash mode
     * `bf`: Each row corresponds to one presence/absence bit-vector corresponding to one hash value (given by the line index).
       * \<PaBitVector>
-    * `bf_trp`: Each row represents
+    * `bf_trp`: Each row corresponds to a sample and is a part of its pBFs.
       * \<BfBitVector>
 
 All matrix files have headers (in text format for `ascii` mode). When compression is enabled, headers remain uncompressed, compression is applied only on file content (even in `ascii` mode).
@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-**Read a column-major bf matrix, tranpose it to obtain row-major bf (see next section) and write the transposed matrix into a kmtricks file:** 
+**Read a hash presence/absence matrix, tranpose it to obtain row-major bf (see next section) and write the transposed matrix into a kmtricks file:** 
 
 ```cpp
 #include <string>
