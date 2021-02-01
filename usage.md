@@ -257,8 +257,8 @@ int main(int argc, char* argv[])
 kmtricks.py run --file fof.txt --run-dir ./hash_run --kmer-size 20 --nb-cores 8 --nb-partitions 50 --count-abundance-min 2 --lz4 --hasher sabuhash --mode [bf | bf_trp] --hasher [sabuhash | xor] --max-hash 100000 --until count [--skip-merge]
 ```
 
-With `--skip-merge`: hashes are represented by a bit-vector at `./kmer_run/storage/kmers_partitions/partition_${part_id}/${ID}.kmer.vec(.lz4)`  
-Without `--skip-merge`: hashes and counts are dumped on disk at `./kmer_run/storage/kmers_partitions/partition_${part_id}/${ID}.kmer(.lz4)`
+With `--skip-merge`: hashes are represented by a bit-vector at `./hash_run/storage/kmers_partitions/partition_${part_id}/${ID}.kmer.vec(.lz4)`  
+Without `--skip-merge`: hashes and counts are dumped on disk at `./hash_run/storage/kmers_partitions/partition_${part_id}/${ID}.kmer(.lz4)`
 
 **Read a counted hashes file [without --skip-merge]:**
 
@@ -272,7 +272,7 @@ using CType = km::selectC<255>::type; // integral type that supports count up to
 
 int main(int argc, char* argv[])
 {
-  const std::string path = "./kmer_run/storage/kmer_partitions/partition_0/D1.kmer.lz4";
+  const std::string path = "./hash_run/storage/kmer_partitions/partition_0/D1.kmer.lz4";
   KmerFile<IN, uint64_t, CType> hash_file(path);
 
   uint64_t hash;
@@ -295,7 +295,7 @@ using CType = km::selectC<255>::type; // integral type that supports count up to
 
 int main(int argc, char* argv[])
 {
-  const std::string path = "./kmer_run/storage/kmer_partitions/partition_0/D1.kmer.vec.lz4";
+  const std::string path = "./hash_run/storage/kmer_partitions/partition_0/D1.kmer.vec.lz4";
   BitVectorFile<IN> bitvector_file(path);
   vector<char> vec = bitvector_file.read();
   std::pair<uint64_t, uint64_t> window = bitvector_file.get_window();
