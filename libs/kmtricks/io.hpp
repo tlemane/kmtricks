@@ -87,34 +87,34 @@ struct kmer_file_header {
   uint32_t file_id;       // in kmtricks pipeline is the fof index
   uint32_t partition_id;  // partition id in [0..P-1]
   uint32_t kmer_size;     // size of a kmer
-  uint32_t is_compressed; // true if compressed
-  uint32_t is_hashes;     // true if hashes
+  uint32_t is_compressed; // 1 if compressed
+  uint32_t is_hashes;     // 1 if hashes
   uint64_t second_magic;
 };
 
 struct count_matrix_file_header {
   uint64_t first_magic;
-  matrix_t matrix_type;    // ASCII, BIN, PA
-  uint32_t ktsize;         //
-  uint32_t ctsize;         //
-  int32_t  partition_id;   // -1 for ALL
-  uint32_t kmer_size;
-  uint32_t nb_counts;        // number of 
-  uint32_t is_hashes;  
-  uint32_t is_compressed;
+  matrix_t matrix_type;    // matrix_t::ASCII | matrix_t::BIN
+  uint32_t ktsize;         // bytes per kmer
+  uint32_t ctsize;         // bytes per count
+  int32_t  partition_id;   // partition id
+  uint32_t kmer_size;      // size of kmer
+  uint32_t nb_counts;      // number of counts per kmer == nb samples
+  uint32_t is_hashes;      // 1 if hashes
+  uint32_t is_compressed;  // 1 if compressed
   uint64_t second_magic;
 };
 
 struct pa_matrix_file_header {
   uint64_t first_magic;
-  matrix_t matrix_type;    // ASCII, BIN, PA
-  uint32_t ktsize;         //
-  int32_t  partition_id;   // -1 for ALL
-  uint32_t kmer_size;
-  uint32_t bits_in_use;        // number of
-  uint32_t size_in_bytes;
-  uint32_t is_hashes;
-  uint32_t is_compressed;
+  matrix_t matrix_type;    // matrix_t::PA
+  uint32_t ktsize;         // bytes per k-mers
+  int32_t  partition_id;   // partition id
+  uint32_t kmer_size;      // size of k-mer
+  uint32_t bits_in_use;    // number of bits actually used in pa vector, because of padding
+  uint32_t size_in_bytes;  // the size of one row (preence/absence bit-vector) in byte
+  uint32_t is_hashes;      // 1 if hashes
+  uint32_t is_compressed;  // 1 if compressed
   uint64_t second_magic;
 }; 
 
@@ -123,21 +123,21 @@ struct bitvector_file_header {
   uint32_t file_id;         // in kmtricks pipeline is the fof index
   uint32_t partition_id;    // partition id in [0..P-1]
   uint32_t partition_size;  // partition size in bytes
-  uint32_t is_compressed;   // true if compressed
+  uint32_t is_compressed;   // 1 if compressed
   uint64_t nb_bits;         // bit vector length
   uint64_t second_magic;
 };
 
 struct bitmatrix_file_header {
   uint64_t first_magic;
-  matrix_t matrix_type;  // BF, BIT
-  int32_t  partition_id; // -1 for ALL
-  uint64_t nb_rows;
-  uint64_t nb_rows_use;   // because of optional padding
-  uint64_t nb_cols;
-  uint64_t nb_cols_use; // because of optional padding
-  uint32_t size_in_bytes;
-  uint32_t is_compressed;
+  matrix_t matrix_type;   // matrix_t::BF, matrix_t::BIT
+  int32_t  partition_id;  // partition id
+  uint64_t nb_rows;       // number of rows
+  uint64_t nb_rows_use;   // because padding
+  uint64_t nb_cols;       // number of columns
+  uint64_t nb_cols_use;   // because padding
+  uint32_t size_in_bytes; // the size of one row in byte
+  uint32_t is_compressed; // 1 if compressed
   uint64_t second_magic;
 }; 
 
@@ -366,7 +366,7 @@ template<typename stream,
                                             std::is_integral<CountType>::value && 
                                             (MatrixType == matrix_format_t::ASCII ||
                                             MatrixType == matrix_format_t::BIN), void>::type>
-class CountMatrixFile : IFile<cmheader_t, stream, buf_size>
+class CountMatrixFile : public IFile<cmheader_t, stream, buf_size>
 {
 
   using ocstream = lz4_stream::basic_ostream<buf_size>;
