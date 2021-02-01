@@ -25,177 +25,20 @@ A pipeline of those modules is proposed, with the following IOs. See the [kmtric
 
 ## kmtricks performances
 
-Compared to a usual pipeline as the one used by `HowDeSBT` using `JellyFish` for generating a bloom filter per input read set, `kmtricks` is 4.2 times faster.
+Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` and `KMC` for generating a bloom filter per input read set.
 
-|      Method     | Indexation time | Max memory | Disk usage |
-|-----------------|:---------------:|:----------:|:----------:|
-| HowDeSBT makebf |       2h27      |   13.2 GB  |   55.1 GB  |
-| kmtricks        |      35min48s   |   3.5 GB   |   56.6 GB  
+|      Method                 | Indexation time | Max memory | Disk usage |
+|:---------------------------:|:---------------:|:----------:|:----------:|
+| HowDeSBT makebf (Jellyfish) |      59h03      |   13.2 GB  |   206 GB   |
+| HowDeSBT makebf (KMC)       |      32h38      |   18.7 GB  |   165 GB   |
+| kmtricks                    |      20h06      |   21.6 GB  |   233 GB   |
+| kmtricks - [rescue mode](#k-mer-rescue-procedure)  |      20h46      |   17.4 GB  |   327 GB   |
 
-Test realised with 100 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
+Test realised with 674 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
 
-List of IDs available [here](tests/kmtricks/experiment_list_100.txt).
+List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
 
-## kmtricks usage
-
-kmtricks can be used in two different ways: by using each **independent modules** or by using the **pipeline** (kmtricks binary). 
-
-### kmtricks modules
-
-kmtricks is composed of 5 independent modules
-
-<img src="https://github.com/tlemane/kmtricks/blob/master/doc/kmtricks_pipeline.png" width="500">  
-
-**Note1:** Using any of those modules requires the existence of the `run-dir` directory and its whole internal structure. The creation of the directory and its structure can be done thanks to the following command: 
-
-`python3 kmtricks.py env`
-
-```
-my_run_directory/  
-├── config.log # log about general parameter, git sha1, ect...
-├── logs #enable all log with --debug or --log-files [repart,superk,count,merge,split]
-│   ├── cmds.log # summary of module calls
-│   ├── counter
-│   ├── merger
-│   ├── split
-│   └── superk
-└── storage
-    ├── config_storage_gatb         # (0) GATB configuration files (kmtricks.py env)
-    ├── partition_storage_gatb      # (1) --until repart (queryable using repartition.hpp)
-    │   └── minimRepart.minimRepart # minimizers repartition (required for queries)
-    ├── superk_partitions           # (2) --until superk (readable using skreader.hpp)
-    ├── kmers_partitions            # (3) --until count  (stream matrix from here using merger.hpp)
-    ├── matrix                      # (4) --until merge --mode [ascii|bin|bf|bf_trp]
-    ├── vectors                     # (5) full pipeline in bf output mode (--mode bf_trp)
-    │   ├── howde                   # with --mode bf_trp --split howde (input BFs for HowDeSBT cluster/build)
-    │   └── sdsl                    # with --mode bf_trp --split sdsl
-    ├── fof.txt                     # copy of input fof (--file)
-    └── hash_window.vec             # info about partitioned bf (required for queries)
-```
-
-**Note2:** Run any of the binary with no argument provides a detailed list of options and mandatory arguments.
-
-Each module is presented below. However, the `kmtricks` binary enables to execute automatically all modules. See the [kmtricks pipeline](#kmtricks-pipeline) section.
-
-#### Module `km_minim_repart`: determine partitions
-
-From reads, determine minimizers and assign each minimizer to a partition.
-
-Example: `./bin/km_minim_repart -file file_of_files.txt -kmer-size 31 -run-dir my_directory_output_name`
-
-#### Module `km_reads_to_superk`: from reads to partitioned super kmers
-
-For each read file,  using the previously determined partitions from minimizers, write superkmers into corresponding partitions
-
-Example: `./bin/km_reads_to_superk -id S1 -file read_file.fasta -run-dir my_directory_output_name -nb-cores 8 -kmer-size 31`
-
-#### Module `km_superk_to_kmer_counts`: from super kmers to counted elements 
-
-For one superkmer partition, determine, sort and count elements that may be kmers or hash value.
-
-Example: `./bin/km_reads_to_kmer_counts -file read_file.fasta -run-dir my_directory_output_name -kmer-size 31 -part-id N`
-
-Option `-mode` enables to provide results either as kmers or hash values 
-
-#### Module `km_merge_within_partition ` merges counted kmers and transpose matrix
-
-For a given partition id, merges values for all input read files. 
-
-Example: `./bin/km_merge_within_partition -run-dir my_directory_output_name -part-id 0 -abundance-min 2 -recurrence-min 2`
-
-#### Module `km_output_convert`: generates output for downstream usages
-
-Given the merged partitions, depending on the user choice, outputs a SDSL compatible or a HowDeSBT compatible set of files. 
-
-Example: `./bin/km_output_convert from_merge -run-dir my_directory_output_name -nb-files nb_of_reads_files -split howde -kmer-size 31`
-
-### kmtricks pipeline
-
-`kmtricks.py` is a pipeline of the five modules.
-
-
-Note that this binary also enables to run independently any module (option `--only`) or enables to run modules until a step (option `--until`).
-
-**Usage:**
-
-`python3 kmtricks.py run --file file_of_files.txt --run-dir my_directory_output_name`
-
-Final results are stored in the `directory_output_name/storage/matrix/` and `directory_output_name/storage/vectors/`.
-
-```
-usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
-                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
-                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
-                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
-                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
-                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
-                       [--keep-tmp] [--lz4] [-h]
-
-kmtricks pipeline
-
-global:
-  --file FILE                    fof that contains path of read files, one per line [required]
-  --run-dir DIR                  directory to write tmp and output files [required]
-  --kmer-size INT                size of a kmer [default: 31]
-  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
-  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
-  --max-count INT                allows to deduce the integer size to store counts [default: 255]
-  --max-memory INT               max memory available in megabytes [default: 8000]
-  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
-  --nb-cores INT                 number of cores [default: 8]
-  --keep-tmp                     keep all tmp files [no arg]
-  --lz4                          lz4 compression for tmp files [no arg]
-  -h, --help                     Show this message and exit
-
-merge options:
-  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
-  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
-  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
-  --skip-merge                   skip merge step, only with --mode bf [no arg]
-
-pipeline control:
-  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
-
-advanced performance tweaks:
-  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
-  --minimizer-size INT           size of minimizer [default: 10]
-  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
-  --nb-partitions INT            number of partitions (0=auto) [default: 0]
-
-hash mode configuration:
-  --hasher STR                   hash function: sabuhash, xor [default: xor]
-  --max-hash INT                 max hash value (0 < hash < max(int64)) [default: 1000000000]
-  --split STR                    split matrix in indidual files: [sdsl|howde] (only with -mf, --mode
-                                 bf_trp) [default: none]
-```
-
-If you need specific thresholds for some or all datasets, you can add these thresholds in the fof. For datasets without a specific threshold, the --count-abundance-min is used.
-
-**File of file format:**
-* STR **:** PATH_1 **;** ... **;** PATH_N **!** INT
-* Dataset ID : one or more fastx.gz files (seperated by **;**) ! An optional min abundance threshold
-
-**Fof example**:
-```
-A1 : /path/to/fastq_A1_1
-B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2
-```
-
-**Full example, with HowDeSBT compatibility TODO update**
-
-```bash
-ls myreads1.fq.gz myreads2.fq.gz myreads3.fg.gz > file_of_files.txt # creates the file of files
-python3 kmtricks.py run --file file_of_files.txt --run-dir my_directory_output_name --mode bf_trp --hasher sabuhash --split howde
-```
-
-**logs**
-
-All execution logs are stored in the `my_directory_output_name/logs` directory.
-
-## kmtrick librairies
-
-In addition to modules, the `libs/kmtricks` directory contains headers. They provide a framework for creating independent tools. The `libs/snippets` directory provides usage examples of those librairies.
+Other benchmarks and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
 
 ## Install
 <details><summary><strong>From conda</strong></summary>
@@ -230,7 +73,7 @@ make -j8
 
 `kmtricks.py` pipeline automatically selects the binaries to be used according to parameters or provides compilation instructions if the required binaries are missing.
 
-A fork of HowDeSBT compatible with kmtricks bf is available. To compile it use: `-DHOWDE=1`. The index construction (i.e `howdesbt cluster` and `howdesbt build`) is equivalent to [classical HowDeSBT construction](https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial#3-create-a-tree-topology). However, query is different, use `howdesbt queryKm` instead of `howdesbt query`.
+A fork of HowDeSBT compatible with kmtricks bf is available. To compile it use: `-DHOWDE=1`. The index construction (i.e `km_howdesbt cluster` and `km_howdesbt build`) is equivalent to [classical HowDeSBT construction](https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial#3-create-a-tree-topology). However, query is different, use `km_howdesbt queryKm` instead of `howdesbt query`.
 
 
 ## Test
@@ -242,7 +85,163 @@ ctest CTestTestfile.cmake
 ```
 </details>
 <br>
-**Warning**: kmtricks is under active development. Its results, features and performances are likely to be improved quickly over time.
+
+## kmtricks usage
+
+kmtricks can be used in two different ways: by using each [**module**](modules.md) or by using the **pipeline** (highly recommended).
+
+### kmtricks pipeline
+
+![](./doc/kmtricks_pipeline_v2.png)
+
+`kmtricks.py` is a pipeline of [kmtricks modules](modules.md).
+
+Note that this script also enables to run independently any module (option `--only`, this requires that previous was correctly executed) or enables to run modules until a step (option `--until`).
+
+**Usage:**
+
+```
+usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
+                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
+                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
+                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
+                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
+                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
+                       [--keep-tmp] [--lz4] [-h]
+
+kmtricks pipeline
+
+global:
+  --file FILE                    fof that contains path of read files, one per line [required]
+  --run-dir DIR                  directory to write tmp and output files [required]
+  --kmer-size INT                size of a kmer [default: 31]
+  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
+  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
+  --max-count INT                allows to deduce the integer size to store counts [default: 255]
+  --max-memory INT               max memory available in megabytes [default: 8000]
+  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
+  --log-files                    enables log files [repart|superk|count|merge|split] [default: ]
+  --nb-cores INT                 number of cores [default: 8]
+  --keep-tmp                     keep all tmp files [no arg]
+  --lz4                          lz4 compression for tmp files [no arg]
+  -h, --help                     Show this message and exit
+
+merge options:
+  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
+  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
+  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
+  --skip-merge                   skip merge step, only with --mode bf [no arg]
+
+pipeline control:
+  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
+  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
+
+advanced performance tweaks:
+  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
+  --minimizer-size INT           size of minimizer [default: 10]
+  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
+  --nb-partitions INT            number of partitions (0=auto) [default: 0]
+
+hash mode configuration:
+  --hasher STR                   hash function: sabuhash, xor [default: xor]
+  --max-hash INT                 max hash value (uint64_t) [default: 1000000000]
+  --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode bf_trp) [default: none]
+```
+#### kmtricks inputs
+
+<u>File of file format:</u>
+One sample per line, with an ID, a list of files and an optional solid threshold.
+* STR **:** PATH_1 **;** ... **;** PATH_N **!** INT
+* \<Dataset ID> : \<1.fastq.gz> ; \<N.fastq.gz> ! \<Abundance min threshold>
+
+<u>Fof example:</u>
+```
+A1 : /path/to/fastq_A1_1 ! 4
+B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2 ! 2
+```
+If the min abundance threshold is not specified, `--count-abundance-min` is used.
+
+#### k-mer rescue procedure
+In kmtricks, k-mer filtering is achieved by leverage count informations across samples. The following parameters can modulate this procedure.
+
+* `--count-abundance-min INT`: An hard threshold, all k-mers with an abundance less than this parameter are discarded.
+* `--merge-abundance-min INT/STR`: A soft threshold, all k-mers with an abundance between `count-abundance-min` and `merge-abundance-min` are considering rescue-able. If a sample-specific thresholds are required. You can provide the path of a file containing one threshold per line, with the same order as in the input fof.
+* `--save-if INT`: If a k-mer is rescue-able, it is keep if it is solid (with an abundance greater than `merge-abundance-min`) in `save-if` other samples.
+* `--recurrence-min INT`: All k-mers that do not occur in at least `recurrence-min` samples are discarded.
+
+### Examples
+
+The following examples can be executed using example scripts at `./tests/kmtricks`. This requires that kmtricks is [installed with conda](#install).
+#### 1. Build a k-mer count matrix
+
+This example can be executed by running [example1.sh](tests/kmtricks/example1.sh) at `./tests/kmtricks`.
+
+```bash
+kmtricks.py run --file ./data/fof.txt \
+                --run-dir ./count_matrix_run \
+                --kmer-size 20 \
+                --nb-cores 8 \
+                --nb-partitions 4 \
+                --count-abundance-min 1 \ # discard k-mers with an abundance less than 2
+                --recurrence-min 1 \      # discard rows with k-mer that occurs in less than 1 sample
+                --mode ascii \
+                --lz4
+```
+kmtricks outputs one matrix per partition at `${run_dir}/storage/matrix/partition_${P}/ascii_matrix${P}.mat`. In each partition, k-mers are sorted using the following order : `A < C < T < G`.
+* `--mode ascii`: Each file starts with a 8-rows header. Then each row corresponds to one k-mer and its count vector, space-separated. Order is the same as in the fof.
+
+#### 2. Build and query an HowDe-SBT index using kmtricks partitioned Bloom filters
+
+This example can be executed by running [example2.sh](tests/kmtricks/example2.sh) at `./tests/kmtricks`.
+
+**Bloom filters construction with kmtricks**
+
+```bash
+kmtricks.py run --file ./data/fof.txt \
+                --run-dir ./km_index \
+                --kmer-size 20 \
+                --nb-cores 8 \
+                --nb-partitions 4 \
+                --count-abundance-min 1 \ # discard k-mers with an abundance less than 2
+                --recurrence-min 1 \      # discard rows with k-mer that occurs in less than 1 sample
+                --mode bf_trp \           # enables Bloom filter construction
+                --hasher sabuhash \       # HowDe-SBT hasher
+                --max-hash 100000 \       # Bloom filter size
+                --split howde \           # output Bloom filter with HowDe-SBT compatibility
+                --lz4
+```
+
+If rescue is not required, the merging step can be skipped in Bloom filters mode by adding `--skip-merge`.
+
+**Index construction with HowDe-SBT**  
+
+```bash
+cd ./km_index/storage/vectors/howde
+ls *.bf > bf_list
+km_howdesbt cluster bf_list
+km_howdesbt build --howde bf_list
+```
+
+kmtricks produces HowDe-SBT compatible files. The index construction procedure remains the same as in classical HowDe-SBT. In other word, all `cluster` and `build` options are supported and have the same behavior as in HowDe-SBT.
+
+**Queries**  
+Query procedure differs from classical HowDe-SBT.
+Two kmtricks files are required:
+* `${run_dir}/storage/hash_window.vec`: contains informations about Bloom filter partitioning
+* `${run_dir}/storage/partitions_storage_gatb/minimRepart.minimRepart`: contains the minimizers repartition
+
+```bash
+km_howdesbt queryKm \ # kmtricks-specific subcommand
+            --tree=bf_list.detbrief.sbt \
+            --repart=../../partition_storage_gatb/minimRepart.minimRepart \
+            --win=../../hash_window.vec \
+            queries.fa \ # fastx file that contains queries
+            > results.txt
+```
+
+### Advanced usage
+
+Some kmtricks features (e.g. matrix streaming) are provided by using kmtricks pipeline combined with the [kmtricks library](./libs/kmtricks). Examples available [here](./developers.md).
 
 ## Contacts
 

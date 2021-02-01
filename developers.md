@@ -1,12 +1,4 @@
-# kmtricks usage
-
-**About input:**  
-One sample per line, with an ID, a list of files and an optional solid threshold.
-`fof.txt` with count-abundance-min specified for each sample, otherwise (`D: sample.fastq.gz`) use --count-abundance-min INT from the command line (default is 2).
-```
-D1: sample1.fastq.gz ! 2
-D2: sample2.fastq.gz ! 3
-```
+# kmtricks advanced usage
 
 **About outputs:**  
 
@@ -32,81 +24,6 @@ my_run_directory/
     ├── fof.txt                     # copy of input fof (--file)
     └── hash_window.vec             # info about partitioned bf (required for queries)
 ```
-
-**CLI**
-```
-usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
-                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
-                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
-                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
-                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
-                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
-                       [--keep-tmp] [--lz4] [-h]
-
-kmtricks pipeline
-
-global:
-  --file FILE                    fof that contains path of read files, one per line [required]
-  --run-dir DIR                  directory to write tmp and output files [required]
-  --kmer-size INT                size of a kmer [default: 31]
-  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
-  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
-  --max-count INT                allows to deduce the integer size to store counts [default: 255]
-  --max-memory INT               max memory available in megabytes [default: 8000]
-  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
-  --nb-cores INT                 number of cores [default: 8]
-  --keep-tmp                     keep all tmp files [no arg]
-  --lz4                          lz4 compression for tmp files [no arg]
-  -h, --help                     Show this message and exit
-
-merge options:
-  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
-  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
-  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
-  --skip-merge                   skip merge step, only with --mode bf [no arg]
-
-pipeline control:
-  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
-
-advanced performance tweaks:
-  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
-  --minimizer-size INT           size of minimizer [default: 10]
-  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
-  --nb-partitions INT            number of partitions (0=auto) [default: 0]
-
-hash mode configuration:
-  --hasher STR                   hash function: sabuhash, xor [default: xor]
-  --max-hash INT                 max hash value (0 < hash < max(int64)) [default: 1000000000]
-  --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode
-                                 bf_trp) [default: none]
-```
-
-**Merge options**
-* `--count-abundance-min INT`: An hard threshold, all k-mers with an abundance less than this parameter are discarded.
-* `--merge-abundance-min INT/STR`: A soft threshold, all k-mers with an abundance between `count-abundance-min` and `merge-abundance-min` are considering rescue-able
-* `--save-if INT`: If a k-mer is rescue-able, it is keep if it is solid (with an abundance greater than `merge-abundance-min`) in `save-if` other samples.
-* `--recurrence-min INT`: All k-mers that do not occur in at least `recurrence-min` samples are discarded.
-
-**Hash mode configuration (Bloom filters construction pipeline)**
-* `--hasher STR`: hash function, for HowDe-SBT compatibility use `--hasher sabuhash`
-* `--max-hash INT`: The requested Bloom filter size; kmtricks build partitioned Bloom filter (pBFs), each partition contains $\frac{max-hash}{nb-partitions} \text{(rounded up to 8)}$
-
-**Output matrices**
-* `--mode STR`:
-  * k-mer mode
-    * `ascii`: Each row corresponds to one k-mer and its counts, space-separated.
-    * `bin`: Each row correponds to a k-mer and a count vector.
-      * \<KType> [\<CType>, ..., \<CType>]
-    * `pa`: Each row corresponds to a k-mer and a presence/absence bit-vector
-      * \<KType> \<BitVector>
-  * hash mode
-    * `bf`: Each row corresponds to one presence/absence bit-vector corresponding to one hash value (given by the line index).
-      * \<PaBitVector>
-    * `bf_trp`: Each row corresponds to a sample and is a part of its pBFs.
-      * \<BfBitVector>
-
-All matrix files have headers (in text format for `ascii` mode). When compression is enabled, headers remain uncompressed, compression is applied only on file content (even in `ascii` mode).
 
 # A. Compute a minimizer repartition
 
@@ -540,4 +457,135 @@ km_howdesbt build --howde bf_list
 **Queries**
 ```bash
 km_howdesbt queryKm --tree=bf_list.detbrief.sbt --repart=../../partition_storage_gatb/minimRepart.minimRepart --win=../../hash_window.vec query_file.fa > result.txt
+```
+
+## Appendix
+
+## kmtricks files
+```
+stream = km::IN | km::OUT
+KmerType = uint8_t | uint16_t | uint32_t | uint64_t | __uint128_t
+CountType = uint8_t | uint16_t | uint32_t
+MatrixType = matrix_t::ASCII | matrix_t::BIN | matrix_t::PA | matrix_t::BF | matrix_t::BIT
+```
+
+### KmerFile
+```cpp
+template<typename stream,
+         typename KmerType,
+         typename CountType,
+         size_t   buf_size = 4096>
+class KmerFile : public IFile<kheader_t, stream, buf_size>
+```
+
+44-bytes header:
+```cpp
+struct kmer_file_header {
+  uint64_t first_magic;
+  uint32_t ktsize;        // bytes per kmer
+  uint32_t ctsize;        // bytes per count
+  uint32_t file_id;       // in kmtricks pipeline is the fof index
+  uint32_t partition_id;  // partition id in [0..P-1]
+  uint32_t kmer_size;     // size of a kmer
+  uint32_t is_compressed; // 1 if compressed
+  uint32_t is_hashes;     // 1 if hashes
+  uint64_t second_magic;
+};
+```
+
+### BitVectorFile
+```cpp
+template<typename stream   = os,
+         size_t   buf_size = 4096>
+class BitVectorFile : public IFile<bvheader_t, stream, buf_size>
+```
+
+40-bytes header:
+```cpp
+struct bitvector_file_header {
+  uint64_t first_magic;
+  uint32_t file_id;         // in kmtricks pipeline is the fof index
+  uint32_t partition_id;    // partition id in [0..P-1]
+  uint32_t partition_size;  // partition size in bytes
+  uint32_t is_compressed;   // 1 if compressed
+  uint64_t nb_bits;         // bit vector length
+  uint64_t second_magic;
+};
+```
+
+### CountMatrixFile
+```cpp
+template<typename stream,
+         typename KmerType,
+         typename CountType,
+         matrix_format_t MatrixType = matrix_format_t::ASCII,
+         size_t buf_size = 4096,
+         typename = typename std::enable_if<std::is_integral<KmerType>::value &&
+                                            std::is_integral<CountType>::value && 
+                                            (MatrixType == matrix_format_t::ASCII ||
+                                            MatrixType == matrix_format_t::BIN), void>::type>
+class CountMatrixFile : public IFile<cmheader_t, stream, buf_size>
+```
+48-bytes header:
+```cpp
+struct count_matrix_file_header {
+  uint64_t first_magic;
+  matrix_t matrix_type;    // matrix_t::ASCII | matrix_t::BIN
+  uint32_t ktsize;         // bytes per kmer
+  uint32_t ctsize;         // bytes per count
+  int32_t  partition_id;   // partition id, -1 if it's the whole matrix
+  uint32_t kmer_size;      // size of kmer
+  uint32_t nb_counts;      // number of counts per kmer == nb samples
+  uint32_t is_hashes;      // 1 if hashes
+  uint32_t is_compressed;  // 1 if compressed
+  uint64_t second_magic;
+};
+```
+
+### PAMatrixFile
+```cpp
+template<typename stream,
+         typename KmerType,
+         size_t buf_size = 4096,
+         typename = typename std::enable_if<std::is_integral<KmerType>::value, void>::type>
+class PAMatrixFile : public IFile<paheader_t, stream, buf_size>
+```
+48-bytes header:
+```cpp
+struct pa_matrix_file_header {
+  uint64_t first_magic;
+  matrix_t matrix_type;    // matrix_t::PA
+  uint32_t ktsize;         // bytes per k-mers
+  int32_t  partition_id;   // partition id
+  uint32_t kmer_size;      // size of k-mer
+  uint32_t bits_in_use;    // number of bits actually used in pa vector, because of padding
+  uint32_t size_in_bytes;  // the size one row (presence/absence bit-vector) in byte
+  uint32_t is_hashes;      // 1 if hashes
+  uint32_t is_compressed;  // 1 if compressed
+  uint64_t second_magic;
+}; 
+```
+### BitMatrixFile
+```cpp
+template<typename stream,
+         matrix_t MatrixType,
+         size_t   buf_size = 4096,
+         typename = typename std::enable_if<MatrixType == matrix_t::BF ||
+                                            MatrixType == matrix_t::BIT, void>::type>
+class BitMatrixFile : public IFile<bmheader_t, stream, buf_size>
+```
+64-bytes header:
+```cpp
+struct bitmatrix_file_header {
+  uint64_t first_magic;
+  matrix_t matrix_type;   // matrix_t::BF, matrix_t::BIT
+  int32_t  partition_id;  // partition id
+  uint64_t nb_rows;       // number of rows
+  uint64_t nb_rows_use;   // because padding
+  uint64_t nb_cols;       // number of columns
+  uint64_t nb_cols_use;   // because padding
+  uint32_t size_in_bytes; // the size of one row in byte
+  uint32_t is_compressed; // 1 if compressed
+  uint64_t second_magic;
+};
 ```
