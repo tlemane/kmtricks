@@ -755,7 +755,8 @@ class Progress():
             print(f'\r{self.pattern.format_map(self.keys)}', end='', file=sys.stderr)
 
     def finish(self) -> None:
-        print(f'\r{self.pattern.format_map(self.keys)}', end='\n', file=sys.stderr)
+        if not sys.stderr.isatty():
+            print(f'\r{self.pattern.format_map(self.keys)}', end='\n', file=sys.stderr)
 
     def add(self, idx: str, nb: int):
         self.keys[idx] = 0
