@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-## 3. Column-major Bloom filter matrix [hash counting mode]
+## 3. Hash presence/absence matrix [hash counting mode]
 
 **CLI example:**
 ```bash
@@ -394,7 +394,7 @@ kmtricks.py run --file fof.txt --run-dir ./cm_bf_matrix_run --kmer-size 20 --nb-
 
 One matrix is dumped per partition at `./cm_bf_matrix_run/storage/matrix/partition${part_id}/no_trp_bf${part_id}.mat`.
 
-**Read a column-major bloom filter matrix:**
+**Read an hash presence/absence matrix:**
 
 ```cpp
 #include <string>
@@ -513,7 +513,7 @@ int main(int argc, char* argv[])
 
 **CLI example:**
 ```bash
-kmtricks.py run --file fof.txt --run-dir ./km_full_bf --kmer-size 20 --nb-cores 8 --nb-partitions 50 --count-abundance-min 2 --until count --lz4 --hasher sabuhash --mode bf_trp --hasher [sabuhash | xor] --max-hash 100000 --split [howde | sdsl]
+kmtricks.py run --file fof.txt --run-dir ./km_full_bf --kmer-size 20 --nb-cores 8 --nb-partitions 50 --count-abundance-min 2 --lz4 --hasher sabuhash --mode bf_trp --hasher [sabuhash | xor] --max-hash 100000 --split [howde | sdsl]
 ```
 
 * Parameters
@@ -527,7 +527,7 @@ Individual Bloom filters are dumped at `./km_full_bf/storage/vectors/howde/${ID}
 
 **Bloom filters construction with kmtricks**
 ```bash
-kmtricks.py run --file fof.txt --run-dir ./km_index --kmer-size 20 --nb-cores 8 --nb-partitions 50 --count-abundance-min 2 --until count --lz4 --hasher sabuhash --mode bf_trp --hasher [sabuhash | xor] --max-hash 100000 --split [howde | sdsl]
+kmtricks.py run --file fof.txt --run-dir ./km_index --kmer-size 20 --nb-cores 8 --nb-partitions 50 --count-abundance-min 2 --lz4 --hasher sabuhash --mode bf_trp --hasher sabuhash --max-hash 100000 --split howde
 ```
 **Index construction with HowDe-SBT**
 ```bash
