@@ -14,6 +14,7 @@ int main(int argc, char* argv [])
     Kmer<T> k("GAGCAGCACAAACGAGACAC", true); // build a kmer
     Minimizer<T> m(&k, 10, true); // build a minimizer of size 10, with check validity = true
     cout << to_string(repartition.get(m.value())) << endl; // get partition
+    cout << to_string(repartition.get(m)) << endl; // get partition
   }
   catch ( exception& e )
   {

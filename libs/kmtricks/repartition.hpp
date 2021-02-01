@@ -22,7 +22,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
-
+#include "sequences.hpp"
 //! \defgroup Repartition
 
 using namespace std;
@@ -55,6 +55,9 @@ public:
   //! \param  minimizer_value minimizer in 2-bit encoding
   //! \return partititon id 
   uint16_t get(uint64_t minimizer_value);
+
+  template<typename K>
+  uint16_t get(Minimizer<K>& minimizer);
 
 private:
   string            _path;
@@ -185,5 +188,16 @@ uint16_t RepartFile::get(uint64_t minimizer_value)
   if (minimizer_value >=  _nb_minims) return 0;
   return _repart_table[minimizer_value];
 }
+
+template<typename K>
+uint16_t RepartFile::get(Minimizer<K>& minimizer)
+{
+  if (!is_load)
+    load();
+  K v = minimizer.value();
+  if (v >= _nb_minims) return 0;
+  return _repart_table[v];
+}
+
 #endif
 } // end of namespace km
