@@ -22,6 +22,7 @@ import sys
 import os
 import abc
 import time
+import re
 import argparse
 import subprocess
 import heapq
@@ -30,7 +31,7 @@ from math import ceil
 from math import log as mlog
 from collections import OrderedDict as odict
 from collections import defaultdict as ddict
-from typing import List, Dict, Union, Optional, TextIO, Set, Tuple
+from typing import List, Dict, Union, Optional, TextIO, Set, Tuple, Iterator
 from signal import SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, Signals
 from shutil import rmtree, copyfile
 from copy import deepcopy, copy
@@ -762,60 +763,71 @@ class Progress():
         self.keys[idx] = 0
         self.keys[f'{idx}N'] = nb
 
+
 class Fof:
     """kmtricks input fof"""
+    class FofBadFormat(Exception):
+        """raise when fof parsing failed"""
+    PATTERN = r'(^[A-Za-z0-9_-]+)[\s]*:[\s]*([.A-Za-z0-9\/_; ]+)([\s]*![\s]*)?([0-9]+$)?'
+    INVALID = r'([<>{},[\]])'
+
     def __init__(self, path: str):
         self.path: str = path
-        self.fp: TextIO = open(path, 'r')
         self.files: odict = odict()
-        self.is_read: bool = False
-        self.id: int = 0
-        self.lfiles: list = []
+        self.current: int = 0
+        self.iterator: Optional[Iterator] = None
+        self.copy_path: Optional[str] = None
         self.nb: int = 0
 
-    def parse(self, defaut_count: int) -> bool:
-        self.fp.seek(0)
-        has_ab = False
-        for line in self.fp:
-            line = line.strip()
-            if not line:
-                continue
-            line = line.split(':')
-            if len(line) != 2:
-                raise IOError(f'fof bad format: {self.fp.name}')
-            idx = line[0].strip()
-            line = line[1].split('!')
-            if len(line) not in (1, 2):
-                raise IOError(f'fof bad format: {self.fp.name}')
-            count = defaut_count
-            if len(line) == 2:
-                has_ab = True
-                count = int(line[1])
-            files = [s.strip() for s in line[0].split(';')]
-            self.files[idx] = (','.join(files), count)
-        self.lfiles = list(self.files)
-        self.nb = len(self.lfiles)
-        return has_ab
+    def fexist(self, *files) -> None:
+        for f in files:
+            f = f.strip()
+            if not os.path.exists(f):
+                raise FileNotFoundError(f'{f} doesn\'t exist')
+            if not os.path.isfile(f):
+                raise FileNotFoundError(f'{f} is not a file')
+    def parse(self, default_count: int):
+        if not os.path.exists(self.path):
+            raise FileNotFoundError(f'Fof not found: {self.path}')
+        with open(self.path, 'r') as in_fof:
+            pos = 0
+            for line in in_fof:
+                line = line.strip()
+                if not line:
+                    continue
+                groups = re.search(self.PATTERN, line)
+                ginvalids = re.search(self.INVALID, line)
+                if not groups or not groups[1] or not groups[2] or ginvalids:
+                    raise self.FofBadFormat(
+                        f'Unable to read fof ({self.path}), possibly due to bad format'
+                    )
+                exp_id = groups[1]
+                paths = groups[2]
+                count = groups[4] if groups[4] else default_count
+                self.fexist(*paths.split(';'))
+                paths = ','.join(map(str.strip,paths.split(';')))
+                self.files[exp_id] = (pos, paths, int(count))
+                pos += 1
+            self.nb = len(self.files)
+        self.iterator = iter(self.files)
 
-    def get_id(self, idx: str):
-        return self.lfiles.index(idx)
+    def get_id(self, idx: str) -> int:
+        return self.files[idx][0]
 
     def copy(self, path: str) -> None:
+        self.copy_path = path
         copyfile(self.path, path)
 
-    def __iter__(self):
+    def __iter__(self) -> 'Fof':
         return self
 
-    def __next__(self):
+    def __next__(self) -> Tuple[int, str, int, str]:
         try:
-            if self.id > self.nb:
-                self.id = 0
-            idx = self.lfiles[self.id]
-            return self.id, self.files[idx][0], self.files[idx][1], idx
-        except IndexError:
+            key = next(self.iterator)
+            return self.files[key][0], self.files[key][1], self.files[key][2], key
+        except StopIteration:
+            self.iterator = iter(self.files)
             raise StopIteration
-        finally:
-            self.id += 1
 
 class Pool:
     """A pool of ICommand"""
@@ -970,9 +982,8 @@ def main():
             sys.exit(0)
 
     fof = Fof(args['file'])
-    ab_per_file = fof.parse(args['abundance_min'])
+    fof.parse(args['abundance_min'])
     fof_copy = f'{args["run_dir"]}/storage/fof.txt'
-    fof.fp.close()
 
     if not args['nb_partitions']:
         args['nb_partitions'] = len(os.listdir(f'{args["run_dir"]}/storage/kmers_partitions'))
@@ -1014,8 +1025,7 @@ def main():
             for i, f, c, exp in fof:
                 dargs = deepcopy(args)
                 dargs['mode'] = mode_kh[dargs['mode']]
-                if ab_per_file:
-                    dargs['abundance_min'] = c
+                dargs['abundance_min'] = c
                 for p in range(args['nb_partitions']):
                     if DEBUG or log_in_files['count']:
                         log = f'{log_dir}/counter/counter{i}_{p}.log'
