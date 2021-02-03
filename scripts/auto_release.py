@@ -20,10 +20,10 @@ from github import Github
 import os
 import sys
 import platform
-from kmtricks import __version__ as kmtricks_version
 
 py_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(py_path+'/..')
+from kmtricks import __version__ as kmtricks_version
 
 system = platform.system()
 
