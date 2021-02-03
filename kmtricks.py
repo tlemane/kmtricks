@@ -36,7 +36,7 @@ from signal import SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, Signals
 from shutil import rmtree, copyfile
 from copy import deepcopy, copy
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
