@@ -47,6 +47,7 @@ private:
   uint                  _min_a;
   uint                  _min_r;
   uint                  _id;
+  uint                  _kmer_size;
   uint64_t              _lower_hash;
   uint64_t              _upper_hash;
   string                _run_dir;

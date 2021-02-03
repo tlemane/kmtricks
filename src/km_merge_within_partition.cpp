@@ -36,6 +36,7 @@ KmMerge::KmMerge()
   getParser()->push_back(new OptionOneParam(STR_RUN_DIR, "kmtricks run directory", true));
   getParser()->push_back(new OptionOneParam(STR_PART_ID, "partition id", true));
   getParser()->push_back(new OptionOneParam(STR_KMER_ABUNDANCE_MIN, "abundance min to keep a k-mer", true));
+  getParser()->push_back(new OptionOneParam(STR_KMER_SIZE, "size of k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_REC_MIN, "recurrence min to keep a k-mer", true));
   getParser()->push_back(new OptionOneParam(STR_SAVE_IF, "save a non-solid k-mer if it occurs in N other datasets", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_MODE, "output matrix format: ascii, bin, pa, bf, bf_trp"));
@@ -52,6 +53,7 @@ void KmMerge::parse_args()
   _min_r          = getInput()->getInt(STR_REC_MIN);
   _id             = getInput()->getInt(STR_PART_ID);
   _mode           = output_format.at(getInput()->getStr(STR_MODE));
+  _kmer_size      = getInput()->getInt(STR_KMER_SIZE);
   
   string tmp      = getInput()->getStr(STR_KMER_ABUNDANCE_MIN);
   if (System::file().doesExist(tmp))
@@ -89,7 +91,7 @@ void KmMerge::merge_to_pa_matrix()
 {
   string opath = e->STORE_MATRIX + fmt::format(PA_TEMP, _id, _id);
   PAMatrixFile<OUT, kmtype_t> pam(
-    opath, _id, _m->nb_files, 20, 0, 0);
+    opath, _id, _m->nb_files, _kmer_size, 0, 0);
   while (!_m->end)
   {
     _m->next();
@@ -102,7 +104,7 @@ void KmMerge::merge_to_bin()
 {
   string opath = e->STORE_MATRIX + fmt::format(CO_TEMP, _id, _id);
   CountMatrixFile<OUT, kmtype_t, cntype_t, matrix_t::BIN> mat(
-    opath, _id, _m->nb_files, 20, 0, 0);
+    opath, _id, _m->nb_files, _kmer_size, 0, 0);
   while (!_m->end)
   {
     _m->next();
@@ -116,7 +118,7 @@ void KmMerge::merge_to_ascii()
   string opath = e->STORE_MATRIX + fmt::format(AS_TEMP, _id, _id);
   km::Kmer<kmtype_t> k(true);
   CountMatrixFile<OUT, kmtype_t, cntype_t, matrix_t::ASCII> mat(
-    opath, _id, _m->nb_files, 20, 0, 0);
+    opath, _id, _m->nb_files, _kmer_size, 0, 0);
   while(!_m->end)
   {
     _m->next();

@@ -466,6 +466,7 @@ MERGE_CLI_TEMPLATE = (
     "{merge_bin} "
     "-run-dir {run_dir} "
     "-part-id {part_id} "
+    "-kmer-size {kmer_size} "
     "-abundance-min {merge_abundance_min} "
     "-recurrence-min {recurrence_min} "
     "-mode {mode} "
