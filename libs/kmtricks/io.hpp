@@ -362,8 +362,9 @@ template<typename stream,
          typename CountType,
          matrix_format_t MatrixType = matrix_format_t::ASCII,
          size_t buf_size = 4096,
-         typename = typename std::enable_if<std::is_integral<KmerType>::value &&
-                                            std::is_integral<CountType>::value && 
+         typename = typename std::enable_if<(std::is_integral<KmerType>::value ||
+                                            std::is_same<KmerType, __uint128_t>{}) &&
+                                            std::is_integral<CountType>::value &&
                                             (MatrixType == matrix_format_t::ASCII ||
                                             MatrixType == matrix_format_t::BIN), void>::type>
 class CountMatrixFile : public IFile<cmheader_t, stream, buf_size>
@@ -567,7 +568,8 @@ public:
 template<typename stream,
          typename KmerType,
          size_t buf_size = 4096,
-         typename = typename std::enable_if<std::is_integral<KmerType>::value, void>::type>
+         typename = typename std::enable_if<std::is_integral<KmerType>::value ||
+                                            std::is_same<KmerType, __uint128_t>{}, void>::type>
 class PAMatrixFile : public IFile<paheader_t, stream, buf_size>
 {
 
