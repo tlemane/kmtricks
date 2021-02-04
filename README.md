@@ -5,42 +5,22 @@
 ![linux](https://github.com/tlemane/kmtricks/workflows/linux/badge.svg)
 ![macOS](https://github.com/tlemane/kmtricks/workflows/macOS/badge.svg)
 
-kmtricks is a tool suite for counting kmers, and constructing bloom filters or counted kmer matrices from large and numerous read sets. 
+kmtricks is a modular tool suite for counting kmers, and constructing Bloom filters or kmer matrices, for large collections of sequencing data. 
 
-## kmtricks IOs
+## Overview
 
-kmtricks is composed of a **set of independent modules** designed for kmer counting given a set of raw read sets. 
+**Input**: a set of read sets in FASTA or FASTQ format, gzipped or not.
 
-A pipeline of those modules is proposed, with the following IOs. See the [kmtricks pipeline](#kmtricks-pipeline) section for details.
+**Final output** is either:
 
-**Input** is composed of a set of read sets in fasta or fastq format, gzipped or not.
-
-**Final output** depends on the user usage. It may be
-
-* a matrix of kmer x abundance. M_(i,j) is the abundance of kmer i in the read set j
-* a matrix of kmer x presence or absence. M_(i,j) is the presence (1) or absence (0) of kmer i in the read set j
-* a matrix of bloom filters. M_(i,j) is the presence (1) or absence (0) of the hash_value i (line numbers are hash values) in the read set j.
+* a matrix of kmer x abundance. M<sub>i,j</sub> is the abundance of kmer i in the read set j
+* a matrix of kmer x presence or absence. M<sub>i,j</sub> is the presence (1) or absence (0) of kmer i in the read set j
+* a matrix of Bloom filters. M<sub>i,j</sub> is the presence (1) or absence (0) of the hash_value i (line numbers are hash values) in the read set j.
   * In this case, this matrix is provided vertically (one column is a bloom filter corresponding to one dataset).
-  * After transposition, this matrix may also be provided horizontally (one line is a bloom filter corresponding to one dataset). This enables to provide efficiently an independent bloom filter per input read file.  
+  * After transposition, this matrix may also be provided horizontally (one line is a Bloom filter corresponding to one dataset). This enables to provide efficiently an independent Bloom filter per input read file.  
 
-## kmtricks performances
+## Installation
 
-Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` and `KMC` for generating a bloom filter per input read set.
-
-|      Method                 | Indexation time | Max memory | Disk usage |
-|:---------------------------:|:---------------:|:----------:|:----------:|
-| HowDeSBT makebf (Jellyfish) |      59h03      |   13.2 GB  |   206 GB   |
-| HowDeSBT makebf (KMC)       |      32h38      |   18.7 GB  |   165 GB   |
-| kmtricks                    |      20h06      |   21.6 GB  |   233 GB   |
-| kmtricks - [rescue mode](#k-mer-rescue-procedure)  |      20h46      |   17.4 GB  |   327 GB   |
-
-Test realised with 674 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
-
-List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
-
-Other benchmarks and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
-
-## Install
 <details><summary><strong>From conda</strong></summary>
 
 ```bash
@@ -90,64 +70,8 @@ ctest CTestTestfile.cmake
 
 kmtricks can be used in two different ways: by using each [**module**](modules.md) or by using the **pipeline** (highly recommended).
 
-### kmtricks pipeline
 
-![](./doc/kmtricks_pipeline_v2.png)
-
-`kmtricks.py` is a pipeline of [kmtricks modules](modules.md).
-
-Note that this script also enables to run independently any module (option `--only`, this requires that previous was correctly executed) or enables to run modules until a step (option `--until`).
-
-**Usage:**
-
-```
-usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
-                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
-                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
-                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
-                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
-                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
-                       [--keep-tmp] [--lz4] [-h]
-
-kmtricks pipeline
-
-global:
-  --file FILE                    fof that contains path of read files, one per line [required]
-  --run-dir DIR                  directory to write tmp and output files [required]
-  --kmer-size INT                size of a kmer [default: 31]
-  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
-  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
-  --max-count INT                allows to deduce the integer size to store counts [default: 255]
-  --max-memory INT               max memory available in megabytes [default: 8000]
-  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
-  --log-files                    enables log files [repart|superk|count|merge|split] [default: ]
-  --nb-cores INT                 number of cores [default: 8]
-  --keep-tmp                     keep all tmp files [no arg]
-  --lz4                          lz4 compression for tmp files [no arg]
-  -h, --help                     Show this message and exit
-
-merge options:
-  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
-  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
-  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
-  --skip-merge                   skip merge step, only with --mode bf [no arg]
-
-pipeline control:
-  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
-
-advanced performance tweaks:
-  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
-  --minimizer-size INT           size of minimizer [default: 10]
-  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
-  --nb-partitions INT            number of partitions (0=auto) [default: 0]
-
-hash mode configuration:
-  --hasher STR                   hash function: sabuhash, xor [default: xor]
-  --max-hash INT                 max hash value (uint64_t) [default: 1000000000]
-  --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode bf_trp) [default: none]
-```
-#### kmtricks inputs
+#### Input format
 
 <u>File of file format:</u>
 One sample per line, with an ID, a list of files and an optional solid threshold.
@@ -238,6 +162,82 @@ km_howdesbt queryKm \ # kmtricks-specific subcommand
             queries.fa \ # fastx file that contains queries
             > results.txt
 ```
+
+### kmtricks pipeline
+
+![](./doc/kmtricks_pipeline_v2.png)
+
+`kmtricks.py` is a pipeline of [kmtricks modules](modules.md).
+
+Note that this script also enables to run independently any module (option `--only`, this requires that previous was correctly executed) or enables to run modules until a step (option `--until`).
+
+**Usage:**
+
+```
+usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
+                       [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
+                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
+                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
+                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
+                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
+                       [--keep-tmp] [--lz4] [-h]
+
+kmtricks pipeline
+
+global:
+  --file FILE                    fof that contains path of read files, one per line [required]
+  --run-dir DIR                  directory to write tmp and output files [required]
+  --kmer-size INT                size of a kmer [default: 31]
+  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
+  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
+  --max-count INT                allows to deduce the integer size to store counts [default: 255]
+  --max-memory INT               max memory available in megabytes [default: 8000]
+  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
+  --log-files                    enables log files [repart|superk|count|merge|split] [default: ]
+  --nb-cores INT                 number of cores [default: 8]
+  --keep-tmp                     keep all tmp files [no arg]
+  --lz4                          lz4 compression for tmp files [no arg]
+  -h, --help                     Show this message and exit
+
+merge options:
+  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
+  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
+  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
+  --skip-merge                   skip merge step, only with --mode bf [no arg]
+
+pipeline control:
+  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
+  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
+
+advanced performance tweaks:
+  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
+  --minimizer-size INT           size of minimizer [default: 10]
+  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
+  --nb-partitions INT            number of partitions (0=auto) [default: 0]
+
+hash mode configuration:
+  --hasher STR                   hash function: sabuhash, xor [default: xor]
+  --max-hash INT                 max hash value (uint64_t) [default: 1000000000]
+  --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode bf_trp) [default: none]
+```
+
+
+## Benchmark
+
+Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` and `KMC` for generating a Bloom filter per input read set.
+
+|      Method                 | Indexation time | Max memory | Disk usage |
+|:---------------------------:|:---------------:|:----------:|:----------:|
+| HowDeSBT makebf (Jellyfish) |      59h03      |   13.2 GB  |   206 GB   |
+| HowDeSBT makebf (KMC)       |      32h38      |   18.7 GB  |   165 GB   |
+| kmtricks                    |      20h06      |   21.6 GB  |   233 GB   |
+| kmtricks - [rescue mode](#k-mer-rescue-procedure)  |      20h46      |   17.4 GB  |   327 GB   |
+
+Test realised with 674 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
+
+List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
+
+Other benchmarks and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
 
 ### Advanced usage
 
