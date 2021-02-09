@@ -256,7 +256,7 @@ hash mode configuration:
 
 ## Limitations
 
-kmtricks needs disk space to run. The disk usage is variable and depends on data, parameters and output format. Based on our observations, the required space is between $\frac{\text{total input size (gzipped)}}{5}$ and the total input size (including outputs).
+kmtricks needs disk space to run. The disk usage is variable and depends on data, parameters and output format. Based on our observations, the required space is between 20% of the total input size (gzipped) and the total input size (including outputs).
 
 ## Benchmark
 
