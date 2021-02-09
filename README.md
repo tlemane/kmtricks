@@ -28,6 +28,7 @@ Note: for counting single file, kmtricks works but is slightly slower than a tra
   * In this case, this matrix is provided vertically (one column is a bloom filter corresponding to one dataset).
   * After transposition, this matrix may also be provided horizontally (one line is a Bloom filter corresponding to one dataset). This enables to provide efficiently an independent Bloom filter per input read file.  
 
+![overview](doc/overview.png)
 ## Installation
 
 <details><summary><strong>From conda</strong></summary>
@@ -84,7 +85,6 @@ kmtricks can be used in two different ways: by using each [**module**](modules.m
 
 <u>File of file format:</u>
 One sample per line, with an ID, a list of files and an optional solid threshold.
-* STR **:** PATH_1 **;** ... **;** PATH_N **!** INT
 * \<Dataset ID> : \<1.fastq.gz> ; \<N.fastq.gz> ! \<Abundance min threshold>
 
 <u>Fof example:</u>
@@ -95,13 +95,37 @@ B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2 ! 2
 If the min abundance threshold is not specified, `--count-abundance-min` is used.
 
 #### k-mer rescue procedure
-In kmtricks, k-mer filtering is achieved by leverage count informations across samples. The following parameters can modulate this procedure.
+In kmtricks, k-mer filtering is achieved by leverage k-mer abundances across samples. The following parameters can modulate this procedure.
 
 * `--count-abundance-min INT`: An hard threshold, all k-mers with an abundance less than this parameter are discarded.
 * `--merge-abundance-min INT/STR`: A soft threshold, all k-mers with an abundance between `count-abundance-min` and `merge-abundance-min` are considering rescue-able. If a sample-specific thresholds are required. You can provide the path of a file containing one threshold per line, with the same order as in the input fof.
 * `--save-if INT`: If a k-mer is rescue-able, it is keep if it is solid (with an abundance greater than `merge-abundance-min`) in `save-if` other samples.
 * `--recurrence-min INT`: All k-mers that do not occur in at least `recurrence-min` samples are discarded.
 
+#### Outputs
+
+```
+my_run_directory/  
+├── config.log # log about general parameter, git sha1, ect...
+├── logs #enable all log with --debug or --log-files [repart,superk,count,merge,split]
+│   ├── cmds.log # summary of module calls
+│   ├── counter
+│   ├── merger
+│   ├── split
+│   └── superk
+└── storage
+    ├── config_storage_gatb         # (0) GATB configuration files
+    ├── partition_storage_gatb      # (1) --until repart
+    │   └── minimRepart.minimRepart # minimizers repartition (required for queries)
+    ├── superk_partitions           # (2) --until superk (partitioned super-k-mers)
+    ├── kmers_partitions            # (3) --until count (partitioned k-mers)
+    ├── matrix                      # (4) --until merge (partitioned matrices)
+    ├── vectors                     # (5) full pipeline, bf output mode (--mode bf_trp)
+    │   ├── howde                   # HowDeSBT files (--split howde)
+    │   └── sdsl                    # SDSL files (--split sdsl)
+    ├── fof.txt                     # copy of input fof (--file)
+    └── hash_window.vec             # info about partitioned bf (required for queries)
+```
 ### Examples
 
 The following examples can be executed using example scripts at `./tests/kmtricks`. This requires that kmtricks is [installed with conda](#install).
@@ -200,7 +224,7 @@ global:
   --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
   --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
   --max-count INT                allows to deduce the integer size to store counts [default: 255]
-  --max-memory INT               max memory available in megabytes [default: 8000]
+  --max-memory INT               max memory in megabytes (per core) [default: 8000]
   --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
   --log-files                    enables log files [repart|superk|count|merge|split] [default: ]
   --nb-cores INT                 number of cores [default: 8]
@@ -230,6 +254,9 @@ hash mode configuration:
   --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode bf_trp) [default: none]
 ```
 
+## Limitations
+
+kmtricks needs disk space to run. The disk usage is variable and depends on data, parameters and output format. Based on our observations, the required space is between $\frac{\text{total input size (gzipped)}}{5}$ and the total input size (including outputs).
 
 ## Benchmark
 
@@ -242,7 +269,7 @@ Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` an
 | kmtricks                    |      20h06      |   21.6 GB  |   233 GB   |
 | kmtricks - [rescue mode](#k-mer-rescue-procedure)  |      20h46      |   17.4 GB  |   327 GB   |
 
-Test realised with 674 RNA-seq experiments with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
+Test realised with 674 RNA-seq experiments (961 GB gzipped) with 20 cores 100 GB RAM Intel(R) Xeon(R) 2.60GHz
 
 List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
 
