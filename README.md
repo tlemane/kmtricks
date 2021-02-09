@@ -9,7 +9,7 @@ kmtricks is a modular tool suite for counting kmers, and constructing Bloom filt
 
 ## Rationale
 
-kmtricks is optimized for the analysis of **multiple FASTA/FASTQ** files. It features:
+kmtricks is optimized for the analysis of **multiple FASTA/FASTQ** files (gzipped or not). It features:
  * Fast **k-mer matrix** construction
  * Fast **Bloom filters** construction
  * **Rescues low-abundance k-mers** when they are seen in multiple samples
