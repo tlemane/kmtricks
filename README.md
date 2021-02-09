@@ -22,8 +22,8 @@ Note: for counting single file, kmtricks works but is slightly slower than a tra
 
 **Final output** is either:
 
-* a matrix of kmer x abundance. M<sub>i,j</sub> is the abundance of kmer i in the read set j
-* a matrix of kmer x presence or absence. M<sub>i,j</sub> is the presence (1) or absence (0) of kmer i in the read set j
+* a matrix of kmer abundances. M<sub>i,j</sub> is the abundance of kmer i in the read set j
+* a matrix of kmer membership. M<sub>i,j</sub> is the presence (1) or absence (0) of kmer i in the read set j
 * a matrix of Bloom filters. M<sub>i,j</sub> is the presence (1) or absence (0) of the hash_value i (line numbers are hash values) in the read set j.
   * In this case, this matrix is provided vertically (one column is a bloom filter corresponding to one dataset).
   * After transposition, this matrix may also be provided horizontally (one line is a Bloom filter corresponding to one dataset). This enables to provide efficiently an independent Bloom filter per input read file.  
