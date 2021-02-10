@@ -83,7 +83,7 @@ kmtricks can be used in two different ways: by using each [**module**](modules.m
 
 #### Input format
 
-<u>File of file format:</u>
+<u>File of file (fof) format:</u>
 One sample per line, with an ID, a list of files and an optional solid threshold.
 * `<Dataset ID> : <1.fastq.gz> ; ... ; <N.fastq.gz> ! <Abundance min threshold>`
 
