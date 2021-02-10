@@ -7,6 +7,16 @@
 
 kmtricks is a modular tool suite for counting kmers, and constructing Bloom filters or kmer matrices, for large collections of sequencing data. 
 
+## Table of content
+ * [Rationale](#rationale)
+ * [Overview](#overview)
+ * [Installation](#installation)
+ * [Tests](#tests)
+ * [kmtricks usage](#kmtricks-usage)
+ * [Limitations](#limitations)
+ * [Benchmark](#benchmark)
+ * [Contacts](#contacts)
+
 ## Rationale
 
 kmtricks is optimized for the analysis of **multiple FASTA/FASTQ** files (gzipped or not). It features:
@@ -66,7 +76,7 @@ make -j8
 A fork of HowDeSBT compatible with kmtricks bf is available. To compile it use: `-DHOWDE=1`. The index construction (i.e `km_howdesbt cluster` and `km_howdesbt build`) is equivalent to [classical HowDeSBT construction](https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial#3-create-a-tree-topology). However, query is different, use `km_howdesbt queryKm` instead of `howdesbt query`.
 
 
-## Test
+## Tests
 
 ```bash
 cd build
@@ -85,7 +95,7 @@ kmtricks can be used in two different ways: by using each [**module**](modules.m
 
 <u>File of file format:</u>
 One sample per line, with an ID, a list of files and an optional solid threshold.
-* `\<Dataset ID> : \<1.fastq.gz> ; \<N.fastq.gz> ! \<Abundance min threshold>`
+* `<Dataset ID> : <1.fastq.gz> ; ... ; <N.fastq.gz> ! <Abundance min threshold>`
 
 <u>Fof example:</u>
 ```
@@ -128,7 +138,7 @@ my_run_directory/
 ```
 ### Examples
 
-The following examples can be executed using example scripts at `./tests/kmtricks`. This requires that kmtricks is [installed with conda](#install).
+The following examples can be executed using example scripts at `./tests/kmtricks`. This requires that kmtricks is [installed with conda](#Installation).
 #### 1. Build a k-mer count matrix
 
 This example can be executed by running [example1.sh](tests/kmtricks/example1.sh) at `./tests/kmtricks`.
@@ -138,7 +148,7 @@ kmtricks.py run --file ./data/fof.txt \
                 --run-dir ./count_matrix_run \
                 --kmer-size 20 \
                 --nb-cores 8 \
-                --nb-partitions 4 \
+                --nb-partitions 4  \
                 --count-abundance-min 1 \ # discard k-mers with an abundance less than 2
                 --recurrence-min 1 \      # discard rows with k-mer that occurs in less than 1 sample
                 --mode ascii \
