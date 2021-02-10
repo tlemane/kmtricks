@@ -145,7 +145,7 @@ kmtricks.py run --file ./data/fof.txt \
                 --lz4
 ```
 kmtricks outputs one matrix per partition at `${run_dir}/storage/matrix/partition_${P}/ascii_matrix${P}.mat`. In each partition, k-mers are sorted using the following order : `A < C < T < G`.
-* `--mode ascii`: Each file starts with a 8-rows header. Then each row corresponds to one k-mer and its count vector, space-separated. Order is the same as in the fof.
+* `--mode ascii`: Each file starts with a 8-rows header recalling options. Then each row corresponds to one k-mer and its count vector, space-separated. Order is the same as in the fof.
 
 #### 2. Build and query an HowDe-SBT index using kmtricks partitioned Bloom filters
 
@@ -170,7 +170,7 @@ kmtricks.py run --file ./data/fof.txt \
 
 If rescue is not required, the merging step can be skipped in Bloom filters mode by adding `--skip-merge`.
 
-**Index construction with HowDe-SBT**  
+**Index construction with HowDe-SBT using kmtricks partitioned Bloom filters**  
 
 ```bash
 cd ./km_index/storage/vectors/howde
@@ -272,7 +272,7 @@ Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` an
 Test realised with 674 RNA-seq experiments (961 GB gzipped) with 20 cores (Intel(R) Xeon(R) 2.60GHz) and 100 GB RAM.
 List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
 
-Other benchmarks and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
+Other benchmarks on larger dataset and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
 
 ### Advanced usage
 
