@@ -87,7 +87,7 @@ kmtricks can be used in two different ways: by using each [**module**](modules.m
 One sample per line, with an ID, a list of files and an optional solid threshold.
 * `<Dataset ID> : <1.fastq.gz> ; ... ; <N.fastq.gz> ! <Abundance min threshold>`
 
-<u>Fof example:</u>
+<u>Example:</u>
 ```
 A1 : /path/to/fastq_A1_1 ! 4
 B1 : /path/to/fastq_B1_1 ; /with/mutiple/fasta_B1_2 ! 2
