@@ -7,16 +7,6 @@
 
 kmtricks is a modular tool suite for counting kmers, and constructing Bloom filters or kmer matrices, for large collections of sequencing data. 
 
-## Table of content
- * [Rationale](#rationale)
- * [Overview](#overview)
- * [Installation](#installation)
- * [Tests](#tests)
- * [kmtricks usage](#kmtricks-usage)
- * [Limitations](#limitations)
- * [Benchmark](#benchmark)
- * [Contacts](#contacts)
-
 ## Rationale
 
 kmtricks is optimized for the analysis of **multiple FASTA/FASTQ** files (gzipped or not). It features:
