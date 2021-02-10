@@ -14,7 +14,7 @@ kmtricks is optimized for the analysis of **multiple FASTA/FASTQ** files (gzippe
  * Fast **Bloom filters** construction
  * **Rescues low-abundance k-mers** when they are seen in multiple samples
 
-Note: for counting single file, kmtricks works but is slightly slower than a traditional k-mer counter (e.g. KMC). It is really optimized for merging count information across multiple samples, which traditional k-mer counters cannot do.
+Note: for counting kmers from a single file, kmtricks works but is slightly slower than a traditional k-mer counter (e.g. KMC). It is really optimized for merging count information across multiple samples, which traditional k-mer counters cannot do.
 
 ## Overview
 
