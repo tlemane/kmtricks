@@ -85,7 +85,7 @@ kmtricks can be used in two different ways: by using each [**module**](modules.m
 
 <u>File of file format:</u>
 One sample per line, with an ID, a list of files and an optional solid threshold.
-* \<Dataset ID> : \<1.fastq.gz> ; \<N.fastq.gz> ! \<Abundance min threshold>
+* `\<Dataset ID> : \<1.fastq.gz> ; \<N.fastq.gz> ! \<Abundance min threshold>`
 
 <u>Fof example:</u>
 ```
@@ -97,10 +97,10 @@ If the min abundance threshold is not specified, `--count-abundance-min` is used
 #### k-mer rescue procedure
 In kmtricks, k-mer filtering is achieved by leverage k-mer abundances across samples. The following parameters can modulate this procedure.
 
-* `--count-abundance-min INT`: An hard threshold, all k-mers with an abundance less than this parameter are discarded.
-* `--merge-abundance-min INT/STR`: A soft threshold, all k-mers with an abundance between `count-abundance-min` and `merge-abundance-min` are considering rescue-able. If a sample-specific thresholds are required. You can provide the path of a file containing one threshold per line, with the same order as in the input fof.
-* `--save-if INT`: If a k-mer is rescue-able, it is keep if it is solid (with an abundance greater than `merge-abundance-min`) in `save-if` other samples.
-* `--recurrence-min INT`: All k-mers that do not occur in at least `recurrence-min` samples are discarded.
+* `--count-abundance-min INT`: All k-mers with an abundance less than this parameter are discarded.
+* `--merge-abundance-min INT/STR`: All k-mers with an abundance between `count-abundance-min` and `merge-abundance-min` are considering rescue-able. You can provide the path of a file containing one threshold per line, with the same order as in the input fof.
+* `--save-if INT`: If a k-mer is rescue-able, it is keep if it is solid (with an abundance greater than `merge-abundance-min`) in at least `save-if` other sample(s).
+* `--recurrence-min INT`: All k-mers that do not occur in at least `recurrence-min` sample(s) are discarded.
 
 #### Outputs
 
