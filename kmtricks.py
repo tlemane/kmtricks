@@ -769,7 +769,7 @@ class Fof:
     """kmtricks input fof"""
     class FofBadFormat(Exception):
         """raise when fof parsing failed"""
-    PATTERN = r'(^[A-Za-z0-9_-]+)[\s]*:[\s]*([.A-Za-z0-9\/_; ]+)([\s]*![\s]*)?([0-9]+$)?'
+    PATTERN = r'(^[A-Za-z0-9_-]+)[\s]*:[\s]*([.A-Za-z0-9\/_\-; ]+)([\s]*![\s]*)?([0-9]+$)?'
     INVALID = r'([<>{},[\]])'
 
     def __init__(self, path: str):
