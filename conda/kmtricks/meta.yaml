@@ -13,3 +13,4 @@ requirements:
     - cmake
   run:
     - zlib
+    - python>=3.6
