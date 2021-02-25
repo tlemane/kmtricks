@@ -240,7 +240,7 @@ merge options:
 
 pipeline control:
   --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR                     run until step: [repart|superk|count|merge|split] [default: all]
+  --only STR                     run only step: [repart|superk|count|merge|split] [default: all]
 
 advanced performance tweaks:
   --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]

@@ -212,7 +212,7 @@ class OptionsParser:
         glb.add_argument('--max-count', metavar='INT', type=int,
             help='allows to deduce the integer size to store counts', default=255)
         glb.add_argument('--max-memory', metavar='INT', type=int,
-            help='max memory available in megabytes', default=8000)
+            help='max memory per core (in megabytes)', default=8000)
         glb.add_argument('--mode', metavar='STR', type=str,
             choices=mt_format, default='bin',
             help=f'output matrix format: [{"|".join(mt_format)}]')
@@ -235,7 +235,7 @@ class OptionsParser:
             help=f'run until step: [{"|".join(steps)}]')
         ctr.add_argument('--only', metavar='STR', type=str,
             choices=steps, default='all',
-            help=f'run until step: [{"|".join(steps)}]')
+            help=f'run only step: [{"|".join(steps)}]')
 
         adv.add_argument('--minimizer-type', metavar='INT', type=int,
             help='minimizer type (0=lexi, 1=freq)', default=0)
