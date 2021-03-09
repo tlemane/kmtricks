@@ -7,7 +7,7 @@
 
 kmtricks is a modular tool suite for counting kmers, and constructing Bloom filters or kmer matrices, for large collections of sequencing data. 
 
-
+## Table of content
 * [Rationale](#rationale)
 * [Overview](#overview)
 * [Installation](#installation)
@@ -15,8 +15,6 @@ kmtricks is a modular tool suite for counting kmers, and constructing Bloom filt
 * [kmtricks usage](#kmtricks-usage)
 * [Limitations](#limitations)
 * [Benchmark](#benchmark)
-  
-  + [Advanced usage](#advanced-usage)
 * [Contacts](#contacts)
 
 ## Rationale
