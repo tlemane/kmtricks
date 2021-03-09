@@ -13,13 +13,6 @@ kmtricks is a modular tool suite for counting kmers, and constructing Bloom filt
 * [Installation](#installation)
 * [Tests](#tests)
 * [kmtricks usage](#kmtricks-usage)
-    - [Input format](#input-format)
-    - [k-mer rescue procedure](#k-mer-rescue-procedure)
-    - [Outputs](#outputs)
-  + [Examples](#examples)
-    - [1. Build a k-mer count matrix](#1-build-a-k-mer-count-matrix)
-    - [2. Build and query an HowDe-SBT index using kmtricks partitioned Bloom filters](#2-build-and-query-an-howde-sbt-index-using-kmtricks-partitioned-bloom-filters)
-  + [kmtricks pipeline](#kmtricks-pipeline)
 * [Limitations](#limitations)
 * [Benchmark](#benchmark)
   
