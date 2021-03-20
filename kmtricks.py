@@ -221,7 +221,7 @@ class OptionsParser:
         glb.add_argument('--nb-cores', metavar='INT', type=int,
             help='number of cores', default=8)
 
-        rar.add_argument('--merge-abundance-min', metavar='INT/STR', type=str,
+        rar.add_argument('--merge-abundance-min', metavar='INT/FLOAT/STR', type=str,
             help='min abundance threshold for solid kmers', default=1)
         rar.add_argument('--recurrence-min', metavar='INT', type=int,
             help='min reccurence threshold for solid kmers', default=1)
@@ -315,6 +315,107 @@ def get_binary(dir: str, t: str, vk: int, vc: int = 255) -> str:
     if os.path.exists(path):
         return pattern
     raise BinaryNotFoundError(nf_temp.format(vk, vc, pattern, k, c))
+
+class KMHist:
+    def __init__(self):
+        self.data: odict = odict()
+
+    def init(self, idx: str, nb_part: int):
+        for i in idx:
+            self.data[i] = {
+                'id': 0,
+                'lower': 0,
+                'upper': 0,
+                'uniq': 0,
+                'total': 0,
+                'histu': [],
+                'histn': [],
+                'n': 0
+            }
+        self.nb_part = nb_part
+
+    def update(self, idx: str, path: str):
+        with open(path, 'rb') as fin:
+            fin.read(16)
+            self.data[idx]['lower'] = int.from_bytes(fin.read(8), byteorder='little')
+            self.data[idx]['upper'] = int.from_bytes(fin.read(8), byteorder='little')
+            self.data[idx]['uniq'] += int.from_bytes(fin.read(8), byteorder='little')
+            self.data[idx]['total'] += int.from_bytes(fin.read(8), byteorder='little')
+            self.size = self.data[idx]['upper'] - self.data[idx]['lower'] + 1
+            fin.read(40)
+            if not self.data[idx]['histu']:
+                self.data[idx]['histu'] = [0]*self.size
+                self.data[idx]['histn'] = [0]*self.size
+            for i in range(self.size):
+                self.data[idx]['histu'][i] += int.from_bytes(fin.read(8), byteorder='little')
+            for i in range(self.size):
+                self.data[idx]['histn'][i] += int.from_bytes(fin.read(8), byteorder='little')
+        self.data[idx]['n'] += 1
+
+    def full(self) -> bool:
+        return all(v['n'] == self.nb_part for v in self.data.values())
+
+    def dump(self, hpath: str) -> None:
+        mat = [['']*len(self.data) for _ in range(self.size+1)]
+        f = 0
+        for k, v in self.data.items():
+            mat[0][f] = k
+            i = 1
+            for c in v['histu']:
+                mat[i][f] = str(c)
+                i += 1
+            f += 1
+
+        with open(hpath, 'w') as hout:
+            for line in mat:
+                hout.write(f'{" ".join(line)}\n')
+
+class RescueThreshold:
+    def __init__(self, kmhist: KMHist, d: Union[str, float, int], path: str):
+        self.kmhist: KMHist = kmhist
+        self.thresholds: list = []
+        self._path: str = path
+        self.path: str = None
+        self.is_computed = False
+        try:
+            self.d = int(d)
+        except:
+            try:
+                self.d = float(d)
+            except:
+                self.path = d
+                self.d = None
+        
+    def compute_thresholds(self) -> None:
+        if isinstance(self.d, float):
+            if not self.kmhist.full():
+                raise RuntimeError(f'Unable to compute rescue thresholds from partial hist.')
+            for _, v in self.kmhist.data.items():
+                n = ceil(v['uniq']*self.d)
+                s = 0
+                for i, c in enumerate(v['histu']):
+                    if s > n:
+                        self.thresholds.append(i)
+                        break
+                    s += c
+            self.is_computed = True
+            self.path = self._path
+            self.dump(self.path)
+
+    def auto(self) -> bool:
+        return isinstance(self.d, float)
+
+    def dump(self, path: str) -> None:
+        with open(path, 'w') as fout:
+            for t in self.thresholds:
+                fout.write(f'{t}\n')
+
+    def get(self) -> Union[int, str]:
+        if not self.is_computed:
+            self.compute_thresholds()
+        if self.path:
+            return self.path
+        return self.d
 
 class ICommand:
     """The command interface"""
@@ -622,7 +723,12 @@ class CountCommand(ICommand):
             raise FileExistsError(f'{kmer_file} already exists')
 
     def postprocess(self) -> None:
-        pass
+        p = self.args['part_id']
+        i = self.args['f']
+        hist_file = f'{self.run_directory}/storage/kmers_partitions/partition_{p}/{i}.khist'
+        if os.path.exists(hist_file):
+            self.args['hist'].update(i, hist_file)
+            os.remove(hist_file)
 
 class MergeCommand(ICommand):
     """km_merge_within_partition"""
@@ -659,6 +765,17 @@ class MergeCommand(ICommand):
         if not self.args['keep_tmp']:
             pi = self.args['part_id']
             rmtree(f'{self.run_directory}/storage/kmers_partitions/partition_{pi}')
+
+    def ready(self, finished: set) -> bool:
+        if self.is_done:
+            return False
+        if self.args['hist']:
+            if not self.args['hist'].full():
+                return False
+        r = self.depends.issubset(finished)
+        if r:
+            self.args['merge_abundance_min'] = self.args['rt'].get()
+        return r
 
 class OutputCommand(ICommand):
     """km_output_command from_merge"""
@@ -986,6 +1103,12 @@ def main():
     fof.parse(args['abundance_min'])
     fof_copy = f'{args["run_dir"]}/storage/fof.txt'
 
+    global_hist = KMHist()
+    global_hist.init([f[3] for f in fof], int(args['nb_partitions']))
+
+    rescue_th = RescueThreshold(
+        global_hist, args['merge_abundance_min'], f'{args["run_dir"]}/storage/rthresholds.txt')
+
     if not args['nb_partitions']:
         args['nb_partitions'] = len(os.listdir(f'{args["run_dir"]}/storage/kmers_partitions'))
 
@@ -1031,19 +1154,20 @@ def main():
                     if DEBUG or log_in_files['count']:
                         log = f'{log_dir}/counter/counter{i}_{p}.log'
                     count_commands[f'{COUNT_PREFIX_ID}{i}_{p}'] = CountCommand(
-                       f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, **dargs
+                       f=exp, part_id=p, fof=fof, log=log, count_bin=cbin, hist=global_hist, **dargs
                     )
             pool.push('C', count_commands, args['nb_cores'])
 
         merge_commands = odict()
         if ((only == 4 or all_ and until > 3) and not args['skip_merge']):
             mbin = get_binary(BIN_DIR, 'merge', args['kmer_size'], args['max_count'])
+            mhist = global_hist if rescue_th.auto() else None
             for p in range(args['nb_partitions']):
                 dargs = deepcopy(args)
                 if DEBUG or log_in_files['merge']:
                     log = f'{log_dir}/merger/merger{p}.log'
                 merge_commands[f'{MERGE_PREFIX_ID}{p}'] = MergeCommand(
-                    part_id=p, fof=fof, log=log, merge_bin=mbin, **dargs
+                    part_id=p, fof=fof, log=log, merge_bin=mbin, hist=mhist, rt=rescue_th, **dargs
                 )
             pool.push('M', merge_commands, args['nb_cores'])
 
@@ -1072,8 +1196,10 @@ def main():
         pool.exec()
 
     progress_bar.finish()
+    
+    global_hist.dump(f'{args["run_dir"]}/storage/global.kmhist')
+    
     total_time.print('Done in ')
-
 
 if __name__ == '__main__':
     try:
