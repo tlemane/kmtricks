@@ -22,6 +22,8 @@
 #include <gatb/kmer/impl/HashSorting.hpp>
 #include <gatb/kmer/impl/PartitionsCommand.hpp>
 #include <kmtricks/logging.hpp>
+#include <kmtricks/sequences.hpp>
+#include <kmtricks/io.hpp>
 #include "CountProcessorDump.hpp"
 #include "km_superk_to_kmer_counts.hpp"
 #include "signal_handling.hpp"
@@ -104,7 +106,9 @@ struct Functor
     vector<ICommand*> cmds;
     string path = e->STORE_KMERS + fmt::format(PART_TEMP_K, part_id, prefix);
     uint64_t vec_size = props->getInt(STR_VEC_ONLY) ? window_size : 0;
-    CountProcessorDumpPart<span>* dumper;// = new CountProcessorDumpPart<span>(kmerSize, min_abundance, path, part_id, lz4, nb_partitions, vec_size);
+    CountProcessorDumpPart<span>* dumper;
+
+    km::KHist khist(part_id, kmerSize, 1, 255);
 
     km::BitVectorFile<km::OUT> *bvf = nullptr;
     km::KmerFile<km::OUT, kmtype_t, cntype_t> *cmf = nullptr;
@@ -114,14 +118,14 @@ struct Functor
       if (lz4) path += ".lz4";
       bvf = new km::BitVectorFile<km::OUT>(path, 0, part_id, window_size, lz4);
       dumper = new CountProcessorDumpPart<span>(
-        kmerSize, min_abundance, path, part_id, lz4, bvf, nb_partitions, vec_size);
+        kmerSize, min_abundance, path, part_id, lz4, bvf, &khist, nb_partitions, vec_size);
     }
     else
     {
       if (lz4) path += ".lz4";
       cmf = new km::KmerFile<km::OUT, kmtype_t, cntype_t>(path, 0, part_id, kmerSize, hash_mode, lz4);
       dumper = new CountProcessorDumpPart<span>(
-        kmerSize, min_abundance, path, part_id, lz4, cmf, nb_partitions, vec_size);
+        kmerSize, min_abundance, path, part_id, lz4, cmf, &khist, nb_partitions, vec_size);
     } 
 
 
@@ -165,6 +169,9 @@ struct Functor
     pool.free_all();
     _superKstorage->closeFiles();
     _progress->finish();
+
+    km::HistFile<km::OUT> hf(khist, e->STORE_KMERS + fmt::format(PART_TEMP_HIST, part_id, prefix));
+
     delete e;
     delete dumper;
     delete cmf;

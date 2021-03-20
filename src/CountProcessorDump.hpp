@@ -44,38 +44,19 @@ public:
     uint partId,
     bool lz4,
     km::KmerFile<km::OUT, kmtype_t, cntype_t>* cmf,
+    km::KHist *khist,
     size_t nbPartsPerPass = 0,
     size_t window = 0)
 
     : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4),
       _min_abundance(min_abundance), _out_part(out_part), _partId(partId),
-      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _cmf(cmf)
+      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _cmf(cmf), _khist(khist)
   {
-    //_part_file.rdbuf()->pubsetbuf(_buffer, 8192);
-    
     if (_window)
     {
       _out_part += ".vec";
       _vec.resize(_window);
     }
-    //if (_lz4_output)
-    //{
-      //_part_file.open(_out_part+".lz4", std::ios::app | std::ios::binary);
-      //_lzstream = new lz4_stream::ostream(_part_file);
-      //_writer = _lzstream;
-    //}
-    //else
-    //{
-      //_part_file.open(_out_part, std::ios::app | std::ios::binary);
-      //_writer = &_part_file;
-    //}
-
-    //if (!_part_file)
-    //{
-    //  cout << "Unable to open " + _out_part << endl;
-    //  exit(EXIT_FAILURE);
-    //}
-    
     model = new typename Kmer<span>::ModelCanonical(kmerSize);
     _mc = maxc.at(sizeof(cntype_t));
 
@@ -90,12 +71,13 @@ public:
     uint partId,
     bool lz4,
     km::BitVectorFile<km::OUT>* bvf,
+    km::KHist* khist,
     size_t nbPartsPerPass = 0,
     size_t window = 0)
 
     : _kmerSize(kmerSize), _nbPartsPerPass(nbPartsPerPass), _lz4_output(lz4),
       _min_abundance(min_abundance), _out_part(out_part), _partId(partId),
-      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _bvf(bvf)
+      _window(window/8), _window_bits(window), _hk(0), _hcount(0), _bvf(bvf), _khist(khist)
   {
     if (_window)
     {
@@ -125,10 +107,10 @@ public:
   {
     if (_window)
       return new CountProcessorDumpPart(
-        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _bvf, _nbPartsPerPass, _window_bits);
+        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _bvf, _khist, _nbPartsPerPass, _window_bits);
     else
       return new CountProcessorDumpPart(
-        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _cmf, _nbPartsPerPass, _window_bits);
+        _kmerSize, _min_abundance, _out_part, _partId, _lz4_output, _cmf, _khist, _nbPartsPerPass, _window_bits);
   }
 
   void finishClones(vector<ICountProcessor<span> *> &clones)
@@ -158,6 +140,7 @@ public:
   bool process(size_t partId, const Type &kmer, const CountVector &count, CountNumber sum)
   {
     CountNumber kmer_count = count[0];
+    _khist->inc(kmer_count);
     _hk = kmer.getVal();
     if (kmer_count >= _min_abundance)
     {
@@ -196,4 +179,5 @@ private:
   uint64_t  _mc;
   km::BitVectorFile<km::OUT>* _bvf;
   km::KmerFile<km::OUT, kmtype_t, cntype_t>* _cmf;
+  km::KHist* _khist;
 };

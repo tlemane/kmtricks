@@ -168,6 +168,7 @@ cs END_TEMP_SP      = "/split.sync";
 cs PART_DIR         = "/partition_{}";
 cs PART_TEMP_K      = "/partition_{}/{}.kmer";
 cs PART_TEMP_K_F    = "/{}.kmers";
+cs PART_TEMP_HIST   = "/partition_{}/{}.khist";
 
 cs PA_TEMP          = "/partition_{}/pa_matrix{}.mat";
 cs BF_NT_TEMP       = "/partition_{}/no_trp_bf{}.mat";

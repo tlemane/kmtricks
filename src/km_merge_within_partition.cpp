@@ -216,11 +216,12 @@ void KmMerge::execute()
     break;
   }
 
-  km::LOG(km::INFO) << "ABS VEC: " << _abs_vec;
-  km::LOG(km::INFO) << "NON_SOLID: " << _m->_non_solid;
-  km::LOG(km::INFO) << "SAVED: " << _m->_saved;
-  km::LOG(km::INFO) << "TOTAL W/O: " << _m->total;
-  km::LOG(km::INFO) << "TOTAL W: " << _m->total_w_saved;
+  km::LOG(km::INFO) << "UNIQ_WO_RESCUE: " << _m->infos.uniq_wo_rescue;
+  km::LOG(km::INFO) << "UNIQ_W_RESCUE: " << _m->infos.uniq_w_rescue;
+  km::LOG(km::INFO) << "NON_SOLID: " << _m->infos.non_solid;
+  km::LOG(km::INFO) << "RESCUED: " << _m->infos.rescued;
+  km::LOG(km::INFO) << "TOTAL_WO_RESCUE: " << _m->infos.total_wo_rescue;
+  km::LOG(km::INFO) << "TOTAL_W_RESCUE: " << _m->infos.total_w_rescue;
   
   delete _m;
   delete e;
