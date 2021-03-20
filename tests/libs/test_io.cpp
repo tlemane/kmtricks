@@ -68,7 +68,9 @@ protected:
     std::remove("BitMatrixFileBF");
     std::remove("MatrixFileBIT");
     std::remove("BitVectorFile");
+    std::remove("HistFile");
   }
+
   unordered_map<ktype, vector<cntype>> kmap;
   unordered_map<ktype, vector<char>> kbit;
   vector<vector<char>> bfs;
@@ -248,5 +250,37 @@ TEST_F(IoTest, BitVectorFile)
     pair<uint64_t, uint64_t> w = bvfile.get_window();
     EXPECT_EQ(w.first, 120);
     EXPECT_EQ(w.second, 239);
+  }
+}
+
+TEST_F(IoTest, HistFile)
+{
+  vector<uint64_t> v {1, 1, 3, 9, 1, 2, 2, 2, 9, 5};
+  vector<uint64_t> r {3, 3, 1, 0, 1, 0, 0, 0, 2, 0};
+  vector<uint64_t> rn {3, 6, 3, 0, 5, 0, 0, 0, 18, 0};
+  {
+    KHist hist(0, 20, 1, 10);
+
+    for (auto& c : v)
+    {
+      hist.inc(c);
+    }
+    HistFile<OUT> hf(hist, "HistFile");
+  }
+  {
+    HistFile<IN> hf("HistFile");
+    KHist hist = hf.read();
+    hist.print_histu();
+    EXPECT_EQ(hist.lower, 1);
+    EXPECT_EQ(hist.upper, 10);
+    EXPECT_EQ(hist.oob_un, 0);
+    EXPECT_EQ(hist.oob_ln, 0);
+    EXPECT_EQ(hist.oob_lu, 0);
+    EXPECT_EQ(hist.oob_uu, 0);
+    for (int i=0; i<v.size(); i++)
+    {
+      EXPECT_EQ(r[i], hist.hist_u[i]);
+      EXPECT_EQ(rn[i], hist.hist_n[i]);
+    }
   }
 }

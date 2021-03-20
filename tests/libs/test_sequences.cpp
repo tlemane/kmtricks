@@ -254,3 +254,53 @@ TEST(minimizer, minimizer_default)
   minim.set_default();
   EXPECT_EQ(minim.value(), DEFAULT_MINIMIZER);
 }
+
+TEST(khist, khist)
+{
+  vector<uint64_t> v {1, 1, 3, 9, 1, 2, 2, 2, 9, 5};
+  vector<uint64_t> r {3, 3, 1, 0, 1, 0, 0, 0, 2, 0};
+  vector<uint64_t> rn {3, 6, 3, 0, 5, 0, 0, 0, 18, 0};
+  KHist hist(0, 20, 1, 10);
+
+  for (auto& c : v)
+  {
+    hist.inc(c);
+  }
+
+  hist.print_histu();
+  for (int i=0; i<v.size(); i++)
+  {
+    EXPECT_EQ(hist.hist_u[i], r[i]);
+    EXPECT_EQ(hist.hist_n[i], rn[i]);
+  }
+
+  EXPECT_EQ(hist.lower, 1);
+  EXPECT_EQ(hist.upper, 10);
+  EXPECT_EQ(hist.oob_ln, 0);
+  EXPECT_EQ(hist.oob_lu, 0);
+  EXPECT_EQ(hist.oob_uu, 0);
+  EXPECT_EQ(hist.oob_un, 0);
+  EXPECT_EQ(hist.uniq, 10);
+  EXPECT_EQ(hist.total, 35);
+  
+  KHist hist2(0, 20, 3, 5);
+  vector<uint64_t> rb {1, 0, 1};
+  vector<uint64_t> rbn {3, 0, 5};
+
+  for (auto& c : v)
+  {
+    hist2.inc(c);
+  }
+
+  EXPECT_EQ(hist2.hist_n.size(), 3);
+  for (int i=0; i<rb.size(); i++)
+  {
+    EXPECT_EQ(hist2.hist_u[i], rb[i]);
+    EXPECT_EQ(hist2.hist_n[i], rbn[i]);
+  }
+
+  EXPECT_EQ(hist2.oob_lu, 6);
+  EXPECT_EQ(hist2.oob_ln, 9);
+  EXPECT_EQ(hist2.oob_uu, 2);
+  EXPECT_EQ(hist2.oob_un, 18);
+}
