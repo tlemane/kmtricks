@@ -40,6 +40,40 @@ using namespace std;
 namespace km
 {
 
+
+class MergeInfo
+{
+public:
+  MergeInfo() = default;
+
+  void init(size_t nb_files)
+  {
+    nb_files = nb_files;
+    non_solid.resize(nb_files, 0);
+    rescued.resize(nb_files, 0);
+    uniq_wo_rescue.resize(nb_files, 0);
+    uniq_w_rescue.resize(nb_files, 0);
+    total_wo_rescue.resize(nb_files, 0);
+    total_w_rescue.resize(nb_files, 0);
+  }
+
+  void inc_ns(uint i) {non_solid[i]++;}
+  void inc_rd(uint i) {rescued[i]++;}
+  void inc_uwo(uint i) {uniq_wo_rescue[i]++; uniq_w_rescue[i]++;}
+  void inc_uw(uint i) {uniq_w_rescue[i]++;}
+  void inc_wo(uint i, uint c) {total_wo_rescue[i] += c; total_w_rescue[i] += c;}
+  void inc_w(uint i, uint c) {total_w_rescue[i] += c;}
+
+public:
+  size_t nb_files {0};
+  vector<uint64_t> non_solid;
+  vector<uint64_t> rescued;
+  vector<uint64_t> uniq_wo_rescue;
+  vector<uint64_t> uniq_w_rescue;
+  vector<uint64_t> total_wo_rescue;
+  vector<uint64_t> total_w_rescue;
+};
+
 template<typename K, typename C, typename F>
 class Merger
 {
@@ -88,10 +122,7 @@ public:
   size_t           nb_files;
   size_t           vlen;
   uchar            *_bit_vector;
-  vector<uint64_t> _non_solid;
-  vector<uint64_t> _saved;
-  vector<uint>     total;
-  vector<uint>     total_w_saved;
+  MergeInfo        infos;
 
 private:
   string _path;
@@ -108,7 +139,7 @@ private:
   bool _vector;
 
   vector<stream_t *>          _st;
-  vector<hshcount_t *>  _hc;
+  vector<hshcount_t *>        _hc;
   vector<uchar *>             _headers;
   vector<uint>                _abs_vec;
   vector<uint64_t>            _need_check;
@@ -192,6 +223,7 @@ Merger<K, C, F>::Merger(const Merger<K, C, F> &m)
     vlen(m.vlen),
     _bit_vector(nullptr),
     //_bit_vector(m._bit_vector)
+    infos(m.infos),
     _path(m._path),
     _a_min(m._a_min),
     _r_min(m._r_min),
@@ -204,11 +236,7 @@ Merger<K, C, F>::Merger(const Merger<K, C, F> &m)
     _abs_vec(m._abs_vec),
     _save_if(m._save_if),
     _stats(m._stats),
-    _saved(m._saved),
-    _non_solid(m._non_solid),
-    _need_check(m._need_check),
-    total(m.total),
-    total_w_saved(m.total_w_saved)
+    _need_check(m._need_check)
 {
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -264,11 +292,8 @@ Merger<K, C, F> &Merger<K, C, F>::operator=(const Merger<K, C, F> &m)
   _abs_vec = m._abs_vec;
   _save_if = m._save_if;
   _stats = m._stats;
-  _saved = m._saved;
-  _non_solid = m._non_solid;
   _need_check = m._need_check;
-  total = m.total;
-  total_w_saved = m.total_w_saved;
+  infos = m.infos;
 
   _hc.resize(nb_files);
   _st.resize(nb_files);
@@ -345,9 +370,8 @@ int Merger<K, C, F>::init()
   _m_k_set = false;
   end = false;
 
+  infos.init(nb_files);
   counts.resize(nb_files, 0);
-  total.resize(nb_files, 0);
-  total_w_saved.resize(nb_files, 0);
 
   if (!_a_min)
     if(_abs_vec.size() > 0 && _abs_vec.size() != nb_files)
@@ -356,25 +380,12 @@ int Merger<K, C, F>::init()
   if (_save_if)
     _need_check.resize(nb_files);
   
-  if (_stats)
-  {
-    _non_solid.resize(nb_files);
-    _saved.resize(nb_files);
-  }
-  
   for ( size_t i = 0; i < nb_files; i++ )
   {
     _hc.push_back(new hshcount_t());
     _st.push_back(new stream_t());
 
     _st[i]->f = new F(pfiles[i]);
-
-    //if ( _hsize > 0 )
-    //{
-    //  _headers.push_back(new uchar[_hsize]());
-    //  _st[i]->f->read((char*)_headers[i], _hsize-1);
-    //  _headers[i][_hsize - 1] = '\0';
-    //}
 
     if ( !readb(i))
     {
@@ -421,12 +432,12 @@ void Merger<K, C, F>::next()
         solid_in++;
         if ( _vector )
           BITSET(_bit_vector, i);
-        total[i] += counts[i];
+        infos.inc_wo(i, counts[i]);
+        infos.inc_uwo(i);
       }
       else
       {
-        if (_stats)
-          _non_solid[i]++;
+        infos.inc_ns(i);
         if (_save_if)
           _need_check.push_back(i);
         else
@@ -453,8 +464,9 @@ void Merger<K, C, F>::next()
   {
     if (solid_in >= _save_if)
     {
-      _saved[p]++;
-      total_w_saved[p] += counts[p];
+      infos.inc_rd(p);
+      infos.inc_w(p, counts[p]);
+      infos.inc_uw(p);
       if (_vector)
         BITSET(_bit_vector, p);
     }

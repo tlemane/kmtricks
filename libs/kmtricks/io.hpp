@@ -141,32 +141,30 @@ struct bitmatrix_file_header {
   uint64_t second_magic;
 }; 
 
+struct hist_file_header {
+  uint64_t first_magic;
+  int32_t  id;
+  uint32_t kmer_size;
+  uint64_t lower;
+  uint64_t upper;
+  uint64_t uniq;
+  uint64_t total;
+  uint64_t second_magic;
+};
+
 typedef struct bitmatrix_file_header bmheader_t;
 typedef struct bitvector_file_header bvheader_t;
 typedef struct pa_matrix_file_header paheader_t;
 typedef struct count_matrix_file_header cmheader_t;
 typedef struct kmer_file_header kheader_t;
+typedef struct hist_file_header hheader_t;
 
 const static kheader_t  kheader_d  = {magic1, 0, 0, 0, 0, 0, 0, 0, magic2};
 const static cmheader_t cmheader_d = {magic1, matrix_t::ASCII, 0, 0, 0, 0, 0, 0, 0, magic2};
 const static paheader_t paheader_d = {magic1, matrix_t::PA, 0, 0, 0, 0, 0, 0, 0, magic2};
 const static bvheader_t bvheader_d = {magic1, 0, 0, 0, 0, 0, magic2};
 const static bmheader_t bmheader_d = {magic1, matrix_t::BF, 0, 0, 0, 0, 0, 0, 0, magic2};
-//#ifdef _KM_LIB_INCLUDE_
-//extern kheader_t  kheader_d;
-//extern cmheader_t cmheader_d;
-//extern paheader_t paheader_d;
-//extern bvheader_t bvheader_d;
-//extern bmheader_t bmheader_d;
-//#endif
-//
-//#ifndef _KM_LIB_INCLUDE_
-//kheader_t  kheader_d  = {magic1, 0, 0, 0, 0, 0, 0, 0, 0, magic2};
-//cmheader_t cmheader_d = {magic1, matrix_t::ASCII, 0, 0, 0, 0, 0, 0, 0, magic2};
-//paheader_t paheader_d = {magic1, matrix_t::PA, 0, 0, 0, 0, 0, 0, 0, magic2};
-//bvheader_t bvheader_d = {magic1, 0, 0, 0, 0, 0, magic2};
-//bmheader_t bmheader_d = {magic1, matrix_t::BF, 0, 0, 0, 0, 0, 0, 0, magic2};
-//#endif
+const static hheader_t  hheader_d  = {magic1, 0, 0, 0, 0, 0, 0, magic2};
 
 //! \ingroup IO
 //! \class IFile
@@ -959,7 +957,73 @@ private:
   bool is_rw  {false};
 };
 
-#ifndef _KM_LIB_INCLUDE_
+template<typename stream,
+         size_t buf_size = 4096>
+class HistFile : public IFile<hheader_t, stream, buf_size>
+{
+  using ocstream = lz4_stream::basic_ostream<buf_size>;
+  using icstream = lz4_stream::basic_istream<buf_size>;
+  using buffer_t = std::vector<char>;
 
-#endif
+public:
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, is>{}, S>::type>
+  HistFile(const std::string& path)
+    : IFile<hheader_t, stream, buf_size>(
+        path, hheader_d, std::ios::binary | std::ios::in)
+  {
+    this->first_layer->read(reinterpret_cast<char*>(&this->header), sizeof(this->header));
+    if (this->header.first_magic != magic1
+        || this->header.second_magic != magic2)
+      throw std::runtime_error("Unable to read: " + path + ". Possibly due to bad format.");
+
+    this->template set_second_layer<icstream>(false); 
+  }
+
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, os>{}, S>::type>
+  HistFile(const KHist& hist, const std::string& path)
+    : IFile<hheader_t, stream, buf_size>(path, hheader_d, std::ios::binary | std::ios::out)
+  {
+    this->header.id        = hist.idx;
+    this->header.kmer_size = hist.ksize;
+    this->header.lower     = hist.lower;
+    this->header.upper     = hist.upper;
+    this->header.uniq      = hist.uniq;
+    this->header.total     = hist.total;
+
+    this->first_layer->write(reinterpret_cast<const char*>(&this->header), sizeof(this->header));
+    this->first_layer->flush();
+
+    this->template set_second_layer<ocstream>(false);
+
+    this->second_layer->write(reinterpret_cast<const char*>(&hist.oob_lu), sizeof(uint64_t));
+    this->second_layer->write(reinterpret_cast<const char*>(&hist.oob_uu), sizeof(uint64_t));
+    this->second_layer->write(reinterpret_cast<const char*>(&hist.oob_ln), sizeof(uint64_t));
+    this->second_layer->write(reinterpret_cast<const char*>(&hist.oob_un), sizeof(uint64_t));
+    
+    this->second_layer->write(
+      reinterpret_cast<const char*>(hist.hist_u.data()), hist.hist_u.size()*sizeof(uint64_t));
+    this->second_layer->write(
+      reinterpret_cast<const char*>(hist.hist_n.data()), hist.hist_n.size()*sizeof(uint64_t));
+  }
+
+  template<typename S = stream,
+           typename = typename std::enable_if<std::is_same<S, is>{}, void>::type>
+  KHist read()
+  {
+    KHist hist(this->header.id, this->header.kmer_size, this->header.lower, this->header.upper);
+    
+    this->second_layer->read(reinterpret_cast<char*>(&hist.oob_lu), sizeof(uint64_t));
+    this->second_layer->read(reinterpret_cast<char*>(&hist.oob_uu), sizeof(uint64_t));
+    this->second_layer->read(reinterpret_cast<char*>(&hist.oob_ln), sizeof(uint64_t));
+    this->second_layer->read(reinterpret_cast<char*>(&hist.oob_un), sizeof(uint64_t));
+
+    this->second_layer->read(
+      reinterpret_cast<char*>(hist.hist_u.data()), hist.hist_u.size()*sizeof(uint64_t));
+    this->second_layer->read(
+      reinterpret_cast<char*>(hist.hist_n.data()), hist.hist_n.size()*sizeof(uint64_t));
+    return hist;
+  }
+};
 } // end of namespace km

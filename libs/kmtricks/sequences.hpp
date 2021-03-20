@@ -1461,4 +1461,73 @@ K Minimizer<K>::value() const
   return _minimizer;
 }
 #endif
+
+
+class KHist
+{
+public:
+  KHist(int idx, size_t ksize, size_t lower, size_t upper)
+    : idx(idx), ksize(ksize), lower(lower), upper(upper)
+  {
+    hist_u.resize(upper-lower+1, 0);
+    hist_n.resize(upper-lower+1, 0);
+  }
+
+  void inc(uint64_t count)
+  {
+    uniq++;
+    total += count;
+    if (count < lower)
+    {
+      oob_lu++;
+      oob_ln+=count;
+    }
+    else if (count > upper)
+    {
+      oob_uu++;
+      oob_un+=count;
+    }
+    else
+    {
+      hist_u[count-lower]++;
+      hist_n[count-lower]+=count;
+    }
+  }
+
+  void print_histu()
+  {
+    _print(hist_u);
+  }
+
+  void print_histn()
+  {
+    _print(hist_n);
+  }
+
+private:
+  void _print(const std::vector<uint64_t>& v)
+  {
+    uint64_t current = lower;
+    for_each(v.begin(), v.end(), [&current](uint64_t c){
+      cerr << to_string(current) << " " << to_string(c) << "\n";
+      current++;
+    });
+    cerr << flush;
+  }
+
+public:
+  int32_t  idx {0};
+  uint32_t ksize {0};
+  uint64_t lower {0};
+  uint64_t upper {0};
+  uint64_t uniq {0};
+  uint64_t total {0};
+  uint64_t oob_lu {0};
+  uint64_t oob_uu {0};
+  uint64_t oob_ln {0};
+  uint64_t oob_un {0};
+  vector<uint64_t> hist_u;
+  vector<uint64_t> hist_n;
+};
+
 } // end of namespace km
