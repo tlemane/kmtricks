@@ -134,7 +134,8 @@ my_run_directory/
     │   ├── howde                   # HowDeSBT files (--split howde)
     │   └── sdsl                    # SDSL files (--split sdsl)
     ├── fof.txt                     # copy of input fof (--file)
-    └── hash_window.vec             # info about partitioned bf (required for queries)
+    ├── hash_window.vec             # info about partitioned bf (required for queries)
+    └── global.kmhist               # k-mer histograms
 ```
 ### Examples
 
