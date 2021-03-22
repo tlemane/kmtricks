@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmtricks VERSION 0.0.3)
+project(kmtricks VERSION 0.0.4)
 
 set(CONTACT "teo.lemane@inria.fr")
 set(INFOS ${PROJECT_BINARY_DIR}/build_infos.txt)
