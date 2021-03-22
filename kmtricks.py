@@ -222,7 +222,7 @@ class OptionsParser:
             help='number of cores', default=8)
 
         rar.add_argument('--merge-abundance-min', metavar='INT/FLOAT/STR', type=str,
-            help='min abundance threshold for solid kmers', default=1)
+            help='min abundance threshold for solid kmers, see kmtricks README.md', default=1)
         rar.add_argument('--recurrence-min', metavar='INT', type=int,
             help='min reccurence threshold for solid kmers', default=1)
         rar.add_argument('--save-if', metavar='INT', type=int,
