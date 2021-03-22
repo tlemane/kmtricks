@@ -157,6 +157,15 @@ kmtricks.py run --file ./data/fof.txt \
 kmtricks outputs one matrix per partition at `${run_dir}/storage/matrix/partition_${P}/ascii_matrix${P}.mat`. In each partition, k-mers are sorted using the following order : `A < C < T < G`.
 * `--mode ascii`: Each file starts with a 8-rows header recalling options. Then each row corresponds to one k-mer and its count vector, space-separated. Order is the same as in the fof.
 
+To concatenate the matrices by skipping headers, use:
+```bash
+ls count_matrix_run/storage/matrix/partition_*/ascii_matrix* | xargs -I{} tail -n+9 {} > whole_matrix.txt
+```
+Or simulate single file using named pipe:
+```bash
+mkfifo whole_matrix.fifo
+ls count_matrix_run/storage/matrix/partition_*/ascii_matrix* | xargs -I{} tail -n+9 {} > whole_matrix.fifo & mytool --input-file ./whole_matrix.fifo
+```
 #### 2. Build and query an HowDe-SBT index using kmtricks partitioned Bloom filters
 
 This example can be executed by running [example2.sh](tests/kmtricks/example2.sh) at `./tests/kmtricks`.
@@ -219,50 +228,60 @@ Note that this script also enables to run independently any module (option `--on
 ```
 usage: kmtricks.py run --file FILE --run-dir DIR [--kmer-size INT] [--count-abundance-min INT]
                        [--abundance-max INT] [--max-count INT] [--max-memory INT] [--mode STR]
-                       [--nb-cores INT] [--merge-abundance-min INT/STR] [--recurrence-min INT]
-                       [--save-if INT] [--skip-merge] [--until STR] [--only STR]
-                       [--minimizer-type INT] [--minimizer-size INT] [--repartition-type INT]
-                       [--nb-partitions INT] [--hasher STR] [--max-hash INT] [--split STR]
-                       [--keep-tmp] [--lz4] [-h]
+                       [--log-files STR] [--nb-cores INT] [--merge-abundance-min INT/FLOAT/STR]
+                       [--recurrence-min INT] [--save-if INT] [--skip-merge] [--until STR]
+                       [--only STR] [--minimizer-type INT] [--minimizer-size INT]
+                       [--repartition-type INT] [--nb-partitions INT] [--hasher STR]
+                       [--max-hash INT] [--split STR] [--keep-tmp] [--lz4] [-h]
 
 kmtricks pipeline
 
 global:
-  --file FILE                    fof that contains path of read files, one per line [required]
-  --run-dir DIR                  directory to write tmp and output files [required]
-  --kmer-size INT                size of a kmer [default: 31]
-  --count-abundance-min INT      min abundance threshold for solid kmers [default: 2]
-  --abundance-max INT            max abundance threshold for solid kmers [default: 3000000000]
-  --max-count INT                allows to deduce the integer size to store counts [default: 255]
-  --max-memory INT               max memory in megabytes (per core) [default: 8000]
-  --mode STR                     output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
-  --log-files                    enables log files [repart|superk|count|merge|split] [default: ]
-  --nb-cores INT                 number of cores [default: 8]
-  --keep-tmp                     keep all tmp files [no arg]
-  --lz4                          lz4 compression for tmp files [no arg]
-  -h, --help                     Show this message and exit
+  --file FILE                          fof that contains path of read files, see kmtricks README for
+                                       the format [required]
+  --run-dir DIR                        directory to write tmp and output files [required]
+  --kmer-size INT                      size of a kmer [default: 31]
+  --count-abundance-min INT            min abundance threshold for solid kmers [default: 2]
+  --abundance-max INT                  max abundance threshold for solid kmers [default: 3000000000]
+  --max-count INT                      allows to deduce the integer size to store counts [default:
+                                       255]
+  --max-memory INT                     max memory per core (in megabytes) [default: 8000]
+  --mode STR                           output matrix format: [bin|ascii|pa|bf|bf_trp] [default: bin]
+  --log-files STR                      log file: [repart|superk|count|merge|split] [default: ]
+  --nb-cores INT                       number of cores [default: 8]
+  --keep-tmp                           keep all tmp files [no arg]
+  --lz4                                lz4 compression for tmp files [no arg]
+  -h, --help                           Show this message and exit
 
-merge options:
-  --merge-abundance-min INT/STR  min abundance threshold for solid kmers [default: 1]
-  --recurrence-min INT           min reccurence threshold for solid kmers [default: 1]
-  --save-if INT                  keep a non-solid kmer if it's solid in X dataset [default: 0]
-  --skip-merge                   skip merge step, only with --mode bf [no arg]
+merge options, see kmtricks README:
+  --merge-abundance-min INT/FLOAT/STR  min abundance threshold for solid kmers [default: 1]
+  --recurrence-min INT                 min reccurence threshold for solid kmers [default: 1]
+  --save-if INT                        keep a non-solid kmer if it's solid in X dataset [default: 0]
+  --skip-merge                         skip merge step, only with --mode bf [no arg]
 
 pipeline control:
-  --until STR                    run until step: [repart|superk|count|merge|split] [default: all]
-  --only STR                     run only step: [repart|superk|count|merge|split] [default: all]
+  --until STR                          run until step: [repart|superk|count|merge|split] [default:
+                                       all]
+  --only STR                           run only step: [repart|superk|count|merge|split] [default:
+                                       all]
 
 advanced performance tweaks:
-  --minimizer-type INT           minimizer type (0=lexi, 1=freq) [default: 0]
-  --minimizer-size INT           size of minimizer [default: 10]
-  --repartition-type INT         minimizer repartition (0=unordered, 1=ordered) [default: 0]
-  --nb-partitions INT            number of partitions (0=auto) [default: 0]
+  --minimizer-type INT                 minimizer type (0=lexi, 1=freq) [default: 0]
+  --minimizer-size INT                 size of minimizer [default: 10]
+  --repartition-type INT               minimizer repartition (0=unordered, 1=ordered) [default: 0]
+  --nb-partitions INT                  number of partitions (0=auto) [default: 0]
 
 hash mode configuration:
-  --hasher STR                   hash function: sabuhash, xor [default: xor]
-  --max-hash INT                 max hash value (uint64_t) [default: 1000000000]
-  --split STR                    split matrix in indidual files: [sdsl|howde] (only with --mode bf_trp) [default: none]
+  --hasher STR                         hash function: sabuhash, xor [default: xor]
+  --max-hash INT                       max hash value (0 < hash < max(int64)) [default: 1000000000]
+  --split STR                          split matrix in indidual files: [sdsl|howde] (only with -mf,
+                                       --mode bf_trp) [default: none]
 ```
+
+About `--merge-abundance-min <VALUE>`:
+* VALUE is INT: one threshold for all samples.
+* VALUE is STR: a file with one threshold per sample (one per line).
+* VALUE is FLOAT: compute one specific threshold T per sample such that the number of k-mers occurring T times is smaller than $\lceil{VALUE*total\_nb\_kmers}\rceil$.
 
 ## Limitations
 
