@@ -282,7 +282,7 @@ hash mode configuration:
 About `--merge-abundance-min <VALUE>`:
 * VALUE is INT: one threshold for all samples.
 * VALUE is STR: a file with one threshold per sample (one per line).
-* VALUE is FLOAT: compute one specific threshold T per sample such that the number of k-mers occurring T times is smaller than $\lceil{VALUE*total\_nb\_kmers}\rceil$.
+* VALUE is FLOAT: compute one specific threshold T per sample such that the number of k-mers occurring T times is smaller than VALUE x nb_kmers.
 
 ## Limitations
 
