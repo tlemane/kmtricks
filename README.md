@@ -300,7 +300,7 @@ Compared to a usual pipeline as the one used by `HowDe-SBT` using `Jellyfish` an
 | kmtricks - [rescue mode](#k-mer-rescue-procedure)  |      20h46      |   17.4 GB  |   327 GB   |
 
 Test realised with 674 RNA-seq experiments (961 GB gzipped) with 20 cores (Intel(R) Xeon(R) 2.60GHz) and 100 GB RAM.
-List of IDs available [here](./tests/kmtricks/experiment_list_674.txt).
+List of IDs available [here](./tests/kmtricks/experiment_list_674.txt. Command lines can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks/tree/master/rna-seq).
 
 Other benchmarks on larger dataset and results can be found [here](https://github.com/pierrepeterlongo/kmtricks_benchmarks).
 
