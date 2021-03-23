@@ -11,6 +11,11 @@ requirements:
     - zlib
     - make
     - cmake
+    - openmp
+    - lz4
+
   run:
     - zlib
     - python>=3.6
+    - lz4
+    - openmp
