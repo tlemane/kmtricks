@@ -124,7 +124,7 @@ void KmMerge::merge_to_ascii()
     _m->next();
     if (_m->keep)
     {
-      k.set_kmer(_m->m_khash, 20);
+      k.set_kmer(_m->m_khash, _kmer_size);
       mat.write(k, _m->counts);
     }
   }
