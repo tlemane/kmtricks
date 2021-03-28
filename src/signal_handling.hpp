@@ -107,6 +107,8 @@ public:
     size_t _size;
     _size = backtrace(array, 256);
     backtrace_symbols_fd(array, _size, fileno(back));
+
+    exit(sig);
   }
 
 private:
