@@ -1196,8 +1196,9 @@ def main():
         pool.exec()
 
     progress_bar.finish()
-    
-    global_hist.dump(f'{args["run_dir"]}/storage/global.kmhist')
+
+    if (only == 3 or all_ and until > 1):
+        global_hist.dump(f'{args["run_dir"]}/storage/global.kmhist')
     
     total_time.print('Done in ')
 
