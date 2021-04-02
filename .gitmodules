@@ -17,3 +17,6 @@
 [submodule "thirdparty/googletest"]
 	path = thirdparty/googletest
 	url = https://github.com/google/googletest
+[submodule "thirdparty/kff-cpp-api"]
+	path = thirdparty/kff-cpp-api
+	url = https://github.com/Kmer-File-Format/kff-cpp-api
