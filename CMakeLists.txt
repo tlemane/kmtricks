@@ -99,6 +99,7 @@ set(GATB_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/gatb/src/gatb-build)
 set(SDSL_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/sdsl/src/SDSL-build)
 set(FMT_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build)
 set(LZ_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/lz4/src/LZ4-build)
+set(KFF_BUILD_DIR ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
 
 # includes
 set(GATB_INCLUDE ${GATB_DIR}/src ${GATB_DIR}/thirdparty ${GATB_BUILD_DIR}/include)
@@ -107,17 +108,19 @@ set(SDSL_INCLUDE ${SDSL_BUILD_DIR}/include)
 set(KMTRICKS_INCLUDE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/libs ${THIRDPARTY_DIR})
 set(LZ_INCLUDE ${LZ_DIR}/lib)
 set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
+set(KFF_INCLUDE ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
 
-include_directories(${ZLIB_INCLUDE_DIR} ${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE})
+include_directories(${ZLIB_INCLUDE_DIR} ${GATB_INCLUDE} ${FMT_INCLUDE} ${SDSL_INCLUDE} ${KMTRICKS_INCLUDE} ${CONFIG_INCLUDE} ${KFF_INCLUDE})
 
 # thirdparty lib directories
 set(GATB_LIB_DIR ${GATB_BUILD_DIR}/${GATB_BUILD_LIB})
 set(SDSL_LIB_DIR ${SDSL_BUILD_DIR}/lib)
 set(FMT_LIB_DIR ${FMT_BUILD_DIR})
 set(LZ_LIB_DIR ${LZ_BUILD_DIR})
+set(KFF_LIB ${KFF_BUILD_DIR})
 
 # links
-link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR} ${LZ_LIB_DIR})
+link_directories(${GATB_LIB_DIR} ${SDSL_LIB_DIR} ${FMT_LIB_DIR} ${LZ_LIB_DIR} ${KFF_LIB})
 
 # build kmtricks library
 add_subdirectory(libs/kmtricks) 

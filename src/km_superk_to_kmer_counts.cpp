@@ -24,6 +24,7 @@
 #include <kmtricks/logging.hpp>
 #include <kmtricks/sequences.hpp>
 #include <kmtricks/io.hpp>
+#include <kff_io.hpp>
 #include "CountProcessorDump.hpp"
 #include "km_superk_to_kmer_counts.hpp"
 #include "signal_handling.hpp"
@@ -112,6 +113,9 @@ struct Functor
 
     km::BitVectorFile<km::OUT> *bvf = nullptr;
     km::KmerFile<km::OUT, kmtype_t, cntype_t> *cmf = nullptr;
+    Kff_file* kff_file = nullptr;
+    
+    int kff = props->getInt(STR_KFF_OUTPUT);
     if (vec_size)
     {
       path += ".vec";
@@ -119,6 +123,13 @@ struct Functor
       bvf = new km::BitVectorFile<km::OUT>(path, 0, part_id, window_size, lz4);
       dumper = new CountProcessorDumpPart<span>(
         kmerSize, min_abundance, path, part_id, lz4, bvf, &khist, nb_partitions, vec_size);
+    }
+    else if (kff)
+    {
+      path += ".kff";
+      kff_file = new Kff_file(path, "w");
+      dumper = new CountProcessorDumpPart<span>(
+        kmerSize, min_abundance, part_id, kff_file, &khist, nb_partitions, vec_size);
     }
     else
     {
@@ -176,6 +187,8 @@ struct Functor
     delete dumper;
     delete cmf;
     delete bvf;
+    if (kff_file) kff_file->close();
+    delete kff_file;
   }
 };
 
@@ -209,6 +222,8 @@ KmCount::KmCount() : Tool("km_count")
     "keep superkmers files", false, "0"));
   getParser()->push_back(new OptionOneParam(STR_LZ4_OUT,
     "compress output k-mers files with lz4 compression", false, "0"));
+  getParser()->push_back(new OptionOneParam(STR_KFF_OUTPUT,
+    "output k-mers in kff format", false, "0"));
 
   getParser()->push_back(hParser);
 

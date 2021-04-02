@@ -144,6 +144,8 @@ cs STR_LZ4_OUT      = "-lz4";
 cs STR_VEC_ONLY     = "-vec-only";
 cs STR_EXP_ID       = "-id";
 cs STR_SAVE_IF      = "-save-if";
+cs STR_KFF_OUTPUT   = "-kff-output";
+
 // commands
 cs PARTITIONER_CMD  = 
   "{} {} -file {} -kmer-size {} -nb-cores {} -run-dir {} &> {} &";

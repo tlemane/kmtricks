@@ -28,6 +28,11 @@ add_custom_target(copy_lz4
         DEPENDS LZ4
 )
 
+ExternalProject_Add(KFF
+        PREFIX KFF
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kff-cpp-api
+        INSTALL_COMMAND "")
+
 if (TEST)
     ExternalProject_Add(googletest
         PREFIX googletest

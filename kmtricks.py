@@ -216,6 +216,9 @@ class OptionsParser:
         glb.add_argument('--mode', metavar='STR', type=str,
             choices=mt_format, default='bin',
             help=f'output matrix format: [{"|".join(mt_format)}]')
+        glb.add_argument('--kff-output', action=asInteger,
+            help='Output k-mers in kff format (only with --until count || --only count',
+            nargs=0, const=0, default=0)
         glb.add_argument('--log-files', metavar='STR', type=str,
             help=f'log file: [{"|".join(steps)}]', default='')
         glb.add_argument('--nb-cores', metavar='INT', type=int,
@@ -288,8 +291,17 @@ class OptionsParser:
             print('--skip-merge only with --mode bf')
             sys.exit()
 
+        if int(args.kmer_size) > 64:
+            print('kmtricks supports only k up to 64 for now.')
+            sys.exit()
+
+        if args.kff_output and ('count' != args.until and 'count' != args.only):
+            print('--kff-output only with --until count || --only count.')
+            sys.exit()
+
         if as_dict:
             return vars(args)
+
         return args
 
 class BinaryNotFoundError(Exception):
@@ -558,6 +570,7 @@ COUNT_CLI_TEMPLATE = (
     "-hasher {hasher} "
     "-max-hash {max_hash} "
     "-vec-only {skip_merge} "
+    "-kff-output {kff_output} "
     "-nb-cores {nb_cores}"
 )
 
