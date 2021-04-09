@@ -32,4 +32,5 @@ cp -r ./bin/* $PREFIX/bin
 cp ./bin/lib/* $PREFIX/lib
 cp ./libs/kmtricks/*.hpp $PREFIX/include/kmtricks
 cp ./kmtricks.py $PREFIX/bin
+cp ./kmtricks-socks.py $PREFIX/bin
 chmod +x $PREFIX/bin/kmtricks.py

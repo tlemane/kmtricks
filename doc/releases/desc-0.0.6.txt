@@ -1,0 +1,3 @@
+kmtricks v0.0.6
+- kff support (https://github.com/Kmer-File-Format/kff-reference)
+- socks-interface (https://gitlab.ub.uni-bielefeld.de/gi/socks)
