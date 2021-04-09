@@ -384,7 +384,7 @@ class KMHist:
 
     def dump_tot(self, path: str) -> None:
         with open(path, "w") as fout:
-            for k, v in self.data:
+            for k, v in self.data.items():
                 fout.write(f'{k} {v["total"]}\n')
 
 class RescueThreshold:
