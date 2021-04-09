@@ -36,7 +36,7 @@ from signal import SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, Signals
 from shutil import rmtree, copyfile
 from copy import deepcopy, copy
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
@@ -381,6 +381,11 @@ class KMHist:
         with open(hpath, 'w') as hout:
             for line in mat:
                 hout.write(f'{" ".join(line)}\n')
+
+    def dump_tot(self, path: str) -> None:
+        with open(path, "w") as fout:
+            for k, v in self.data:
+                fout.write(f'{k} {v["total"]}\n')
 
 class RescueThreshold:
     def __init__(self, kmhist: KMHist, d: Union[str, float, int], path: str):
@@ -766,8 +771,11 @@ class MergeCommand(ICommand):
     def preprocess(self) -> None:
         p = self.args['part_id']
         pdir = f'{self.run_directory}/storage/kmers_partitions/partition_{p}'
-        if not os.listdir(pdir):
+        ldir = os.listdir(pdir)
+        if not ldir:
             raise FileNotFoundError(f'{pdir} is empty')
+        if ldir[0].endswith('.kff'):
+            raise RuntimeError(f'Merge doesn\'t support kff files. Run without --kff-output.')
         path = f'{pdir}/partition{p}.fof'
         ext = '.kmer' if not self.args['lz4'] else '.kmer.lz4'
         with open(path, 'w') as f_out:
@@ -1212,7 +1220,8 @@ def main():
 
     if (only == 3 or all_ and until > 1):
         global_hist.dump(f'{args["run_dir"]}/storage/global.kmhist')
-    
+        global_hist.dump_tot(f'{args["run_dir"]}/storage/kmers.total')
+
     total_time.print('Done in ')
 
 if __name__ == '__main__':
