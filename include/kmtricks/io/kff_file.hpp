@@ -174,7 +174,6 @@ public:
 
   void write(const std::string& superk, size_t minim_pos, std::vector<uint8_t>& vcount)
   {
-    spdlog::error("WRITE {} {} {} {}", superk, m_current_minim, minim_pos, vcount.size());
     uint8_t seq[superk.size()];
     encode_sequence(superk, seq);
     m_current_section->write_compacted_sequence(seq, superk.size(), minim_pos, vcount.data());

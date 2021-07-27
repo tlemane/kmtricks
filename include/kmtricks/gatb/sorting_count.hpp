@@ -1354,13 +1354,14 @@ public:
                   size_t kmer_size,
                   size_t minim_size,
                   MemAllocator &pool,
-                  Storage *superk_storage)
+                  Storage *superk_storage,
+                  size_t ab_min)
       : IPartitionCounter<CountProcessor, Storage, span>(processor,
                                                 kmer_size,
                                                 pinfo, pool,
                                                 superk_storage,
                                                 parti),
-        radix_kmers(0), radix_sizes(0), r_idx(0), m_minim_size(minim_size)
+        radix_kmers(0), radix_sizes(0), r_idx(0), m_minim_size(minim_size), m_ab_min(ab_min)
   {
   }
 
@@ -1689,17 +1690,7 @@ private:
           mink = temp;
           superkmer.push_back(mink);
         }
-        //std::string superk_str = superkmer[0].toString(kmer_size);
-        //for (size_t i=1; i<superkmer.size(); i++)
-        //{
-        //  superk_str.push_back(superkmer[i].toString(kmer_size).back());
-        //}
-        using KmModelDirect = typename ::Kmer<span>::ModelDirect;
-        using KmModelMinimizer = typename ::Kmer<span>::ModelMinimizer<KmModelDirect>;
-        KmModelMinimizer mmm(kmer_size, m_minim_size);
-        const KmModelDirect& modelmini = mmm.getMmersModel();
 
-        
         std::vector<std::vector<Type>> superklist;
         bool newsk = true;
         uint32_t cminim = km::Kmer<span>(superkmer[0].toString(kmer_size)).minimizer(m_minim_size).value();
@@ -1728,10 +1719,10 @@ private:
         for (auto& kvec: superklist)
         {
           // kvec is a superkmer represented by a vector of kmer
-          std::vector<bool> pseen(kvec.size());
           std::vector<uint32_t> superk_counts(kvec.size());
           size_t ii = 0;
-          std::string str_minim = km::Kmer<span>(kvec[0].toString(kmer_size)).minimizer(m_minim_size).to_string();
+          uint32_t minim = km::Kmer<span>(kvec[0].toString(kmer_size)).minimizer(m_minim_size).value();
+          std::string str_minim = km::Mmer(minim, m_minim_size).to_string();
           for (auto& kk : kvec)
           {
             Type rev = revcomp(kk, kmer_size);
@@ -1739,23 +1730,23 @@ private:
             bool seen = m_kmer_map.at(cano).first;
             if (seen)
             {
-              pseen[ii] = false;
               superk_counts[ii] = 0;
             }
             else
             {
-              pseen[ii] = true;
-              m_kmer_map.at(cano).first = true;
-              superk_counts[ii] = m_kmer_map.at(cano).second;
+              auto& kc = m_kmer_map.at(cano);
+              kc.first = true;
+              superk_counts[ii] = kc.second > 1 ? kc.second : 0;
             }
             ii++;
           }
-          if (!m_superk_map.count(str_minim))
-            m_superk_map.insert({str_minim, std::vector<SuperKC>()});
+          if (!m_superk_map.count(minim))
+            m_superk_map.insert({minim, std::vector<SuperKC>()});
 
           // second split
           std::vector<std::string> split;
           std::vector<std::vector<uint32_t>> split_count;
+
           bool first = true;
           for (size_t i=0; i<kvec.size(); i++)
           {
@@ -1769,7 +1760,9 @@ private:
               }
               else
               {
-                split.back().push_back(kvec[i].toString(kmer_size).back());
+                //split.back().push_back(kvec[i].toString(kmer_size).back());
+                split.back().push_back(km::bToN[kvec[i][0]]);
+
                 split_count.back().push_back(superk_counts[i]);
               }
             }
@@ -1781,99 +1774,9 @@ private:
 
           for (size_t i=0; i<split.size(); i++)
           {
-            m_superk_map.at(str_minim).push_back(std::make_tuple(split[i], split_count[i], split[i].find(str_minim)));
+            m_superk_map.at(minim).push_back(std::make_tuple(split[i], split_count[i], split[i].find(str_minim)));
           }
         }
-        //spdlog::error("SUPERK INIT {} {}", this->m_part, superk_str);
-
-        //spdlog::error("ALL SUPERK KMER MINI");
-        //for (auto& k: superkmer)
-        //{
-        //  spdlog::error("{} {} {}", k.toString(kmer_size), km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).to_string(), superkmer.size());
-        //}
-
-        //spdlog::error("AFTER SPLIT");
-        //for (auto& kvec : superklist)
-        //{
-        //  bool first = true;
-        //  std::string sss;
-        //  for (auto& k : kvec)
-        //  {
-        //     if (first)  sss = k.toString(kmer_size);
-        //     else sss.push_back(k.toString(kmer_size).back());
-        //     first = false;
-        //  }
-        //  spdlog::error("{} {}", sss, kvec.size());
-        //}
-        //using ModelMINI = typename ::Kmer<span>::ModelMinimizer<typename ::Kmer<span>::ModelDirect>::Kmer;
-        //using ModelMI = typename ::Kmer<span>::ModelMinimizer<typename ::Kmer<span>::ModelDirect>;
-        //using Data = gatb::core::tools::misc::Data;
-        //std::vector<char> cstr(superk_str.c_str(), superk_str.c_str() + superk_str.size() + 1);
-        //Data dd(cstr.data());
-        //spdlog::error("New superk");
-        //SKK skk(kmer_size, 10);
-        //for (auto& k: superkmer)
-        //{
-        //  spdlog::error("{} {} {}", k.toString(kmer_size), km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).to_string(), superkmer.size());
-        //}
-
-        //std::string str_minim = km::Kmer<span>(superkmer[0].toString(kmer_size)).minimizer(m_minim_size).to_string();
-
-        //std::vector<bool> pseen(superkmer.size());
-        //std::vector<uint32_t> superk_counts(superkmer.size());
-
-        //size_t ii = 0;
-        //for (auto& kk : superkmer)
-        //{
-        //  Type rev = revcomp(kk, kmer_size);
-        //  Type cano = kk < rev ? kk : rev;
-        //  bool seen = m_kmer_map.at(cano).first;
-        //  if (seen)
-        //  {
-        //    pseen[ii] = false;
-        //    superk_counts[ii] = 0;
-        //  }
-        //  else
-        //  {
-        //    pseen[ii] = true;
-        //    m_kmer_map.at(cano).first = true;
-        //    superk_counts[ii] = m_kmer_map.at(cano).second;
-        //  }
-        //  ii++;
-        //}
-
-        //if (!m_superk_map.count(str_minim))
-        //  m_superk_map.insert({str_minim, std::vector<SuperKC>()});
-
-        //std::vector<std::string> split;
-        //std::vector<std::vector<uint32_t>> split_count;
-        //bool first = true;
-        //for (size_t i=0; i<superkmer.size(); i++)
-        //{
-        //  if (superk_counts[i])
-        //  {
-        //    if (first)
-        //    {
-        //      split.push_back(superkmer[i].toString(kmer_size));
-        //      split_count.push_back({superk_counts[i]});
-        //      first = false;
-        //    }
-        //    else
-        //    {
-        //      split.back().push_back(superkmer[i].toString(kmer_size).back());
-        //      split_count.back().push_back(superk_counts[i]);
-        //    }
-        //  }
-        //  else
-        //  {
-        //    first = true;
-        //  }
-        //}
-
-        //for (size_t i=0; i<split.size(); i++)
-        //{
-        //  m_superk_map.at(str_minim).push_back(std::make_tuple(split[i], split_count[i], split[i].find(str_minim)));
-        //}
         nbsuperkmer_read++;
       }
     }
@@ -1885,7 +1788,7 @@ private:
     {
       for (auto& sc : skv)
       {
-        this->m_processor->process(std::get<0>(sc), minim, std::get<2>(sc), std::get<1>(sc));
+        this->m_processor->process(std::get<0>(sc), km::Mmer(minim, m_minim_size).to_string(), std::get<2>(sc), std::get<1>(sc));
       }
     }
   }
@@ -1897,7 +1800,8 @@ private:
   size_t m_minim_size;
   std::vector<size_t> nb_items_per_bank_per_part;
   robin_hood::unordered_map<Type, std::pair<bool, uint32_t>> m_kmer_map;
-  robin_hood::unordered_map<std::string, std::vector<SuperKC>> m_superk_map;
+  robin_hood::unordered_map<uint32_t, std::vector<SuperKC>> m_superk_map;
+  size_t m_ab_min;
 };
 
 };

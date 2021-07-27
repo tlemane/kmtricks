@@ -584,7 +584,7 @@ public:
                                                                                   writer,
                                                                                   nullptr));
     SkPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
-                                                   m_config._minim_size, pool, m_superk_storage.get());
+                                                   m_config._minim_size, pool, m_superk_storage.get(), m_ab_min);
 
     partition_counter.execute();
     pool.free_all();

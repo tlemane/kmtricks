@@ -844,7 +844,7 @@ public:
 
   Mmer minimizer(uint8_t size)
   {
-    uint32_t def = ((uint64_t)1 << (2*size)) - 1;
+    //uint32_t def = ((uint64_t)1 << (2*size)) - 1;
     const size_t nb_mmers = m_kmer_size - size + 1;
     Mmer minim(std::numeric_limits<uint32_t>::max(), size);
     for (size_t i=0; i<nb_mmers; i++)
