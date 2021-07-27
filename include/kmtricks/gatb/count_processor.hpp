@@ -43,6 +43,7 @@ class ICountProcessor
 public:
   virtual bool process(size_t partId, const Type& kmer, uint32_t count) = 0;
   virtual void finish() {};
+  virtual bool process(const std::string& superk, const std::string& minim, size_t minim_pos, std::vector<uint32_t>& counts) { return 0; }
   virtual ~ICountProcessor() {}
 };
 
@@ -187,6 +188,44 @@ private:
   hist_t m_hist;
   typename::Kmer<span>::ModelCanonical m_model {m_kmer_size};
   km_count_type m_count;
+  uint32_t m_max_c {std::numeric_limits<km_count_type>::max()};
+};
+
+template<size_t span, size_t MAX_C>
+class KffSkCountProcessor : public ICountProcessor<span>
+{
+public:
+  using Type = typename ::Kmer<span>::Type;
+  using km_count_type = typename selectC<MAX_C>::type;
+
+  KffSkCountProcessor(uint32_t kmer_size, size_t minim_size, kffsk_w_t<MAX_C> writer, hist_t hist)
+    : m_kmer_size(kmer_size), m_minim_size(minim_size), m_writer(writer), m_hist(hist) {}
+
+  bool process(size_t partId, const Type &kmer, uint32_t count) override
+  {
+    return true;
+  }
+
+  bool process(const std::string& superk, const std::string& minim, size_t minim_pos, std::vector<uint32_t>& counts)
+  {
+    std::vector<km_count_type> vc (superk.size() - m_kmer_size + 1);
+    for (size_t i=0; i<vc.size(); i++)
+      vc[i] = counts[i] >= m_max_c ? m_max_c : static_cast<km_count_type>(counts[i]);
+    if (minim != m_current_minimizer)
+    {
+      m_writer->new_section(minim);
+      m_current_minimizer = minim;
+    }
+    m_writer->write(superk, minim_pos, vc);
+    return true;
+  }
+
+private:
+  uint32_t m_kmer_size;
+  size_t m_minim_size;
+  std::string m_current_minimizer;
+  hist_t m_hist;
+  kffsk_w_t<MAX_C> m_writer;
   uint32_t m_max_c {std::numeric_limits<km_count_type>::max()};
 };
 

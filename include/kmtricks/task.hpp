@@ -540,6 +540,68 @@ private:
   hist_t m_hist;
 };
 
+template<size_t span, size_t MAX_C, typename Storage>
+class KffSkCountTask : public ITask
+{
+  using storage_t = std::shared_ptr<Storage>;
+public:
+  KffSkCountTask(const std::string& path,
+            Configuration& config,
+            storage_t superk_storage,
+            parti_info_t pinfo,
+            uint32_t part_id, uint32_t sample_id,
+            uint32_t kmer_size, uint32_t abundance_min,
+            bool clear = false)
+    : ITask(3, clear),
+      m_path(path),
+      m_config(config),
+      m_superk_storage(superk_storage),
+      m_pinfo(pinfo),
+      m_part_id(part_id),
+      m_sample_id(sample_id),
+      m_kmer_size(kmer_size),
+      m_ab_min(abundance_min)
+   {
+   }
+
+  void preprocess() {}
+  void postprocess()
+  {
+    this->m_finish = true;
+    this->exec_callback();
+  }
+
+  void exec()
+  {
+    spdlog::debug("[exec] - KffSkCountTask - S={}, P={}", KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
+
+    MemAllocator pool(1);
+    pool.reserve(get_required_memory<span>(m_pinfo->getNbKmer(m_part_id)));
+    kffsk_w_t<DMAX_C> writer = std::make_shared<KffSkWriter<MAX_C>>(m_path, m_kmer_size, m_config._minim_size);
+
+    KffSkCountProcessor<span, DMAX_C>* processor(new KffSkCountProcessor<span, MAX_C>(m_kmer_size,
+                                                                                  m_config._minim_size,
+                                                                                  writer,
+                                                                                  nullptr));
+    SkPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
+                                                   m_config._minim_size, pool, m_superk_storage.get());
+
+    partition_counter.execute();
+    pool.free_all();
+    spdlog::debug("[done] - KffSkCountTask - S={}, P={}", KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
+    delete processor;
+  }
+private:
+  std::string m_path;
+  Configuration& m_config;
+  storage_t m_superk_storage;
+  parti_info_t m_pinfo;
+  uint32_t m_part_id;
+  uint32_t m_sample_id;
+  uint32_t m_kmer_size;
+  uint32_t m_ab_min;
+};
+
 template<size_t span, size_t MAX_C>
 class KmerMergeTask : public ITask
 {

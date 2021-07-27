@@ -195,7 +195,7 @@ public:
         task_t task = nullptr;
         if (m_opt->count_format == COUNT_FORMAT::KMER)
         {
-          if (!m_opt->kff)
+          if (!m_opt->kff || !m_opt->kff_sk)
           {
             spdlog::debug("[push] - CountTask - S={}, P={}", sid, p);
             path = KmDir::get().get_count_part_path(
@@ -212,6 +212,10 @@ public:
             task = std::make_shared<KffCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid,
               m_config._kmerSize, a_min, m_hists[iid], !m_opt->keep_tmp);
+          }
+          else
+          {
+            // kff superk
           }
         }
         else
@@ -276,7 +280,7 @@ public:
           task_t task = nullptr;
           if (m_opt->count_format == COUNT_FORMAT::KMER)
           {
-            if (!m_opt->kff)
+            if (!m_opt->kff && !m_opt->kff_sk)
             {
               spdlog::debug("[push] - CountTask - S={}, P={}", sid, p);
               path = KmDir::get().get_count_part_path(
@@ -294,6 +298,14 @@ public:
               task = std::make_shared<KffCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, this->m_config, sk_storage, pinfos, p, iid,
                 this->m_config._kmerSize, a_min, this->m_hists[iid], !this->m_opt->keep_tmp);
+            }
+            else
+            {
+              spdlog::debug("[push] - KffSkCountTask - S={}, P={}", sid, p);
+              path = KmDir::get().get_count_part_path(sid, p, this->m_opt->lz4, KM_FILE::KFF);
+              task = std::make_shared<KffSkCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
+                path, this->m_config, sk_storage, pinfos, p, iid, this->m_config._kmerSize, a_min,
+                !this->m_opt->keep_tmp);
             }
           }
           else

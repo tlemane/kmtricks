@@ -1325,4 +1325,579 @@ private:
   uint64_t m_window;
 };
 
+// this a (highly inefficient) POC of kff compacted superkmer storage
+template <typename Storage, size_t span>
+class SkPartCounter : public IPartitionCounter<ICountProcessor<span>, Storage, span>
+{
+public:
+  typedef typename ::Kmer<span>::Type Type;
+  typedef typename ::Kmer<span>::Count Count;
+  typedef ICountProcessor<span> CountProcessor;
+  static const size_t KX = 4;
+
+  using SuperKC = std::tuple<std::string, std::vector<uint32_t>, size_t>;
+
+private:
+  typedef std::pair<int, Type> kxp;
+  struct kxpcomp
+  {
+    bool operator()(kxp l, kxp r)
+    {
+      return r.second < l.second;
+    }
+  };
+
+public:
+  SkPartCounter(CountProcessor *processor,
+                  PartiInfo<5>* pinfo,
+                  int parti,
+                  size_t kmer_size,
+                  size_t minim_size,
+                  MemAllocator &pool,
+                  Storage *superk_storage)
+      : IPartitionCounter<CountProcessor, Storage, span>(processor,
+                                                kmer_size,
+                                                pinfo, pool,
+                                                superk_storage,
+                                                parti),
+        radix_kmers(0), radix_sizes(0), r_idx(0), m_minim_size(minim_size)
+  {
+  }
+
+  void execute()
+  {
+    radix_kmers = (Type **)MALLOC(256 * (KX + 1) * sizeof(Type *));
+    radix_sizes = (uint64_t *)MALLOC(256 * (KX + 1) * sizeof(uint64_t));
+    r_idx = (uint64_t *)CALLOC(256 * (KX + 1), sizeof(uint64_t));
+
+    executeRead();
+    executeSort();
+    build_kmer_map();
+
+    FREE(radix_kmers);
+    FREE(radix_sizes);
+
+    executeDump();
+    FREE(r_idx);
+  }
+
+private:
+  void executeRead()
+  {
+    if constexpr(std::is_same_v<Storage, SuperKmerBinFiles>)
+      this->m_superk_storage->openFile("r", this->m_part);
+    else
+      this->m_superk_storage->openFile(this->m_part);
+
+    uint64_t sum_nbxmer = 0;
+
+    {
+      LocalSynchronizer synchro(this->m_pool.getSynchro());
+      this->m_pool.align(16);
+
+      for (size_t xx = 0; xx < (KX + 1); xx++)
+      {
+        for (int ii = 0; ii < 256; ii++)
+        {
+          size_t nb_kmers = this->m_pinfo->getNbKmer(this->m_part, ii, xx);
+          radix_kmers[IX(xx, ii)] = (Type *)this->m_pool.pool_malloc(nb_kmers * sizeof(Type),
+                                                                     "kmers alloc");
+          radix_sizes[IX(xx, ii)] = nb_kmers;
+          sum_nbxmer += nb_kmers;
+        }
+      }
+
+      ReadSuperk<Storage, span> read_cmd(this->m_superk_storage, this->m_part, this->m_kmer_size,
+                                r_idx, radix_kmers, radix_sizes);
+      read_cmd.execute();
+    }
+    this->m_superk_storage->closeFile(this->m_part);
+  }
+
+  void executeSort()
+  {
+    for (size_t xx = 0; xx < (KX + 1); xx++)
+    {
+      KmerSort<span> sort_cmd(radix_kmers + IX(xx, 0), 0, 255, radix_sizes + IX(xx, 0));
+      sort_cmd.execute();
+    }
+  }
+
+  void build_kmer_map()
+  {
+    int nbkxpointers = 453;
+    std::vector<KXmerPointer<span> *> vec_pointer(nbkxpointers);
+    int best_p;
+    std::priority_queue<kxp, std::vector<kxp>, kxpcomp> pq;
+    size_t nbBanks = nb_items_per_bank_per_part.size();
+
+    if (nbBanks == 0)
+      nbBanks = 1;
+
+    CounterBuilder solidCounter(nbBanks);
+    Type previous_kmer;
+    int pidx = 0;
+
+    vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(0, 0), 0, 0, 0, 255,
+                                                 this->m_kmer_size, radix_sizes + IX(0, 0));
+
+    vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(1, 0), 0, 1, 0, 255,
+                                                 this->m_kmer_size, radix_sizes + IX(1, 0));
+    int lowr = 0;
+    int maxr = 63;
+
+    for (uint32_t ii = 0; ii < 4; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(1, 0), 1, 1, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(1, 0));
+      lowr += 64;
+      maxr += 64;
+    }
+
+    vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(2, 0), 0, 2, 0, 255,
+                                                 this->m_kmer_size, radix_sizes + IX(2, 0));
+    lowr = 0;
+    maxr = 63;
+    for (uint32_t ii = 0; ii < 4; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(2, 0), 1, 2, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(2, 0));
+      lowr += 64;
+      maxr += 64;
+    }
+
+    lowr = 0;
+    maxr = 15;
+    for (uint32_t ii = 0; ii < 16; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(2, 0), 2, 2, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(2, 0));
+      lowr += 16;
+      maxr += 16;
+    }
+
+    vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(3, 0), 0, 3, 0, 255,
+                                                 this->m_kmer_size, radix_sizes + IX(3, 0));
+
+    lowr = 0;
+    maxr = 63;
+    for (uint32_t ii = 0; ii < 4; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(3, 0), 1, 3, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(3, 0));
+      lowr += 64;
+      maxr += 64;
+    }
+
+    lowr = 0;
+    maxr = 15;
+    for (uint32_t ii = 0; ii < 16; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(3, 0), 2, 3, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(3, 0));
+      lowr += 16;
+      maxr += 16;
+    }
+
+    lowr = 0;
+    maxr = 3;
+    for (uint32_t ii = 0; ii < 64; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(3, 0), 3, 3, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(3, 0));
+      lowr += 4;
+      maxr += 4;
+    }
+
+    vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(4, 0), 0, 4, 0, 255,
+                                                 this->m_kmer_size, radix_sizes + IX(4, 0));
+
+    lowr = 0;
+    maxr = 63;
+    for (uint32_t ii = 0; ii < 4; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(4, 0), 1, 4, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(4, 0));
+      lowr += 64;
+      maxr += 64;
+    }
+
+    lowr = 0;
+    maxr = 15;
+    for (uint32_t ii = 0; ii < 16; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(4, 0), 2, 4, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(4, 0));
+      lowr += 16;
+      maxr += 16;
+    }
+
+    lowr = 0;
+    maxr = 3;
+    for (uint32_t ii = 0; ii < 64; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(4, 0), 3, 4, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(4, 0));
+      lowr += 4;
+      maxr += 4;
+    }
+
+    lowr = 0;
+    maxr = 0;
+    for (uint32_t ii = 0; ii < 256; ii++)
+    {
+      vec_pointer[pidx++] = new KXmerPointer<span>(radix_kmers + IX(4, 0), 4, 4, lowr, maxr,
+                                                   this->m_kmer_size, radix_sizes + IX(4, 0));
+      lowr += 1;
+      maxr += 1;
+    }
+
+    for (int ii = 0; ii < nbkxpointers; ii++)
+    {
+      if (vec_pointer[ii]->next())
+      {
+        pq.push(kxp(ii, vec_pointer[ii]->value()));
+      }
+    }
+
+    uint32_t count = 0;
+    if (pq.size() != 0)
+    {
+      best_p = pq.top().first;
+      pq.pop();
+      previous_kmer = vec_pointer[best_p]->value();
+      //solidCounter.init(vec_pointer[best_p]->getBankId());
+      count = 1;
+      while (1)
+      {
+        if (!vec_pointer[best_p]->next())
+        {
+          if (pq.size() == 0)
+            break;
+          best_p = pq.top().first;
+          pq.pop();
+        }
+
+        if (vec_pointer[best_p]->value() != previous_kmer)
+        {
+          pq.push(kxp(best_p, vec_pointer[best_p]->value()));
+          best_p = pq.top().first;
+          pq.pop();
+
+          if (vec_pointer[best_p]->value() != previous_kmer)
+          {
+            //this->insert(previous_kmer, count);
+            m_kmer_map.insert({previous_kmer, std::make_pair(false, count)});
+            count = 1;
+            previous_kmer = vec_pointer[best_p]->value();
+          }
+          else
+          {
+            count++;
+          }
+        }
+        else
+        {
+          count++;
+        }
+      }
+      m_kmer_map.insert({previous_kmer, std::make_pair(false, count)});
+      //this->insert(previous_kmer, count);
+    }
+
+    for (int ii = 0; ii < nbkxpointers; ii++)
+    {
+      delete vec_pointer[ii];
+    }
+  }
+
+  void executeDump()
+  {
+    this->m_superk_storage->openFile(this->m_part);
+    unsigned char* buffer = NULL;
+    unsigned int buffer_size = 0;
+    uint nbbreak = 0;
+    uint32_t nb_bytes_read;
+    int kmer_size = (int)this->m_kmer_size;
+    Type seedk;
+    Type kmer_mask;
+    Type un; un.setVal(1);
+    kmer_mask = (un << (kmer_size * 2)) - 1;
+    while (this->m_superk_storage->readBlock(&buffer, &buffer_size, &nb_bytes_read, this->m_part))
+    {
+      unsigned char *ptr = buffer;
+      uint8_t nbK;
+      int nbsuperkmer_read = 0;
+      uint8_t newbyte = 0;
+
+      while (ptr < (buffer + nb_bytes_read))
+      {
+        std::vector<Type> superkmer;
+        nbK = *ptr;
+        ptr++;
+        int rem_size = kmer_size;
+        Type Tnewbyte;
+        int nbr = 0;
+        seedk.setVal(0);
+        while (rem_size >= 4)
+        {
+          newbyte = *ptr;
+          ptr++;
+          Tnewbyte.setVal(newbyte);
+          seedk = seedk | (Tnewbyte << (8 * nbr));
+          rem_size -= 4;
+          nbr++;
+        }
+        int uid = 4;
+        if (rem_size > 0)
+        {
+          newbyte = *ptr;
+          ptr++;
+          Tnewbyte.setVal(newbyte);
+          seedk = (seedk | (Tnewbyte << (8 * nbr)));
+          uid = rem_size;
+        }
+        seedk = seedk & kmer_mask;
+
+        uint8_t rem = nbK;
+        Type temp = seedk;
+        Type mink, newnt;
+
+        mink = temp;
+
+        superkmer.push_back(mink);
+
+        for (int i = 0; i < nbK; i++, rem--)
+        {
+          nbbreak++;
+          if (rem < 2)
+            break;
+
+          if (uid >= 4)
+          {
+            newbyte = *ptr;
+            ptr++;
+            Tnewbyte.setVal(newbyte);
+            uid = 0;
+          }
+
+          newnt = (Tnewbyte >> (2 * uid)) & 3;
+          uid++;
+          temp = ((temp << 2) | newnt) & kmer_mask;
+          newnt.setVal(comp_NT[newnt.getVal()]);
+
+          mink = temp;
+          superkmer.push_back(mink);
+        }
+        //std::string superk_str = superkmer[0].toString(kmer_size);
+        //for (size_t i=1; i<superkmer.size(); i++)
+        //{
+        //  superk_str.push_back(superkmer[i].toString(kmer_size).back());
+        //}
+        using KmModelDirect = typename ::Kmer<span>::ModelDirect;
+        using KmModelMinimizer = typename ::Kmer<span>::ModelMinimizer<KmModelDirect>;
+        KmModelMinimizer mmm(kmer_size, m_minim_size);
+        const KmModelDirect& modelmini = mmm.getMmersModel();
+
+        
+        std::vector<std::vector<Type>> superklist;
+        bool newsk = true;
+        uint32_t cminim = km::Kmer<span>(superkmer[0].toString(kmer_size)).minimizer(m_minim_size).value();
+        for (auto& k : superkmer)
+        {
+          if (km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).value() == cminim)
+          {
+            if (newsk)
+            {
+              superklist.push_back({k});
+              newsk = false;
+            }
+            else
+            {
+              superklist.back().push_back(k);
+            }
+          }
+          else
+          {
+            newsk = false;
+            superklist.push_back({k});
+          }
+          cminim = km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).value();
+        }
+
+        for (auto& kvec: superklist)
+        {
+          // kvec is a superkmer represented by a vector of kmer
+          std::vector<bool> pseen(kvec.size());
+          std::vector<uint32_t> superk_counts(kvec.size());
+          size_t ii = 0;
+          std::string str_minim = km::Kmer<span>(kvec[0].toString(kmer_size)).minimizer(m_minim_size).to_string();
+          for (auto& kk : kvec)
+          {
+            Type rev = revcomp(kk, kmer_size);
+            Type cano = kk < rev ? kk : rev;
+            bool seen = m_kmer_map.at(cano).first;
+            if (seen)
+            {
+              pseen[ii] = false;
+              superk_counts[ii] = 0;
+            }
+            else
+            {
+              pseen[ii] = true;
+              m_kmer_map.at(cano).first = true;
+              superk_counts[ii] = m_kmer_map.at(cano).second;
+            }
+            ii++;
+          }
+          if (!m_superk_map.count(str_minim))
+            m_superk_map.insert({str_minim, std::vector<SuperKC>()});
+
+          // second split
+          std::vector<std::string> split;
+          std::vector<std::vector<uint32_t>> split_count;
+          bool first = true;
+          for (size_t i=0; i<kvec.size(); i++)
+          {
+            if (superk_counts[i])
+            {
+              if (first)
+              {
+                split.push_back(kvec[i].toString(kmer_size));
+                split_count.push_back({superk_counts[i]});
+                first = false;
+              }
+              else
+              {
+                split.back().push_back(kvec[i].toString(kmer_size).back());
+                split_count.back().push_back(superk_counts[i]);
+              }
+            }
+            else
+            {
+              first = true;
+            }
+          }
+
+          for (size_t i=0; i<split.size(); i++)
+          {
+            m_superk_map.at(str_minim).push_back(std::make_tuple(split[i], split_count[i], split[i].find(str_minim)));
+          }
+        }
+        //spdlog::error("SUPERK INIT {} {}", this->m_part, superk_str);
+
+        //spdlog::error("ALL SUPERK KMER MINI");
+        //for (auto& k: superkmer)
+        //{
+        //  spdlog::error("{} {} {}", k.toString(kmer_size), km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).to_string(), superkmer.size());
+        //}
+
+        //spdlog::error("AFTER SPLIT");
+        //for (auto& kvec : superklist)
+        //{
+        //  bool first = true;
+        //  std::string sss;
+        //  for (auto& k : kvec)
+        //  {
+        //     if (first)  sss = k.toString(kmer_size);
+        //     else sss.push_back(k.toString(kmer_size).back());
+        //     first = false;
+        //  }
+        //  spdlog::error("{} {}", sss, kvec.size());
+        //}
+        //using ModelMINI = typename ::Kmer<span>::ModelMinimizer<typename ::Kmer<span>::ModelDirect>::Kmer;
+        //using ModelMI = typename ::Kmer<span>::ModelMinimizer<typename ::Kmer<span>::ModelDirect>;
+        //using Data = gatb::core::tools::misc::Data;
+        //std::vector<char> cstr(superk_str.c_str(), superk_str.c_str() + superk_str.size() + 1);
+        //Data dd(cstr.data());
+        //spdlog::error("New superk");
+        //SKK skk(kmer_size, 10);
+        //for (auto& k: superkmer)
+        //{
+        //  spdlog::error("{} {} {}", k.toString(kmer_size), km::Kmer<span>(k.toString(kmer_size)).minimizer(m_minim_size).to_string(), superkmer.size());
+        //}
+
+        //std::string str_minim = km::Kmer<span>(superkmer[0].toString(kmer_size)).minimizer(m_minim_size).to_string();
+
+        //std::vector<bool> pseen(superkmer.size());
+        //std::vector<uint32_t> superk_counts(superkmer.size());
+
+        //size_t ii = 0;
+        //for (auto& kk : superkmer)
+        //{
+        //  Type rev = revcomp(kk, kmer_size);
+        //  Type cano = kk < rev ? kk : rev;
+        //  bool seen = m_kmer_map.at(cano).first;
+        //  if (seen)
+        //  {
+        //    pseen[ii] = false;
+        //    superk_counts[ii] = 0;
+        //  }
+        //  else
+        //  {
+        //    pseen[ii] = true;
+        //    m_kmer_map.at(cano).first = true;
+        //    superk_counts[ii] = m_kmer_map.at(cano).second;
+        //  }
+        //  ii++;
+        //}
+
+        //if (!m_superk_map.count(str_minim))
+        //  m_superk_map.insert({str_minim, std::vector<SuperKC>()});
+
+        //std::vector<std::string> split;
+        //std::vector<std::vector<uint32_t>> split_count;
+        //bool first = true;
+        //for (size_t i=0; i<superkmer.size(); i++)
+        //{
+        //  if (superk_counts[i])
+        //  {
+        //    if (first)
+        //    {
+        //      split.push_back(superkmer[i].toString(kmer_size));
+        //      split_count.push_back({superk_counts[i]});
+        //      first = false;
+        //    }
+        //    else
+        //    {
+        //      split.back().push_back(superkmer[i].toString(kmer_size).back());
+        //      split_count.back().push_back(superk_counts[i]);
+        //    }
+        //  }
+        //  else
+        //  {
+        //    first = true;
+        //  }
+        //}
+
+        //for (size_t i=0; i<split.size(); i++)
+        //{
+        //  m_superk_map.at(str_minim).push_back(std::make_tuple(split[i], split_count[i], split[i].find(str_minim)));
+        //}
+        nbsuperkmer_read++;
+      }
+    }
+    if (buffer != 0)
+      free(buffer);
+    this->m_superk_storage->closeFile(this->m_part);
+
+    for (auto& [minim, skv] : m_superk_map)
+    {
+      for (auto& sc : skv)
+      {
+        this->m_processor->process(std::get<0>(sc), minim, std::get<2>(sc), std::get<1>(sc));
+      }
+    }
+  }
+
+private:
+  Type **radix_kmers;
+  uint64_t *radix_sizes;
+  uint64_t *r_idx;
+  size_t m_minim_size;
+  std::vector<size_t> nb_items_per_bank_per_part;
+  robin_hood::unordered_map<Type, std::pair<bool, uint32_t>> m_kmer_map;
+  robin_hood::unordered_map<std::string, std::vector<SuperKC>> m_superk_map;
+};
+
 };

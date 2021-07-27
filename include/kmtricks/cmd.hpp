@@ -176,6 +176,10 @@ struct main_count
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
             config._kmerSize, opt->c_ab_min, hist, opt->clear));
         }
+        else
+        {
+          // kff sk
+        }
       }
       else if (opt->format == "hash" || opt->format == "vector")
       {

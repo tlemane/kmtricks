@@ -203,6 +203,10 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->as_flag()
     ->setter(options->kff);
 
+  all_cmd->add_param("--kff-sk-output", "output counted k-mers in kff-sk format (only with --until count).")
+    ->as_flag()
+    ->setter(options->kff_sk);
+
   all_cmd->add_param("--keep-tmp", "keep tmp files.")
     ->as_flag()
     ->setter(options->keep_tmp);
@@ -450,9 +454,9 @@ km_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t optio
     ->checker(bc::check::is_number)
     ->setter(options->partition_id);
 
-  count_cmd->add_param("--mode", "count k-mers or hashes. [kmer|hash|vector|kff]")
+  count_cmd->add_param("--mode", "count k-mers or hashes. [kmer|hash|vector|kff|kff-sk]")
     ->meta("STR")
-    ->checker(bc::check::f::in("kmer|hash|vector|kff"))
+    ->checker(bc::check::f::in("kmer|hash|vector|kff|kff-sk"))
     ->setter(options->format);
 
   count_cmd->add_param("--hist", "compute k-mer histograms.")

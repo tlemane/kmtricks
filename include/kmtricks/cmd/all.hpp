@@ -53,6 +53,7 @@ struct all_options : km_options
   bool keep_tmp {false};
   bool lz4 {false};
   bool kff {false};
+  bool kff_sk {false};
   bool skip_merge {false};
   bool hist {false};
 
@@ -90,6 +91,7 @@ struct all_options : km_options
     RECORD(ss, keep_tmp);
     RECORD(ss, lz4);
     RECORD(ss, kff);
+    RECORD(ss, kff_sk);
     RECORD(ss, skip_merge);
     RECORD(ss, hist);
     RECORD(ss, focus);
@@ -104,11 +106,11 @@ struct all_options : km_options
 
   void sanity_check()
   {
-    if ((kff) && (until != COMMAND::COUNT))
+    if ((kff || kff_sk) && (until != COMMAND::COUNT))
     {
       throw PipelineError("--kff-output/--kff-sk-output available only with --until count");
     }
-    if ((kff) && (count_format == COUNT_FORMAT::HASH))
+    if ((kff || kff_sk) && (count_format == COUNT_FORMAT::HASH))
     {
       throw PipelineError("--kff-output/--kff-sk-output available only in k-mer mode.");
     }
