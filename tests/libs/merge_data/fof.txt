@@ -1,2 +1,0 @@
-./merge_data/toy1.txt.bin
-./merge_data/toy2.txt.bin

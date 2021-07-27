@@ -1,2 +1,0 @@
-kmtricks v0.0.5
-- fix k-mer size in ascii matrix

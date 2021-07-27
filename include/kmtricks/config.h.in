@@ -1,0 +1,57 @@
+/*****************************************************************************
+ *   kmtricks
+ *   Authors: T. Lemane
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @file kmtricks build configuration
+ *****************************************************************************/
+
+#pragma once
+
+#define KMER_LIST @KMER_LIST@
+#define KMER_LIST_STR "@KMER_LIST@"
+#define KMER_N @KMER_N@
+#define PROJECT_NAME "@PROJECT_NAME@"
+#define PROJECT_VER  "v@PROJECT_VERSION@"
+#define PROJECT_VER_MAJOR "@PROJECT_VERSION_MAJOR@"
+#define PROJECT_VER_MINOR "@PROJECT_VERSION_MINOR@"
+#define PROJECT_VER_PATCH "@PROJECT_VERSION_PATCH@"
+#define PROJECT_DESC "@PROJECT_DESCRIPTION@"
+#define CONTACT "@CONTACT@"
+#define HOST_SYSTEM "@CMAKE_HOST_SYSTEM@"
+#define COMPILER_C "@CMAKE_C_COMPILER_ID@ @CMAKE_C_COMPILER_VERSION@"
+#define COMPILER_CXX "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@"
+#define CONDA_BUILD "@CONDA_BUILD@"
+#define STATIC_BUILD "@STATIC@"
+#define NATIVE_BUILD "@NATIVE@"
+#define MODULES_BUILD "@WITH_MODULES@"
+#define SOCKS_ON "@WITH_SOCKS@"
+#define HOWDE_BUILD "@WITH_HOWDE@"
+#define DEV_BUILD "@DEV_MODE@"
+#define GIT_SHA1 "@GIT_SHA1@"
+#define SDSL_SHA1 "@SDSL_SHA1@"
+#define BCLI_SHA1 "@BCLI_SHA1@"
+#define FMT_SHA1 "@FMT_SHA1@"
+#define KFF_SHA1 "@KFF_SHA1@"
+#define LZ4_SHA1 "@LZ4_SHA1@"
+#define SPDLOG_SHA1 "@SPDLOG_SHA1@"
+#define XXHASH_SHA1 "@XXHASH_SHA1@"
+#define GTEST_SHA1 "@GTEST_SHA1@"
+#define CROAR_SHA1 "@CROAR_SHA1@"
+#define IND_SHA1 "@IND_SHA1@"
+#define ROBIN_SHA1 "@ROBIN_SHA1@"
+#define TURBOP_SHA1 "@TURBOP_SHA1@"
+#define CFR_SHA1 "@CFR_SHA1@"
+

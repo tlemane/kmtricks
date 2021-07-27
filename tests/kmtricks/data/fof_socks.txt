@@ -1,3 +1,0 @@
-D1: data/1.fasta
-D2: data/2.fasta
-  

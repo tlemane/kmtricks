@@ -1,21 +1,31 @@
+{% set version = "1.0.0" %}
+
 package:
   name: kmtricks
-  version: "0.0.6"
+  version: {{ version }}
 
 source:
   git_url: https://github.com/tlemane/kmtricks
+  path: ../..
 
 requirements:
   build:
     - {{ compiler('cxx') }}
-    - zlib
     - make
     - cmake
-    - openmp
-    - lz4
+
+  host:
+    - zlib
 
   run:
     - zlib
-    - python>=3.6
-    - lz4
-    - openmp
+
+about:
+  home: https://github.com/tlemane/kmtricks
+  license: AGPL-3.0
+  dev_url: https://github.com/tlemane/kmtricks/
+  doc_url: https://github.com/tlemane/kmtricks/wiki
+
+extra:
+  recipe-maintainers:
+    - tlemane

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#   kmtricks
+#   kmdiff
 #   Authors: T. Lemane
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -20,17 +20,18 @@
 
 mkdir build-conda
 cd build-conda
-cmake .. -DKMER_NB_BIT=ALL -DCOUNT_NB_BIT=ALL -DHOWDE=1
-make -j4
-cd .. 
+cmake .. -DCONDA_BUILD=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DKMER_LIST="32 64 96 128 160 192 224 256" -DWITH_SOCKS=ON
+make -j8
+cd ..
+
+mkdir build-conda-debug
+cd build-conda-debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCONDA_BUILD=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DKMER_LIST="32 64 96 128 160 192 224 256" -DWITH_SOCKS=ON
+make -j8
+cd ..
 
 mkdir -p $PREFIX/bin
-mkdir -p $PREFIX/lib
-mkdir -p $PREFIX/include/kmtricks
 
-cp -r ./bin/* $PREFIX/bin
-cp ./bin/lib/* $PREFIX/lib
-cp ./libs/kmtricks/*.hpp $PREFIX/include/kmtricks
-cp ./kmtricks.py $PREFIX/bin
-cp ./kmtricks-socks.py $PREFIX/bin
-chmod +x $PREFIX/bin/kmtricks.py
+cp -r ./bin/kmtricks $PREFIX/bin
+cp -r ./bin/kmtricks-debug $PREFIX/bin
+cp -r ./bin/kmtricks-socks $PREFIX/bin

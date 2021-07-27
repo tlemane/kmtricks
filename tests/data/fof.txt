@@ -1,0 +1,2 @@
+D1 : /path/to/D1.fasta ; /path/to/D1.fasta ! 20
+D2 : /path/to/D2.fasta ; /path/to/D2.fasta ! 20
