@@ -208,6 +208,10 @@ public:
 
   bool process(const std::string& superk, const std::string& minim, size_t minim_pos, std::vector<uint32_t>& counts)
   {
+    if (m_hist)
+      for (auto& c : counts)
+        m_hist->inc(c);
+
     std::vector<km_count_type> vc (superk.size() - m_kmer_size + 1);
     for (size_t i=0; i<vc.size(); i++)
       vc[i] = counts[i] >= m_max_c ? m_max_c : static_cast<km_count_type>(counts[i]);

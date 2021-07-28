@@ -214,6 +214,7 @@ public:
 
   void insertSuperkmer(uint8_t* superk, int nb_bytes, uint8_t nbk, int file_id)
   {
+    m_synchros[file_id]->lock();
     if ( (m_buffers_idx[file_id]+nb_bytes+1) > static_cast<int>(m_capacity))
     {
       flushCache(file_id);
@@ -222,6 +223,7 @@ public:
     memcpy(m_buffers[file_id] + m_buffers_idx[file_id], superk, nb_bytes);
     m_buffers_idx[file_id] += nb_bytes;
     m_nbk_per_file[file_id] += nbk;
+    m_synchros[file_id]->unlock();
   }
 
   ~SuperKStorageWriter()
@@ -300,12 +302,10 @@ public:
   {
     if (!m_restricted.count(file_id))
       return;
-    m_synchros[file_id]->lock();
     m_nbk_per_file[file_id] += nbkmers;
     m_file_size[file_id] += block_size + sizeof(block_size);
     m_files[file_id]->write_size(block_size);
     m_files[file_id]->write_block(block, block_size);
-    m_synchros[file_id]->unlock();
   }
 
   int nbFiles() const { return m_nb_files; }

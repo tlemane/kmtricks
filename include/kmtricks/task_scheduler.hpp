@@ -261,11 +261,16 @@ public:
 
     int max_running = std::floor(m_opt->nb_threads * m_opt->focus) > 0 ? m_opt->nb_threads * m_opt->focus : 1;
 
+    size_t skt = 1;
+    if (KmDir::get().m_fof.size() == 1)
+      skt = m_opt->nb_threads / 2;
+
     for (auto id : KmDir::get().m_fof)
     {
       task_t task = std::make_shared<SuperKTask<MAX_K>>(std::get<0>(id),
                                                         m_opt->lz4,
-                                                        m_opt->restrict_to_list);
+                                                        m_opt->restrict_to_list,
+                                                        skt);
       task->set_callback([this, id, &pool](){
         if (this->m_is_info)
           this->m_dyn[0].tick();
@@ -305,7 +310,7 @@ public:
               path = KmDir::get().get_count_part_path(sid, p, this->m_opt->lz4, KM_FILE::KFF);
               task = std::make_shared<KffSkCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, this->m_config, sk_storage, pinfos, p, iid, this->m_config._kmerSize, a_min,
-                !this->m_opt->keep_tmp);
+                this->m_hists[iid], !this->m_opt->keep_tmp);
             }
           }
           else

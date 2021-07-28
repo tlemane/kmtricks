@@ -1736,7 +1736,7 @@ private:
             {
               auto& kc = m_kmer_map.at(cano);
               kc.first = true;
-              superk_counts[ii] = kc.second > 1 ? kc.second : 0;
+              superk_counts[ii] = kc.second >= m_ab_min ? kc.second : 0;
             }
             ii++;
           }
@@ -1760,7 +1760,6 @@ private:
               }
               else
               {
-                //split.back().push_back(kvec[i].toString(kmer_size).back());
                 split.back().push_back(km::bToN[kvec[i][0]]);
 
                 split_count.back().push_back(superk_counts[i]);

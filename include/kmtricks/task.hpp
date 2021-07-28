@@ -141,8 +141,8 @@ template<size_t span>
 class SuperKTask : public ITask
 {
 public:
-  SuperKTask(const std::string& sample_id, bool lz4, std::vector<uint32_t>& partitions)
-    : ITask(2), m_sample_id(sample_id), m_lz4(lz4), m_partitions(partitions) {}
+  SuperKTask(const std::string& sample_id, bool lz4, std::vector<uint32_t>& partitions, size_t threads = 1)
+    : ITask(2), m_sample_id(sample_id), m_lz4(lz4), m_partitions(partitions), m_threads(threads) {}
 
   void preprocess() {}
 
@@ -192,6 +192,7 @@ public:
                                System::thread().newSynchronizer()));
     LOCAL(progress);
     progress->init();
+    if (m_threads > 1)
     {
       auto fill_partitions = KmFillPartitions<span>(model,
                                                         1,
@@ -211,6 +212,16 @@ public:
       }
       itSeq->finalize();
     }
+    else
+    {
+      Dispatcher dispatcher(m_threads);
+      dispatcher.iterate(
+        itSeq,
+        KmFillPartitions<span>(model, 1, 0, config._nb_partitions, config._nb_cached_items_per_core_per_part, progress, bank_stats, nullptr, repartitor, pinfo, superk_storage),
+        1000, true
+      );
+      itSeq->finalize();
+    }
 
     progress->finish();
     superk_storage->SaveInfoFile(KmDir::get().get_superk_path(m_sample_id));
@@ -224,6 +235,7 @@ private:
   std::string m_sample_id;
   bool m_lz4;
   std::vector<uint32_t>& m_partitions;
+  size_t m_threads;
 };
 
 template<size_t span, size_t MAX_C, typename Storage>
@@ -551,7 +563,7 @@ public:
             parti_info_t pinfo,
             uint32_t part_id, uint32_t sample_id,
             uint32_t kmer_size, uint32_t abundance_min,
-            bool clear = false)
+            hist_t hist = nullptr, bool clear = false)
     : ITask(3, clear),
       m_path(path),
       m_config(config),
@@ -560,6 +572,7 @@ public:
       m_part_id(part_id),
       m_sample_id(sample_id),
       m_kmer_size(kmer_size),
+      m_hist(hist),
       m_ab_min(abundance_min)
    {
    }
@@ -582,7 +595,7 @@ public:
     KffSkCountProcessor<span, DMAX_C>* processor(new KffSkCountProcessor<span, MAX_C>(m_kmer_size,
                                                                                   m_config._minim_size,
                                                                                   writer,
-                                                                                  nullptr));
+                                                                                  m_hist));
     SkPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
                                                    m_config._minim_size, pool, m_superk_storage.get(), m_ab_min);
 
@@ -600,6 +613,7 @@ private:
   uint32_t m_sample_id;
   uint32_t m_kmer_size;
   uint32_t m_ab_min;
+  hist_t   m_hist;
 };
 
 template<size_t span, size_t MAX_C>

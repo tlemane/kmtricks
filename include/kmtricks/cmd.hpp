@@ -157,7 +157,7 @@ struct main_count
       if (opt->partition_id != -1)
         if (static_cast<size_t>(opt->partition_id) != i)
           continue;
-      if (opt->format == "kmer" || opt->format == "kff")
+      if (opt->format == "kmer" || opt->format == "kff" || opt->format == "kff-sk")
       {
         std::string path = KmDir::get().get_count_part_path(
           opt->id, i, opt->lz4, opt->format == "kmer" ? KM_FILE::KMER : KM_FILE::KFF);
@@ -178,7 +178,10 @@ struct main_count
         }
         else
         {
-          // kff sk
+          spdlog::debug("[push] - KffSkCountTask - S={}, P={}", opt->id, i);
+          pool.add_task(std::make_shared<KffSkCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
+            path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
+            config._kmerSize, opt->c_ab_min, hist, opt->clear));
         }
       }
       else if (opt->format == "hash" || opt->format == "vector")
