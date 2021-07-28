@@ -589,7 +589,7 @@ protected:
 
   Mmer minimizer(uint8_t size)
   {
-    uint32_t def = ((uint64_t)1 << (2*size)) - 1;
+    //uint32_t def = ((uint64_t)1 << (2*size)) - 1;
     const size_t nb_mmers = m_kmer_size - size + 1;
     Mmer minim(std::numeric_limits<uint32_t>::max(), size);
     for (size_t i=0; i<nb_mmers; i++)
@@ -609,19 +609,19 @@ protected:
         tmp >>= 2;
       }
       Mmer tmp_minim(value, size);
-      if (is_valid_minimizer(tmp_minim.value(), size))
-      {
+      //if (is_valid_minimizer(tmp_minim.value(), size))
+      //{
         if (tmp_minim < minim)
           minim = tmp_minim;
-      }
-      else
-      {
-        tmp_minim = Mmer(def, size);
-        if (tmp_minim < minim)
-        {
+      //}
+      //else
+      //{
+      //  tmp_minim = Mmer(def, size);
+      //  if (tmp_minim < minim)
+      //  {
           minim = tmp_minim;
-        }
-      }
+      //  }
+      //}
     }
     return minim;
   }
