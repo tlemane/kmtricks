@@ -29,7 +29,7 @@ Note: for counting kmers from a single file, kmtricks works but is slightly slow
 
 ## Installation and usage
 
-Instructions for installation and usage are provided in the [wiki](https://github.com/tlemane/kmtricks2/wiki/Home).
+Instructions for installation and usage are provided in the [wiki](https://github.com/tlemane/kmtricks/wiki/Home).
 
 ## Limitations
 
@@ -37,7 +37,7 @@ kmtricks needs disk space to run. The disk usage is variable and depends on data
 
 ## Reporting an issue
 
-If you encounter a problem, please open an issue with a description of your run and the return of [kmtricks infos](https://github.com/tlemane/kmtricks2/wiki/infos). If you encounter a critical error like a segmentation fault, kmtricks automatically dumps a file `kmtricks_backtrace.log` in your current directory. This file is somewhat illegible in release mode. If you can, compile kmtricks in debug mode, launch it again and join the content of this file. If you cannot directly compile kmtricks on your system, the conda package provides `kmtricks-debug` binary for this case.
+If you encounter a problem, please open an issue with a description of your run and the return of [kmtricks infos](https://github.com/tlemane/kmtricks/wiki/infos). If you encounter a critical error like a segmentation fault, kmtricks automatically dumps a file `kmtricks_backtrace.log` in your current directory. This file is somewhat illegible in release mode. If you can, compile kmtricks in debug mode, launch it again and join the content of this file. If you cannot directly compile kmtricks on your system, the conda package provides `kmtricks-debug` binary for this case.
 
 ## Contacts
 
