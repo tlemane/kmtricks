@@ -37,7 +37,7 @@ inline ProgressBar* get_progress_bar(const std::string& name, size_t size,
                      option::End{"]"},
                      option::ForegroundColor{color},
                      option::ShowElapsedTime{true},
-                     option::ShowRemainingTime{true},
+                     option::ShowRemainingTime{false},
                      option::PrefixText{name},
                      option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
                      option::MaxProgress{size}

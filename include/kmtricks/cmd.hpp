@@ -396,11 +396,11 @@ struct main_dump
     {
       HistReader hr(opt->input);
       if (opt->output == "stdout")
-        hr.write_as_text(std::cout, true);
+        hr.write_as_text(std::cout, false);
       else
       {
         std::ofstream out(opt->output); check_fstream_good(opt->output, out);
-        hr.write_as_text(out, true);
+        hr.write_as_text(out, false);
       }
     }
     else
@@ -427,15 +427,23 @@ struct main_agg
     config.load(config_storage->getGroup("gatb"));
 
     auto check_paths = [](const std::vector<std::string>& paths) {
-      if (paths.empty())
-        throw IOError("No files found for these paramters.");
+      std::vector<std::string> ret;
+      for (auto& p : paths)
+      {
+        if (fs::exists(p))
+          ret.push_back(p);
+      }
+
+      if (ret.empty())
+        throw IOError("No files found for these parameters.");
+      return ret;
     };
 
     if (opt->count == "kmer")
     {
       std::vector<std::string> paths = KmDir::get().get_count_part_paths(
         opt->id, config._nb_partitions, opt->lz4_in, KM_FILE::KMER);
-      check_paths(paths);
+      paths = check_paths(paths);
 
       if (opt->sorted)
       {
@@ -458,7 +466,7 @@ struct main_agg
     {
       std::vector<std::string> paths = KmDir::get().get_count_part_paths(
         opt->id, config._nb_partitions, opt->lz4_in, KM_FILE::HASH);
-      check_paths(paths);
+      paths = check_paths(paths);
 
       HashFileAggregator<DMAX_C> hfa(paths);
       if (opt->format == "text")
@@ -471,7 +479,7 @@ struct main_agg
       std::vector<std::string> paths = KmDir::get().get_matrix_paths(config._nb_partitions,
                                                                     MODE::COUNT, FORMAT::BIN,
                                                                     COUNT_FORMAT::KMER, opt->lz4_in);
-      check_paths(paths);
+      paths = check_paths(paths);
 
       if (opt->sorted)
       {
@@ -495,7 +503,7 @@ struct main_agg
       std::vector<std::string> paths = KmDir::get().get_matrix_paths(config._nb_partitions,
                                                                     MODE::COUNT, FORMAT::BIN,
                                                                     COUNT_FORMAT::HASH, opt->lz4_in);
-      check_paths(paths);
+      paths = check_paths(paths);
 
       MatrixHashFileAggregator<DMAX_C> mhfa(paths);
       if (opt->format == "text")
@@ -508,7 +516,7 @@ struct main_agg
       std::vector<std::string> paths = KmDir::get().get_matrix_paths(config._nb_partitions,
                                                                     MODE::PA, FORMAT::BIN,
                                                                     COUNT_FORMAT::KMER, opt->lz4_in);
-      check_paths(paths);
+      paths = check_paths(paths);
       if (opt->sorted)
       {
         PAMatrixFileMerger<MAX_K> pmfm(paths, config._kmerSize);
@@ -531,7 +539,7 @@ struct main_agg
       std::vector<std::string> paths = KmDir::get().get_matrix_paths(config._nb_partitions,
                                                                     MODE::PA, FORMAT::BIN,
                                                                     COUNT_FORMAT::HASH, opt->lz4_in);
-      check_paths(paths);
+      paths = check_paths(paths);
       PAHashMatrixFileAggregator phmfa(paths);
       if (opt->format == "text")
         opt->output == "stdout" ? phmfa.write_as_text(std::cout) : phmfa.write_as_text(opt->output);
