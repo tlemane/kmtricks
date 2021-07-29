@@ -47,7 +47,7 @@ public:
     Section_GV sgv(m_kff_file.get());
     sgv.write_var("k", m_kmer_size);
     sgv.write_var("max", 1);
-    sgv.write_var("data_size", requiredC<MAX_C>::value);
+    sgv.write_var("data_size", sizeof(typename selectC<MAX_C>::type));
     sgv.close();
     m_kff_sec = std::make_unique<Section_Raw>(m_kff_file.get());
   }
