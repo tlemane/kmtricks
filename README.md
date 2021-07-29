@@ -1,6 +1,6 @@
 # kmtricks
 
-This branch is a POC for [kff k-mer compaction](). Don't use it for other things.
+This branch is a POC for [kff k-mer compaction](https://github.com/Kmer-File-Format). Don't use it for other things.
 
 
 The procedure consists of two steps:
@@ -12,7 +12,7 @@ Super-k-mers are then stored in kff format according to their minimizers. In min
 
 ## Installation
 
-See [kmtricks installation]().
+./install.sh -c 1 -t 0 -k "32 64" -m
 
 ## Usage
 
