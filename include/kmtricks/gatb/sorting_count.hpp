@@ -339,6 +339,7 @@ struct IHasher
   typedef typename ::Kmer<span>::Type Type;
   static constexpr size_t slot {(span + 31) / 32};
   virtual uint64_t operator()(Type& kmer) = 0;
+  virtual ~IHasher() = default;
 };
 
 template<size_t span>

@@ -29,7 +29,7 @@ endif()
 ExternalProject_Add(GATB
         PREFIX GATB
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped
-        CMAKE_ARGS ${GATB_DEBUG} -DKSIZE_LIST=${KMER_LIST_GATB} -DNONCANONICAL=ON
+        CMAKE_ARGS ${GATB_DEBUG} -DKSIZE_LIST=${KMER_LIST_GATB}
         BUILD_ALWAYS 1
         INSTALL_COMMAND "")
 
