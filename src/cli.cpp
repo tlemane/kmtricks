@@ -219,15 +219,15 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     if (v.find('.') != std::string::npos)
     {
       bc::check::throw_if_false(bc::check::f::range(0.0, 1.0)("--abundance-min<float>", v));
-      options->m_ab_min_f;
+      options->m_ab_min_f = bc::utils::lexical_cast<double>(v);
       options->m_ab_float = true;
     }
     else
       options->m_ab_min = bc::utils::lexical_cast<uint32_t>(v);
   };
 
-  all_cmd->add_param("--merge-abundance-min", "during merge, min abundance to keep a k-mer.")
-    ->meta("INT")
+  all_cmd->add_param("--merge-abundance-min", "during merge, min abundance to keep a k-mer, see README.")
+    ->meta("INT/STR/FLOAT")
     ->def("1")
     ->setter_c(a_min_setter);
 
@@ -496,7 +496,7 @@ km_options_t merge_cli(std::shared_ptr<bc::Parser<1>> cli, merge_options_t optio
     if (v.find('.') != std::string::npos)
     {
       bc::check::throw_if_false(bc::check::f::range(0.0, 1.0)("--abundance-min<float>", v));
-      options->m_ab_min_f;
+      options->m_ab_min_f = bc::utils::lexical_cast<double>(v);
       options->m_ab_float = true;
     }
     else
