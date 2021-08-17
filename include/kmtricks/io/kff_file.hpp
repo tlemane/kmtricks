@@ -145,7 +145,7 @@ public:
     Section_GV sgv(m_kff_file.get());
     sgv.write_var("k", m_kmer_size);
     sgv.write_var("m", m_minim_size);
-    sgv.write_var("max", 255);
+    sgv.write_var("max", m_kmer_size - m_minim_size + 1);
     sgv.write_var("data_size", 1);
     sgv.close();
   }
