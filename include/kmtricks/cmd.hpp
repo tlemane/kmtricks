@@ -569,8 +569,22 @@ struct main_index
     }
 
     std::string index = KmDir::get().get_index_path();
-    std::string howde_index_str = fmt::format("cluster --list={} --out={} --bits={}",
-                                              bf_list, index, opt->bits);
+    std::string howde_index_str = fmt::format("cluster --list={} --out={}",
+                                              bf_list, index);
+
+    if (opt->upper != 0)
+      howde_index_str += fmt::format(" {}..{}", opt->lower, opt->upper);
+    else
+      howde_index_str += fmt::format(" --bits={}", opt->bits);
+
+    if (opt->cull > 0)
+      howde_index_str += fmt::format(" --cull={}", opt->cull);
+
+    if (opt->cull2)
+      howde_index_str += " --cull";
+
+    if (opt->cullsd > 0)
+      howde_index_str += fmt::format(" --cull={}sd", opt->cullsd);
     std::vector<std::string> howde_index = bc::utils::split(howde_index_str, ' ');
 
     char** arr = new char*[howde_index.size()+1];

@@ -40,6 +40,10 @@ struct index_options : km_options
   uint64_t bits;
   double cull;
   bool keep;
+  size_t lower;
+  size_t upper;
+  bool cull2;
+  double cullsd;
 
   std::string display()
   {
@@ -55,6 +59,10 @@ struct index_options : km_options
     RECORD(ss, bits);
     RECORD(ss, cull);
     RECORD(ss, keep);
+    RECORD(ss, lower);
+    RECORD(ss, upper);
+    RECORD(ss, cull2);
+    RECORD(ss, cullsd);
     std::string ret = ss.str(); ret.pop_back(); ret.pop_back();
     return ret;
   }

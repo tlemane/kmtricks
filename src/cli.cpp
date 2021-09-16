@@ -738,18 +738,58 @@ km_options_t index_cli(std::shared_ptr<bc::Parser<1>> cli, index_options_t optio
     ->setter(options->dir);
 
   index_cmd->add_group("Clustering options", "");
-  index_cmd->add_param("--bits", "Number of bits to use from each filter for topology computation.")
+  index_cmd->add_param("--bits", "number of bits to use from each filter for topology computation.")
     ->meta("INT")
     ->def("100000")
     ->checker(bc::check::is_number)
     ->setter(options->bits);
 
+  auto wbits_checker = [](const std::string& s, const std::string& v) -> bc::check::checker_ret_t {
+    auto win = bc::utils::split(v, ':');
+    if (win.size() == 2)
+    {
+      try
+      {
+        size_t a = bc::utils::lexical_cast<size_t>(win[0]);
+        size_t b = bc::utils::lexical_cast<size_t>(win[1]);
+        if (a <= b)
+          return std::make_tuple(true, "");
+        else
+          return std::make_tuple(false, fmt::format("{} must be less than {}.", a, b));
+      }
+      catch (...) { return std::make_tuple(false, "Invalid format"); }
+    }
+    return std::make_tuple(false, "Invalid format.");
+  };
+
+  auto wbits_setter = [options](const std::string& v) {
+    auto win = bc::utils::split(v, ':');
+    options->lower = bc::utils::lexical_cast<size_t>(win[0]);
+    options->upper = bc::utils::lexical_cast<size_t>(win[1]);
+  };
+
+  index_cmd->add_param("--wbits", "bit window to use from each filter for topology computation.")
+    ->meta("INT:INT")
+    ->def("0:0")
+    ->checker(wbits_checker)
+    ->setter_c(wbits_setter);
+
   index_cmd->add_param("--cull",
-                       "Remove nodes for which saturation of determined is less than cull")
+                       "remove nodes for which saturation of determined is less than cull.")
     ->meta("FLOAT")
-    ->def("0.2")
+    ->def("0.0")
     ->checker(bc::check::f::range(0.0, 1.0))
     ->setter(options->cull);
+
+  index_cmd->add_param("--cullsd", "remove nodes for which saturation of determined is more than X sd below the mean.")
+    ->meta("FLOAT")
+    ->def("0.0")
+    ->checker(bc::check::f::range(0.0, 1.0))
+    ->setter(options->cullsd);
+
+  index_cmd->add_param("--cull2", "remove nodes for which saturation of determined is more than 2 sd below the mean.")
+    ->as_flag()
+    ->setter(options->cull2);
 
   index_cmd->add_param("--keep-all-nodes", "keep all node of the binary tree.")
     ->as_flag()
