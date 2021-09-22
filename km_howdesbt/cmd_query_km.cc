@@ -426,6 +426,9 @@ int QueryCommandKm::execute()
   // check before we start the search (we'd rather not run for a long time
   // and *then* report the problem)
 
+
+  // preload
+
   else if (checkConsistency)
   {
     BloomFilter *modelBf = nullptr;
@@ -440,6 +443,19 @@ int QueryCommandKm::execute()
         modelBf = node->bf;
       else
         node->bf->is_consistent_with(modelBf, /*beFatal*/ true);
+    }
+  }
+
+  else
+  {
+    BloomFilter *model = nullptr;
+    if (order.size() == 0)
+      root->post_order(order);
+    for (const auto& node: order)
+    {
+      node->preload();
+      if (model == nullptr)
+        model = node->bf;
     }
   }
 
