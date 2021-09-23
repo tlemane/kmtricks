@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <functional>
 #include <filesystem>
+#include <cmath>
 #include <cstdlib>
 #include <sys/resource.h>
 
@@ -235,6 +236,17 @@ inline std::tuple<int64_t, int64_t> get_prlimit_nofile()
   return std::make_tuple(rlim.rlim_cur, rlim.rlim_max);
 }
 
+inline double bloom_fp(size_t m, size_t n, size_t k = 1)
+{
+  static double e = std::exp(1.0);
+  return std::pow(1.0 - std::pow(e, (-(k * static_cast<double>(n)) / static_cast<double>(m))), static_cast<double>(k));
+}
+
+inline double bloom_estimate(size_t m, size_t k, size_t x)
+{
+  return -(static_cast<double>(m)/static_cast<double>(k) * std::log(1.0 - static_cast<double>(x)/static_cast<double>(m)));
+
+}
 class Eraser
 {
 public:

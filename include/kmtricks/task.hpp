@@ -679,6 +679,20 @@ public:
                             m_win.get_upper(m_part_id), false);
     }
     merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
+
+    if (m_mode == MODE::BF || m_mode == MODE::BFT)
+    {
+      std::string fpr_path = fmt::format("{}/{}", KmDir::get().m_fpr_storage, fmt::format("partition_{}.txt", m_part_id));
+      std::ofstream fp(fpr_path, std::ios::out); check_fstream_good(fpr_path, fp);
+
+      size_t m = m_win.get_window_size_bits();
+      for (auto& n : merger.get_infos()->get_unique_w_rescue())
+      {
+        double fpr = bloom_fp(m, n);
+        fp << std::fixed << fpr << "\n";
+      }
+    }
+
     spdlog::debug("[done] - HashMergeTask - P={}", m_part_id);
   }
 
