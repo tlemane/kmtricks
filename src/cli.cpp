@@ -129,7 +129,7 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(bc::check::f::range(8, KL[KMER_N-1]-1))
     ->setter(options->kmer_size);
 
-  all_cmd->add_param("--count-abundance-min", "min abundance to keep a k-mer.")
+  all_cmd->add_param("--hard-min", "min abundance to keep a k-mer.")
     ->meta("INT")
     ->def("2")
     ->checker(bc::check::is_number)
@@ -226,7 +226,7 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
       options->m_ab_min = bc::utils::lexical_cast<uint32_t>(v);
   };
 
-  all_cmd->add_param("--merge-abundance-min", "during merge, min abundance to keep a k-mer, see README.")
+  all_cmd->add_param("--soft-min", "during merge, min abundance to keep a k-mer, see README.")
     ->meta("INT/STR/FLOAT")
     ->def("1")
     ->setter_c(a_min_setter);
@@ -237,7 +237,7 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(bc::check::is_number)
     ->setter(options->r_min);
 
-  all_cmd->add_param("--save-if", "save a non-solid k-mer if it is solid in N other samples.")
+  all_cmd->add_param("--share-min", "save a non-solid k-mer if it is solid in N other samples.")
     ->meta("INT")
     ->def("0")
     ->checker(bc::check::is_number)
@@ -438,7 +438,7 @@ km_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t optio
     ->checker(bc::check::is_dir)
     ->setter(options->dir);
 
-  count_cmd->add_param("--abundance-min", "min abundance to keep a k-mer/hash.")
+  count_cmd->add_param("--hard-min", "min abundance to keep a k-mer/hash.")
     ->meta("INT")
     ->def("2")
     ->checker(bc::check::is_number)
@@ -503,7 +503,7 @@ km_options_t merge_cli(std::shared_ptr<bc::Parser<1>> cli, merge_options_t optio
       options->m_ab_min = bc::utils::lexical_cast<uint32_t>(v);
   };
 
-  merge_cmd->add_param("--abundance-min", "min abundance to keep a k-mer/hash, see README.")
+  merge_cmd->add_param("--soft-min", "min abundance to keep a k-mer/hash, see README.")
     ->meta("INT/STR/FLOAT")
     ->def("1")
     ->setter_c(a_min_setter);
@@ -514,7 +514,7 @@ km_options_t merge_cli(std::shared_ptr<bc::Parser<1>> cli, merge_options_t optio
     ->checker(bc::check::is_number)
     ->setter(options->r_min);
 
-  merge_cmd->add_param("--save-if", "save a non-solid k-mer if it occurs in N other samples.")
+  merge_cmd->add_param("--share-min", "save a non-solid k-mer if it is solid in N other samples.")
     ->meta("INT")
     ->def("0")
     ->checker(bc::check::is_number)
