@@ -69,6 +69,12 @@ struct all_options : km_options
   COUNT_FORMAT count_format;
   COMMAND until;
 
+#ifdef WITH_PLUGIN
+  std::string plugin;
+  std::string plugin_config;
+  bool use_plugin {false};
+#endif
+
   std::string display()
   {
     std::stringstream ss;
@@ -94,6 +100,11 @@ struct all_options : km_options
     RECORD(ss, hist);
     RECORD(ss, focus);
     RECORD(ss, restrict_to);
+#ifdef WITH_PLUGIN
+    RECORD(ss, use_plugin);
+    RECORD(ss, plugin);
+    RECORD(ss, plugin_config);
+#endif
     ss << "mode=" << mode_to_str(mode) << ", ";
     ss << "format=" << format_to_str2(format) << ", ";
     ss << "bf_format=" << format_to_str(out_format) << ", ";

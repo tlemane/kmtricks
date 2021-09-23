@@ -211,6 +211,7 @@ public:
     m_options = fmt::format("{}/options.txt", m_root);
     m_minimizer_storage = fmt::format("{}/minimizers", m_root);
     m_fpr_storage = fmt::format("{}/fpr", m_root);
+    m_plugin_storage = fmt::format("{}/plugin_output", m_root);
 
     if (first)
     {
@@ -226,6 +227,9 @@ public:
       fs::create_directory(m_index_storage);
       fs::create_directory(m_part_info_storage);
       fs::create_directory(m_fpr_storage);
+#ifdef WITH_PLUGIN
+      fs::create_directory(m_plugin_storage);
+#endif
       std::string info_path = fmt::format("{}/build_infos.txt", m_root);
       std::ofstream bout(info_path, std::ios::out); check_fstream_good(info_path, bout);
       main_infos(bout);
@@ -265,6 +269,7 @@ public:
   std::string m_run_infos;
   std::string m_options;
   std::string m_fpr_storage;
+  std::string m_plugin_storage;
 
   std::string m_filter_template {"{}/{}.{}"};
   std::string m_matrix_template {"{}/matrix_{}.{}"};

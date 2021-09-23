@@ -41,6 +41,11 @@
 #include <kmtricks/progress.hpp>
 #include <kmtricks/signals.hpp>
 
+#ifdef WITH_PLUGIN
+#include <kmtricks/plugin_manager.hpp>
+#include <kmtricks/plugin.hpp>
+#endif
+
 #ifdef WITH_HOWDE
 #include <cmd_cluster.h>
 #include <cmd_build_sbt.h>
@@ -60,6 +65,12 @@ struct main_all
     opt->sanity_check();
     KmDir::get().init(opt->dir, opt->fof, true);
     opt->dump(KmDir::get().m_options);
+
+#ifdef WITH_PLUGIN
+    if (opt->use_plugin)
+      PluginManager<IMergePlugin>::get().init(opt->plugin, opt->plugin_config, MAX_K);
+#endif
+
     TaskScheduler<MAX_K, DMAX_C> scheduler(opt);
     scheduler.execute();
   }

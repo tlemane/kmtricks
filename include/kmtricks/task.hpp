@@ -38,6 +38,10 @@
 #include <kmtricks/itask.hpp>
 #include <kmtricks/repartition.hpp>
 
+#ifdef WITH_PLUGIN
+#include <kmtricks/plugin_manager.hpp>
+#endif
+
 namespace km {
 
 using parti_info_t = std::shared_ptr<PartiInfo<5>>;
@@ -582,6 +586,20 @@ public:
     std::string out_path = KmDir::get().get_matrix_path(m_part_id, m_mode, m_format,
                                                         COUNT_FORMAT::KMER, m_lz4);
     KmerMerger<span, MAX_C> merger(paths, m_ab_vec, m_kmer_size, m_rec_min, m_save_if);
+
+#ifdef WITH_PLUGIN
+    IMergePlugin* plugin = nullptr;
+
+    if (PluginManager<IMergePlugin>::get().use_plugin())
+    {
+      plugin = PluginManager<IMergePlugin>::get().get_plugin();
+      plugin->set_out_dir(KmDir::get().m_plugin_storage);
+      plugin->set_kmer_size(m_kmer_size);
+      plugin->set_partition(m_part_id);
+      merger.set_plugin(plugin);
+    }
+#endif
+
     if (m_mode == MODE::COUNT)
     {
       if (m_format == FORMAT::TEXT)
@@ -596,6 +614,18 @@ public:
       else if (m_format == FORMAT::BIN)
         merger.write_as_pa(out_path, m_lz4);
     }
+
+#ifdef WITH_PLUGIN
+    if (PluginManager<IMergePlugin>::get().use_plugin())
+    {
+      PluginManager<IMergePlugin>::get().destroy_plugin(plugin);
+    }
+    else
+    {
+      merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
+    }
+#endif
+
     merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
 
     spdlog::debug("[done] - KmerMergeTask - P={}", m_part_id);
@@ -654,6 +684,19 @@ public:
 
     HashMerger<MAX_C, 32768, HashReader<MAX_C, 32768>> merger(paths, m_ab_vec, m_rec_min, m_save_if);
 
+#ifdef WITH_PLUGIN
+    IMergePlugin* plugin = nullptr;
+
+    if (PluginManager<IMergePlugin>::get().use_plugin())
+    {
+      plugin = PluginManager<IMergePlugin>::get().get_plugin();
+      plugin->set_out_dir(KmDir::get().m_plugin_storage);
+      plugin->set_kmer_size(0);
+      plugin->set_partition(m_part_id);
+      merger.set_plugin(plugin);
+    }
+#endif
+
     if (m_mode == MODE::COUNT)
     {
       if (m_format == FORMAT::TEXT)
@@ -678,6 +721,17 @@ public:
         merger.write_as_bft(out_path, m_win.get_lower(m_part_id),
                             m_win.get_upper(m_part_id), false);
     }
+
+#ifdef WITH_PLUGIN
+    if (PluginManager<IMergePlugin>::get().use_plugin())
+    {
+      PluginManager<IMergePlugin>::get().destroy_plugin(plugin);
+    }
+    else
+    {
+      merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
+    }
+#endif
     merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
 
     if (m_mode == MODE::BF || m_mode == MODE::BFT)
