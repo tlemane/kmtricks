@@ -26,6 +26,11 @@
 #include <kmtricks/io/hash_file.hpp>
 #include <kmtricks/io/vector_matrix_file.hpp>
 
+#ifdef WITH_PLUGIN
+#include <kmtricks/plugin_manager.hpp>
+#include <kmtricks/plugin.hpp>
+#endif
+
 namespace km {
 
 template<size_t MAX_K, size_t MAX_C>
@@ -161,6 +166,14 @@ public:
     m_infos = std::make_unique<MergeStatistics<MAX_C>>(m_size);
   }
 
+
+#ifdef WITH_PLUGIN
+  void set_plugin(IMergePlugin* plugin)
+  {
+    m_plugin = plugin;
+  }
+#endif
+
   bool keep()
   {
     return m_keep;
@@ -231,8 +244,17 @@ public:
         }
       }
     }
+
     if (recurrence >= m_r_min)
       m_keep = true;
+
+#ifdef WITH_PLUGIN
+    if (m_plugin)
+    {
+      m_keep = m_plugin->process_kmer(m_current.get_data64(), m_counts);
+    }
+#endif
+
     return !m_finish;
   }
 
@@ -331,6 +353,10 @@ private:
   bool m_finish {false};
 
   std::unique_ptr<MergeStatistics<MAX_C>> m_infos {nullptr};
+
+#ifdef WITH_PLUGIN
+  IMergePlugin* m_plugin {nullptr};
+#endif
 };
 
 template<size_t MAX_C, size_t buf_size = 8192, typename Reader = HashReader<buf_size>>
@@ -398,6 +424,13 @@ public:
     m_counts.resize(m_size, 0);
     m_infos = std::make_unique<MergeStatistics<MAX_C>>(m_size);
   }
+
+#ifdef WITH_PLUGIN
+  void set_plugin(IMergePlugin* plugin)
+  {
+    m_plugin = plugin;
+  }
+#endif
 
   bool keep()
   {
@@ -471,6 +504,14 @@ public:
     }
     if (recurrence >= m_r_min)
       m_keep = true;
+
+#ifdef WITH_PLUGIN
+    if (m_plugin)
+    {
+      m_keep = m_plugin->process_hash(m_current, m_counts);
+    }
+#endif
+
     return !m_finish;
   }
 
@@ -607,5 +648,9 @@ private:
   bool m_finish {false};
 
   std::unique_ptr<MergeStatistics<MAX_C>> m_infos {nullptr};
+
+#ifdef WITH_PLUGIN
+  IMergePlugin* m_plugin {nullptr};
+#endif
 };
 };

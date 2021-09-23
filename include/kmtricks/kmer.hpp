@@ -657,6 +657,7 @@ public:
   void zero() { m_data = 0; }
   void set_k(size_t kmer_size) { m_data = 0; m_kmer_size = kmer_size; }
   void set64(uint64_t value) { m_data = value; }
+  void set64_p(const uint64_t* ptr) { m_data = *ptr; }
 
   void set_polynom(const char* data, size_t kmer_size)
   {
@@ -932,6 +933,7 @@ public:
   void set_k(size_t kmer_size) { m_data = 0; m_kmer_size = kmer_size; }
   void set64(uint64_t value) { m_data = value; }
   void set128(__uint128_t value) { m_data = value; }
+  void set64_p(const uint64_t* ptr) { m_data = (__uint128_t{ptr[1]} << 64) | ptr[0]; }
 
   void set_polynom(const char* data, size_t kmer_size)
   {

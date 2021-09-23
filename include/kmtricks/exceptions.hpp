@@ -50,5 +50,6 @@ km_EXCEPTION(FileNotFoundError);
 km_EXCEPTION(PipelineError);
 km_EXCEPTION(ConfigError);
 km_EXCEPTION(KSizeError);
+km_EXCEPTION(PluginError);
 
 };

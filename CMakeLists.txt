@@ -6,6 +6,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 option(WITH_MODULES "Build all modules." OFF)
 option(WITH_HOWDE "Build km_howdesbt." OFF)
 option(WITH_SOCKS "Build socks interface." OFF)
+option(WITH_PLUGIN "Build plugins" OFF)
 option(COMPILE_TESTS "Compile tests." OFF)
 option(MAKE_PACKAGE "Build package." OFF)
 option(CONDA_BUILD "Build inside conda env." OFF)
@@ -147,6 +148,10 @@ if (WITH_HOWDE)
 endif()
 
 add_subdirectory(src)
+
+if (NOT STATIC AND WITH_PLUGIN)
+  add_subdirectory(plugins)
+endif()
 
 if (COMPILE_TESTS)
   message(STATUS "COMPILE_TESTS=ON - Add target test.")

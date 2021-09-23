@@ -4,6 +4,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE DMAX_C=${MAX_C})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-reorder -Wno-char-subscripts)
 
+if (WITH_PLUGIN)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE WITH_PLUGIN)
+endif()
+
 if (WITH_HOWDE)
   target_link_libraries(${PROJECT_NAME} howdesbt roaring)
   target_compile_definitions(${PROJECT_NAME} PRIVATE WITH_HOWDE)

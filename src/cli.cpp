@@ -330,6 +330,27 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(bc::check::f::in("howdesbt|sdsl"))
     ->setter_c(format_setter);
 
+#ifdef WITH_PLUGIN
+  auto plugin_setter = [options](const std::string& v) {
+    options->plugin = v;
+    if (!v.empty())
+      options->use_plugin = true;
+  };
+
+  all_cmd->add_group("Plugin options", "See kmtricks wiki on github");
+  all_cmd->add_param("--plugin", "path to plugin (shared library)")
+    ->meta("STR")
+    ->def("")
+    ->checker(bc::check::is_file)
+    ->checker(bc::check::f::ext("so|dylib"))
+    ->setter_c(plugin_setter);
+
+  all_cmd->add_param("--plugin-config", "string passed to plugin for config, a config file for instance")
+    ->meta("STR")
+    ->def("")
+    ->setter(options->plugin_config);
+#endif
+
   add_common(all_cmd, options);
 
   return options;
