@@ -11,7 +11,7 @@ check_conda(){
 
 function kmtricks_build ()
 {
-  echo "Type=${1}, Modules=${2}, Socks=${3}, HowDe=${4}, Tests=${5}, Static=${6}, K=${7}, C=${8}, Native=${11}, Run=${10}, j=${9}"
+  echo "Type=${1}, Modules=${2}, Socks=${3}, HowDe=${4}, Tests=${5}, Static=${6}, K=${7}, C=${8}, Native=${11}, Run=${10}, Plugin=${12}, j=${9}"
 
   mkdir build
   cd build
@@ -24,8 +24,14 @@ function kmtricks_build ()
            -DSTATIC=${6} \
            -DKMER_LIST="${7}" \
            -DMAX_C=${8} \
-           -DNATIVE=${11}
-  make -j${9}
+           -DNATIVE=${11} \
+           -DWITH_PLUGIN=${12}
+
+  if [[ ${13} == 1 ]]; then
+    make plugins
+  else
+    make -j${9}
+  fi
 
   if [[ ${10} == 1 ]]; then
     ctest --verbose
@@ -62,8 +68,13 @@ function kmtricks_conda_build ()
            -DCONDA_BUILD=ON \
            -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} \
            -DCMAKE_LIBRARY_PATH=${CONDA_PREFIX} \
-           -DCMAKE_INCLUDE_PATH=${CODNA_PREFIX} \
-  make -j${9}
+           -DCMAKE_INCLUDE_PATH=${CODNA_PREFIX}
+
+  if [[ ${13} == 1 ]]; then
+    make plugins
+  else
+    make -j${9}
+  fi
 
   if [[ ${10} == 1 ]]; then
     ctest --verbose
@@ -74,7 +85,8 @@ function usage ()
 {
   echo "kmtricks build script."
   echo "Usage: "
-  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-w] [-o] [-m] [-s] [-n] [-e] [-h]"
+  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-w] [-o] [-m] [-s] [-n]
+  [-e] [-p] [-q] [-h]"
   echo "Options: "
   echo "  -r <Release|Debug> -> build type {Release}."
   echo "  -k <LIST[INT]>     -> k-mer size {\"32 64 96 128\"}."
@@ -87,6 +99,8 @@ function usage ()
   echo "  -s                 -> static build {disabled}."
   echo "  -n                 -> disable -march=native {enabled}."
   echo "  -e                 -> use conda to install compilers/dependencies {disabled}."
+  echo "  -p                 -> with plugin support {disabled}."
+  echo "  -q                 -> build plugins only {disabled}."
   echo "  -h                 -> show help."
   exit 1
 }
@@ -108,9 +122,10 @@ howde="OFF"
 modules="OFF"
 native="ON"
 conda=0
+plugin="OFF"
+plugin_only=0
 
-
-while getopts "r:k:t:c:j:onwmsh" option; do
+while getopts "r:k:t:c:j:onwmspqeh" option; do
   case "$option" in
     r)
       mode=${OPTARG}
@@ -150,6 +165,14 @@ while getopts "r:k:t:c:j:onwmsh" option; do
     e)
       conda=1
       ;;
+    p)
+      plugin="ON"
+      ;;
+    q)
+      plugin_only=1
+      tests_str="OFF"
+      tests_run=0
+      ;;
     h)
       usage
       ;;
@@ -166,7 +189,7 @@ if [[ ${conda} -eq 1 ]]; then
   conda_install_path=$(conda info | grep -i 'base environment')
   conda_install_path=$(echo ${conda_install_path} | cut -d' ' -f4)
   source ${conda_install_path}/etc/profile.d/conda.sh
-  kmtricks_conda_build ${mode} ${modules} ${socks} ${howde} ${tests_str} ${static} "${ks}" ${count} ${jopt} ${tests_run} ${native}
+  kmtricks_conda_build ${mode} ${modules} ${socks} ${howde} ${tests_str} ${static} "${ks}" ${count} ${jopt} ${tests_run} ${native} ${plugin} ${plugin_only}
 else
-  kmtricks_build ${mode} ${modules} ${socks} ${howde} ${tests_str} ${static} "${ks}" ${count} ${jopt} ${tests_run} ${native}
+  kmtricks_build ${mode} ${modules} ${socks} ${howde} ${tests_str} ${static} "${ks}" ${count} ${jopt} ${tests_run} ${native} ${plugin} ${plugin_only}
 fi
