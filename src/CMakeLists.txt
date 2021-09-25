@@ -56,7 +56,7 @@ if (WITH_SOCKS AND WITH_HOWDE)
   if (STATIC AND NOT APPLE)
     target_link_options(${PROJECT_NAME}-socks PUBLIC -static)
   endif()
-  target_link_libraries(${PROJECT_NAME}-socks LINK_LIBS howdesbt roaring)
+  target_link_libraries(${PROJECT_NAME}-socks LINK_LIBS howdesbt roaring pthread)
   target_compile_definitions(${PROJECT_NAME}-socks PRIVATE WITH_HOWDE)
 endif()
 
