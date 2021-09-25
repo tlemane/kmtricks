@@ -141,7 +141,8 @@ include_directories(${KM_INCLUDES})
 link_directories(${FMT_LIB} ${KMTRICKS_LIB} ${KFF_LIB} ${LZ4_LIB} ${GATB_LIB_DIR} ${SDSL_LIB}
                  ${CROAR_LIB} ${XXHASH_LIB} ${TURBOP_LIB})
 
-link_libraries(fmt lz4 pthread dl kff gatbcore ZLIB::ZLIB xxhash sdsl ic)
+add_library(LINK_LIBS INTERFACE)
+target_link_libraries(LINK_LIBS INTERFACE fmt lz4 pthread dl kff gatbcore ZLIB::ZLIB xxhash sdsl ic)
 
 if (WITH_HOWDE)
   add_subdirectory(km_howdesbt)
