@@ -3,6 +3,7 @@
 // DMAX_C is a compile definition set by cmake
 using count_type = typename km::selectC<DMAX_C>::type;
 
+
 class BasicEx : public km::IMergePlugin
 {
 public:
@@ -10,6 +11,7 @@ public:
 private:
   unsigned int m_threshold {0};
 
+public:
   // Override process_kmer
   // Discard lines which contain abundances less than a threshold
   bool process_kmer(const uint64_t* kmer_data, std::vector<count_type>& count_vector) override
