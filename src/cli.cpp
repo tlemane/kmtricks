@@ -337,7 +337,7 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
       options->use_plugin = true;
   };
 
-  all_cmd->add_group("Plugin options", "See kmtricks wiki on github");
+  all_cmd->add_group("plugin options", "See kmtricks wiki on github");
   all_cmd->add_param("--plugin", "path to plugin (shared library)")
     ->meta("STR")
     ->def("")
