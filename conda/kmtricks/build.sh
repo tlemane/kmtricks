@@ -38,7 +38,7 @@ cp -r ./bin/kmtricks-socks $PREFIX/bin
 
 mkdir build-conda-plugin
 cd build-conda-plugin
-cmake .. -DNATIVE=OFF -DCONDA_BUILD=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DKMER_LIST="32 64 96 128 160 192 224 256"
+cmake .. -DNATIVE=OFF -DWITH_PLUGIN=ON -DCONDA_BUILD=ON -DWITH_MODULES=ON -DKMER_LIST="32 64 96 128 160 192 224 256"
 make -j8
 cd ..
 
