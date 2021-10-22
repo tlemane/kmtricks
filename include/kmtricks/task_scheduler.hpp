@@ -54,7 +54,7 @@ public:
     if (m_opt->hist)
     {
       for (auto& h : m_hists)
-        HistWriter(KmDir::get().get_hist_path(KmDir::get().m_fof.get_id(h->idx)), *h, false);
+        HistWriter(KmDir::get().get_hist_path(KmDir::get().m_fof.get_id(h->idx())), *h, false);
     }
   }
 
@@ -202,7 +202,7 @@ public:
               sid, p, m_opt->lz4, KM_FILE::KMER);
             task = std::make_shared<CountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid, m_config._kmerSize,
-              a_min, m_opt->lz4, m_hists[iid], !m_opt->keep_tmp);
+              a_min, m_opt->lz4, m_hists[iid]->clone(), !m_opt->keep_tmp);
           }
           else if (m_opt->kff)
           {
@@ -211,7 +211,7 @@ public:
               sid, p, m_opt->lz4, KM_FILE::KFF);
             task = std::make_shared<KffCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid,
-              m_config._kmerSize, a_min, m_hists[iid], !m_opt->keep_tmp);
+              m_config._kmerSize, a_min, m_hists[iid]->clone(), !m_opt->keep_tmp);
           }
         }
         else
@@ -224,7 +224,7 @@ public:
             task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid,
               m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-              m_hists[iid], !m_opt->keep_tmp);
+              m_hists[iid]->clone(), !m_opt->keep_tmp);
           }
           else
           {
@@ -234,7 +234,7 @@ public:
             task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid,
               m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-              m_hists[iid], !m_opt->keep_tmp);
+              m_hists[iid]->clone(), !m_opt->keep_tmp);
           }
         }
         if (m_is_info) task->set_callback([this](){ this->m_dyn[1].tick(); });
@@ -243,6 +243,13 @@ public:
       }
     }
     pool.join_all();
+
+    if (m_opt->hist)
+    {
+      for (auto& h : m_hists)
+        h->merge_clones();
+    }
+
     if (m_is_info) m_dyn[1].mark_as_completed();
   }
 
@@ -283,7 +290,7 @@ public:
                 sid, p, this->m_opt->lz4, KM_FILE::KMER);
               task = std::make_shared<CountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_config._kmerSize, a_min, m_opt->lz4, this->m_hists[iid],
+                this->m_config._kmerSize, a_min, m_opt->lz4, this->m_hists[iid]->clone(),
                 !this->m_opt->keep_tmp);
             }
             else if (m_opt->kff)
@@ -293,7 +300,7 @@ public:
                 sid, p, this->m_opt->lz4, KM_FILE::KFF);
               task = std::make_shared<KffCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_config._kmerSize, a_min, this->m_hists[iid], !this->m_opt->keep_tmp);
+                this->m_config._kmerSize, a_min, this->m_hists[iid]->clone(), !this->m_opt->keep_tmp);
             }
           }
           else
@@ -306,7 +313,7 @@ public:
               task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, m_config, sk_storage, pinfos, p, iid,
                 m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-                m_hists[iid], !this->m_opt->keep_tmp);
+                m_hists[iid]->clone(), !this->m_opt->keep_tmp);
             }
             else
             {
@@ -316,7 +323,7 @@ public:
               task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
                 path, this->m_config, sk_storage, pinfos, p, iid,
                 this->m_hw.get_window_size_bits(), this->m_config._kmerSize, a_min, false,
-                this->m_hists[iid], !this->m_opt->keep_tmp);
+                this->m_hists[iid]->clone(), !this->m_opt->keep_tmp);
             }
           }
           if (m_is_info)
@@ -347,6 +354,13 @@ public:
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     pool.join_all();
+
+    if (m_opt->hist)
+    {
+      for (auto& h : m_hists)
+        h->merge_clones();
+    }
+
     if (m_is_info)
       m_dyn[0].mark_as_completed();
   }

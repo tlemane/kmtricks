@@ -90,25 +90,25 @@ public:
     : IFile<HistFileHeader, std::ostream, buf_size>(path, std::ios::out | std::ios::binary)
   {
     this->m_header.compressed = lz4;
-    this->m_header.kmer_size = hist.ksize;
-    this->m_header.id = hist.idx;
-    this->m_header.lower = hist.lower;
-    this->m_header.upper = hist.upper;
-    this->m_header.uniq = hist.uniq;
-    this->m_header.total = hist.total;
-    this->m_header.oob_ln = hist.oob_ln;
-    this->m_header.oob_lu = hist.oob_lu;
-    this->m_header.oob_un = hist.oob_un;
-    this->m_header.oob_uu = hist.oob_uu;
+    this->m_header.kmer_size = hist.m_ksize;
+    this->m_header.id = hist.m_idx;
+    this->m_header.lower = hist.m_lower;
+    this->m_header.upper = hist.m_upper;
+    this->m_header.uniq = hist.m_uniq;
+    this->m_header.total = hist.m_total;
+    this->m_header.oob_ln = hist.m_oob_ln;
+    this->m_header.oob_lu = hist.m_oob_lu;
+    this->m_header.oob_un = hist.m_oob_un;
+    this->m_header.oob_uu = hist.m_oob_uu;
 
     this->m_header.serialize(this->m_first_layer.get());
 
     this->template set_second_layer<ocstream>(this->m_header.compressed);
 
-    this->m_second_layer->write(reinterpret_cast<char*>(hist.hist_u.data()),
-                                  hist.hist_u.size() * sizeof(uint64_t));
-    this->m_second_layer->write(reinterpret_cast<char*>(hist.hist_n.data()),
-                                  hist.hist_n.size() * sizeof(uint64_t));
+    this->m_second_layer->write(reinterpret_cast<char*>(hist.m_hist_u.data()),
+                                  hist.m_hist_u.size() * sizeof(uint64_t));
+    this->m_second_layer->write(reinterpret_cast<char*>(hist.m_hist_n.data()),
+                                  hist.m_hist_n.size() * sizeof(uint64_t));
   }
 };
 
@@ -130,38 +130,41 @@ public:
   {
     hist_t histo = std::make_shared<KHist>(this->m_header.id, this->m_header.kmer_size,
                                            this->m_header.lower, this->m_header.upper);
-    histo->oob_lu = this->m_header.oob_lu;
-    histo->oob_uu = this->m_header.oob_uu;
-    histo->oob_ln = this->m_header.oob_ln;
-    histo->oob_un = this->m_header.oob_un;
+    histo->m_oob_lu = this->m_header.oob_lu;
+    histo->m_oob_uu = this->m_header.oob_uu;
+    histo->m_oob_ln = this->m_header.oob_ln;
+    histo->m_oob_un = this->m_header.oob_un;
     this->m_second_layer->read(
-      reinterpret_cast<char*>(histo->hist_u.data()), histo->hist_u.size()*sizeof(uint64_t));
+      reinterpret_cast<char*>(histo->m_hist_u.data()),
+      histo->m_hist_u.size()*sizeof(uint64_t));
     this->m_second_layer->read(
-      reinterpret_cast<char*>(histo->hist_n.data()), histo->hist_n.size()*sizeof(uint64_t));
+      reinterpret_cast<char*>(histo->m_hist_n.data()),
+      histo->m_hist_n.size()*sizeof(uint64_t));
     return histo;
   }
 
   void write_as_text(std::ostream& stream, bool n)
   {
     hist_t histo = get();
-    uint64_t current = histo->lower;
-    stream << "@LOWER=" << histo->lower << "\n";
-    stream << "@UPPER=" << histo->upper << "\n";
+    uint64_t current = histo->lower();
+    stream << "@LOWER=" << histo->lower() << "\n";
+    stream << "@UPPER=" << histo->upper() << "\n";
 
     if (n)
     {
-      stream << "@OOB_L=" << histo->oob_ln << "\n";
-      stream << "@OOB_U=" << histo->oob_un << "\n";
-      for_each(histo->hist_n.begin(), histo->hist_n.end(), [&current, &stream](uint64_t c) {
+      histo->set_type(KHistType::TOTAL);
+      stream << "@OOB_L=" << histo->oob_lower_total() << "\n";
+      stream << "@OOB_U=" << histo->oob_upper_total() << "\n";
+      for_each(histo->begin(), histo->end(), [&current, &stream](uint64_t c) {
         stream << std::to_string(current) << " " << std::to_string(c) << "\n";
         current++;
       });
     }
     else
     {
-      stream << "@OOB_L=" << histo->oob_lu << "\n";
-      stream << "@OOB_U=" << histo->oob_uu << "\n";
-      for_each(histo->hist_u.begin(), histo->hist_u.end(), [&current, &stream](uint64_t c) {
+      stream << "@OOB_L=" << histo->oob_lower_unique() << "\n";
+      stream << "@OOB_U=" << histo->oob_upper_unique() << "\n";
+      for_each(histo->begin(), histo->end(), [&current, &stream](uint64_t c) {
         stream << std::to_string(current) << " " << std::to_string(c) << "\n";
         current++;
       });

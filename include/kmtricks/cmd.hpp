@@ -178,14 +178,14 @@ struct main_count
           spdlog::debug("[push] - CountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<CountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            config._kmerSize, opt->c_ab_min, opt->lz4, hist, opt->clear));
+            config._kmerSize, opt->c_ab_min, opt->lz4, hist->clone(), opt->clear));
         }
         else if (opt->format == "kff")
         {
           spdlog::debug("[push] - KffCountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<KffCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            config._kmerSize, opt->c_ab_min, hist, opt->clear));
+            config._kmerSize, opt->c_ab_min, hist->clone(), opt->clear));
         }
       }
       else if (opt->format == "hash" || opt->format == "vector")
@@ -199,21 +199,24 @@ struct main_count
           pool.add_task(std::make_shared<HashCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
                 path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
                 hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4,
-                hist, opt->clear));
+                hist->clone(), opt->clear));
         }
         else
         {
           spdlog::debug("[push] - HashVecCountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<HashVecCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4, hist, opt->clear));
+            hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4, hist->clone(), opt->clear));
         }
       }
     }
     pool.join_all();
 
     if (opt->hist)
+    {
+      hist->merge_clones();
       HistWriter(KmDir::get().get_hist_path(opt->id), *hist, false);
+    }
   }
 };
 
