@@ -608,7 +608,8 @@ protected:
         rev |= revB[tmp & 3];
         tmp >>= 2;
       }
-      Mmer tmp_minim(value, size);
+      //Mmer tmp_minim(value, size);
+      Mmer tmp_minim(rev < value ? rev : value, size);
       if (is_valid_minimizer(tmp_minim.value(), size))
       {
         if (tmp_minim < minim)
@@ -864,8 +865,8 @@ public:
         rev |= revB[tmp & 3];
         tmp >>= 2;
       }
-      //Mmer tmp_minim(rev < value ? rev : value, size);
-      Mmer tmp_minim(value, size);
+      Mmer tmp_minim(rev < value ? rev : value, size);
+      //Mmer tmp_minim(value, size);
       if (is_valid_minimizer(tmp_minim.value(), size))
       {
         if (tmp_minim < minim)
@@ -1147,7 +1148,8 @@ public:
         rev |= revB[tmp & 3];
         tmp >>= 2;
       }
-      Mmer tmp_minim(value, size);
+      //Mmer tmp_minim(value, size);
+      Mmer tmp_minim(rev < value ? rev : value, size);
       if (is_valid_minimizer(tmp_minim.value(), size))
       {
         if (tmp_minim < minim)
