@@ -321,7 +321,7 @@ int BuildSBTCommand::execute()
 		{
 		node->reportSave   = true;
 		node->dbgTraversal = (contains(debug,"traversal"));
-		// node->dbgInhibitChildUpdate = (contains(debug,"nochildupdate"));
+		node->dbgInhibitChildUpdate = (contains(debug,"nochildupdate"));
 
 		if (node->num_children() == 1)
 			{

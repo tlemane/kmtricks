@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <set>
-
+#include "utilities.h"
 //----------
 //
 // Command class--

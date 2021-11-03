@@ -117,6 +117,7 @@ void ClusterCommand::parse
 	//////////
 	// scan arguments
 	//////////
+
 	for (int argIx=0 ; argIx<argc ; argIx++)
 		{
 		string arg = argv[argIx];
@@ -129,7 +130,6 @@ void ClusterCommand::parse
 
 		// --help, etc.
 
-	for (int argIx=0 ; argIx<argc ; argIx++)
 		if ((arg == "--help")
 		 || (arg == "-help")
 		 || (arg == "--h")
@@ -371,6 +371,18 @@ ClusterCommand::~ClusterCommand()
 
 int ClusterCommand::execute()
 	{
+	if (contains(debug,"trackmemory"))
+		{
+		trackMemory              = true;
+		FileManager::trackMemory = true;
+		BloomFilter::trackMemory = true;
+		BitVector::trackMemory   = true;
+		}
+	if (contains(debug,"bvcreation"))
+		BitVector::reportCreation = true;
+
+	if (contains(debug,"interval"))
+		cerr << "interval is " << startPosition << ".." << endPosition << endl;
 
 	// $$$ consider deterministically shuffling the leaf list, i.e. sort it
 	//     .. then shuffle with a seed-based PRNG; this would produce the same
@@ -424,6 +436,10 @@ int ClusterCommand::execute()
 
 	if (inhibitBuild)
 		{
+		cerr << treeFilename << " has been created"
+		     << ", but the internal nodes have not been built." << endl;
+		cerr << "You can use this command to build them:" << endl;
+		cerr << commandLine << endl;
 		}
 	else
 		deferredCommands.emplace_back(commandLine);

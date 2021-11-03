@@ -5,18 +5,17 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
-#include <cmath>
 
 #include "utilities.h"
 #include "query.h"
 
-using std::cerr;
-using std::cout;
-using std::endl;
-using std::pair;
-using std::set;
 using std::string;
 using std::vector;
+using std::pair;
+using std::set;
+using std::cout;
+using std::cerr;
+using std::endl;
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
@@ -26,70 +25,75 @@ using std::vector;
 //
 //----------
 
-Query::Query(const querydata &qd,
-			 double _threshold)
-	: threshold(_threshold),
-	  numPositions(0),
-	  neededToPass(0),
-	  neededToFail(0),
-	  numUnresolved(0),
-	  numPassed(0),
-	  numFailed(0),
-	  nodesExamined(0)
-{
+Query::Query
+   (const querydata& qd,
+	double _threshold)
+	  :	threshold(_threshold),
+		numPositions(0),
+		neededToPass(0),
+		neededToFail(0),
+		numUnresolved(0),
+		numPassed(0),
+		numFailed(0),
+		nodesExamined(0)
+	{
 	batchIx = qd.batchIx;
-	name = qd.name;
-	seq = qd.seq;
-}
+	name    = qd.name;
+	seq     = qd.seq;
+	}
 
-Query::Query(const querydata &qd,
-			 double _threshold,
-			 std::shared_ptr<km::Repartition> rep,
-			 std::shared_ptr<km::HashWindow> hashwin,
-			 uint32_t minimsize)
-	: threshold(_threshold),
-	  numPositions(0),
-	  neededToPass(0),
-	  neededToFail(0),
-	  numUnresolved(0),
-	  numPassed(0),
-	  numFailed(0),
-	  nodesExamined(0),
-	  _repartitor(rep),
-	  _hash_win(hashwin),
-	  _minimsize(minimsize)
-{
+Query::Query
+   (const querydata& qd,
+	double _threshold,
+    std::shared_ptr<km::Repartition> rep,
+    std::shared_ptr<km::HashWindow> hashwin,
+    uint32_t minimsize)
+	  :	threshold(_threshold),
+		numPositions(0),
+		neededToPass(0),
+		neededToFail(0),
+		numUnresolved(0),
+		numPassed(0),
+		numFailed(0),
+		nodesExamined(0),
+        m_repartitor(rep),
+        m_hash_win(hashwin),
+        m_minim_size(minimsize)
+	{
 	batchIx = qd.batchIx;
-	name = qd.name;
-	seq = qd.seq;
-}
+	name    = qd.name;
+	seq     = qd.seq;
+	}
 
 Query::~Query()
-{
-}
+	{
+	}
 
 template<size_t KSIZE>
 struct KmerHash
 {
-	void operator()(const std::string& mer, std::shared_ptr<km::HashWindow> hw, std::shared_ptr<km::Repartition> repart, uint32_t minim, uint64_t& pos)
-	{
-		km::Kmer<KSIZE> kmer(mer); km::Kmer<KSIZE> cano = kmer.canonical();
-		uint32_t part = repart->get_partition(cano.minimizer(minim).value());
-		pos = km::KmerHashers<1>::WinHasher<KSIZE>(part, hw->get_window_size_bits())(cano);
-	}
+  void operator()(const std::string& mer, std::shared_ptr<km::HashWindow> hw, std::shared_ptr<km::Repartition> repart, uint32_t  minim, uint64_t& pos)
+  {
+    km::Kmer<KSIZE> kmer(mer); km::Kmer<KSIZE> cano = kmer.canonical();
+    uint32_t part = repart->get_partition(cano.minimizer(minim).value());
+    pos = km::KmerHashers<1>::WinHasher<KSIZE>(part, hw->get_window_size_bits())(cano);
+  }
 };
 
-void Query::kmerize(BloomFilter *bf,
-					bool distinct)
-{
+void Query::kmerize
+   (BloomFilter*	bf,
+	bool			distinct,
+	bool			populateKmers)
+	{
 	bf->preload();
 	u32 kmerSize = bf->kmerSize;
 
 	if (bf->numHashes > 1)
-		fatal("internal error: " + bf->identity() + " uses more than one hash function");
+		fatal ("internal error: "
+		     + bf->identity() + " uses more than one hash function");
 
 	kmerPositions.clear();
-	kmerized2endpos.clear();
+	kmers.clear();
 
 	// if the sequence is too short, there are no kmers
 
@@ -99,68 +103,111 @@ void Query::kmerize(BloomFilter *bf,
 	// scan the sequence's kmers, convert to hash positions, and collect the
 	// distinct positions; optionally collect the corresponding kmers
 
-	set<u64> positionSet;
-	pair<set<u64>::iterator, bool> status;
+    set<u64> positionSet;
+	pair<set<u64>::iterator,bool> status;
 
 	size_t goodNtRunLen = 0;
-	u64 part = 0;
-	u64 pos = 0;
-	u64 wsize = 0;
-	u64 bval = 0;
-	for (size_t ix = 0; ix < seq.length(); ix++)
-	{
 
-		// finds the first position containing a good kmer.
-		if (not nt_is_acgt(seq[ix]))
+	for (size_t ix=0; ix<seq.length() ; ix++)
 		{
-			goodNtRunLen = 0;
-			continue;
-		}
-		if (++goodNtRunLen < kmerSize)
-			continue;
+		if (not nt_is_acgt(seq[ix])) { goodNtRunLen = 0;  continue; }
+		if (++goodNtRunLen < kmerSize) continue;
 
-		// ix ends a valid kmer/
-		string mer = seq.substr(ix + 1 - kmerSize, kmerSize);
-
-	  if (_repartitor)
-		{
-			km::const_loop_executor<0, KMER_N>::exec<KmerHash>(
-				kmerSize, mer, _hash_win, _repartitor, _minimsize, pos);
-			//km::Kmer<32> kmer(mer); km::Kmer<32> cano = kmer.canonical();
-			//std::cout << kmer.to_string() << " " << cano.to_string() << std::endl;
-			//part = _repartitor->get_partition(cano.minimizer(_minimsize).value());
-			//std::cout << std::to_string(part) << std::endl;
-			//pos = km::KmerHashers<1>::WinHasher<32>(part, _hash_win->get_window_size_bits())(cano);
-			//std::cout << std::to_string(pos) << std::endl;
-		}
-		else
-		{
-			pos = bf->mer_to_position(mer);
-		}
-
+		string mer = seq.substr(ix+1-kmerSize,kmerSize);
+        u64 pos = 0;
+        if (m_repartitor)
+        {
+          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(kmerSize, mer, m_hash_win, m_repartitor, m_minim_size, pos);
+        }
+        else
+        {
+		  pos = bf->mer_to_position(mer);
+        }
 		if (pos != BloomFilter::npos)
-		{
-			if (distinct)
 			{
+			if (distinct)
+				{
 				status = positionSet.insert(pos);
 				if (status.second == false) // pos was already in the set
 					continue;
-			}
+				}
 			kmerPositions.emplace_back(pos);
-			kmerized2endpos.emplace_back(ix);
+			if (populateKmers) kmers.emplace_back(mer);
+			}
+
+		if (dbgKmerize || dbgKmerizeAll)
+			{
+			if (pos != BloomFilter::npos)
+				cerr << mer << " -> " << pos << endl;
+			else if (dbgKmerizeAll)
+				cerr << mer << " -> (no)" << endl;
+			}
+		}
+	}
+
+void Query::sort_kmer_positions ()
+	{
+	sort (kmerPositions.begin(), kmerPositions.end());
+	}
+
+void Query::dump_kmer_positions
+   (u64 _numUnresolved)
+	{
+	// we dump the list as, e.g.
+	//   1,2,3,4 (5,6,7)
+	// where 5,6,7 is the "resolved" part of the list;  _numUnresolved=-1 can
+	// be used to just print the whole list without parenthesizing part of it
+
+	cerr << name << ".positions = ";
+	bool firstOutput = true;
+	bool parenWritten = false;
+	u64 posIx = 0;
+	for (auto& pos : kmerPositions)
+		{
+		if (posIx == _numUnresolved)
+			{ cerr << " (" << pos;  parenWritten = true;  firstOutput = false; }
+		else if (firstOutput)
+			{ cerr << pos;  firstOutput = false; }
+		else
+			cerr << "," << pos;
+		posIx++;
 		}
 
+	if (parenWritten)
+		cerr << ")";
+	else if (_numUnresolved != (u64) -1)
+		cerr << " ()";
+	cerr << endl;
 	}
-	// not needed anymore
-	seq_length = seq.length();
-	seq.clear(); 
-	seq.shrink_to_fit(); 
-}
 
+u64 Query::kmer_positions_hash
+   (u64 _numUnresolved)
+	{
+	// we compute a simple permutation-invariant hash on a prefix of the list;
+	// _numUnresolved=-1 indicates that we compute over the whole list
 
+	u64 posSum = 0;
+	u64 posXor = 0;
 
+	u64 posIx = 0;
+	for (auto& pos : kmerPositions)
+		{
+		if (posIx == _numUnresolved)
+			break;
+		posSum += pos;
+		posXor ^= pos;
+		posIx++;
+		}
 
+	posSum ^= posSum << 17;
+	posSum ^= posSum >> 47;
 
+	posXor ^= posXor >> 47;
+	posXor ^= posXor << 17;
+	posXor ^= posXor << 34;
+
+	return (posSum + posXor) & 0x1FFFFFFF;  // (returning only 29 bits)
+	}
 
 //----------
 //
@@ -197,38 +244,34 @@ void Query::kmerize(BloomFilter *bf,
 //
 //----------
 
+void Query::read_query_file
+   (std::istream&	in,
+	const string&	_filename,
+	double			threshold,
+	vector<Query*>&	queries,
+    std::string& repartFileName,
+    std::string& winFileName)
+	{
+	bool			fileTypeKnown = false;
+	bool			haveFastaHeaders = false;
+	querydata		qd;
 
-void Query::read_query_file_km(std::istream &in,
-							   const string &_filename,
-							   double threshold,
-							   vector<Query *> &queries,
-							   string &repartFileName,
-							   string &winFileName)
-{
-	bool fileTypeKnown = false;
-	bool haveFastaHeaders = false;
-	querydata qd;
-
-	//km::Repartition* repartitor = new km::Repartition(repartFileName, "");
-	std::shared_ptr<km::Repartition> repartitor = std::make_shared<km::Repartition>(repartFileName, "");
-	std::shared_ptr<km::HashWindow> hwin = std::make_shared<km::HashWindow>(winFileName);
-
-	uint32_t minimizer_size = hwin->minim_size();
-	uint64_t h0, h1;
-	uint32_t nb_parts;
 	// derive a name to use for nameless sequences
 
+    std::shared_ptr<km::Repartition> repartitor = std::make_shared<km::Repartition>(repartFileName, "");
+    std::shared_ptr<km::HashWindow> hwin = std::make_shared<km::HashWindow>(winFileName);
 	string filename(_filename);
 	if (filename.empty())
 		filename = "(stdin)";
 
 	string baseName(strip_file_path(_filename));
 
-	if ((is_suffix_of(baseName, ".fa")) || (is_suffix_of(baseName, ".fasta")))
-	{
+	if ((is_suffix_of (baseName, ".fa"))
+	 || (is_suffix_of (baseName, ".fasta")))
+		{
 		string::size_type dotIx = baseName.find_last_of(".");
-		baseName = baseName.substr(0, dotIx);
-	}
+		baseName = baseName.substr(0,dotIx);
+		}
 
 	if (baseName.empty())
 		baseName = "query";
@@ -240,75 +283,77 @@ void Query::read_query_file_km(std::istream &in,
 	string line;
 	int lineNum = 0;
 	int queryLineNum = 0;
-	while (std::getline(in, line))
-	{
+	while (std::getline (in, line))
+		{
 		lineNum++;
-		if (line.empty())
-			continue;
+		if (line.empty()) continue;
 
 		if (not fileTypeKnown)
-		{
+			{
 			haveFastaHeaders = (line[0] == '>');
 			fileTypeKnown = true;
-		}
+			}
 
 		// if this is a fasta header, add the previous sequence to the list
 		// and start a new one
 
 		if (line[0] == '>')
-		{
-			if (not haveFastaHeaders)
-				fatal("sequences precede first fasta header in \"" + filename + "\"" + " (at line " + std::to_string(lineNum) + ")");
-			if (not qd.name.empty())
 			{
+			if (not haveFastaHeaders)
+				fatal ("sequences precede first fasta header in \"" + filename + "\""
+				     + " (at line " + std::to_string(lineNum) + ")");
+			if (not qd.name.empty())
+				{
 				if (qd.seq.empty())
 					cerr << "warning: ignoring empty sequence in \"" << filename << "\""
-						 << " (at line " << std::to_string(queryLineNum) << ")" << endl;
+					     << " (at line " << std::to_string(queryLineNum) << ")" << endl;
 				else
-				{
+					{
 					qd.batchIx = queries.size();
-					queries.emplace_back(new Query(qd, threshold, repartitor, hwin, minimizer_size));
+					queries.emplace_back(new Query(qd,threshold, repartitor, hwin, hwin->minim_size()));
+					}
 				}
-			}
 
 			queryLineNum = lineNum;
 			qd.name = strip_blank_ends(line.substr(1));
 			if (qd.name.empty())
 				qd.name = baseName + std::to_string(lineNum);
 			qd.seq = "";
-		}
+			}
 
 		// if it's not a fasta header, and we're in fasta mode, add this line
 		// to the current sequence
 
 		else if (haveFastaHeaders)
-		{
+			{
 			qd.seq += line;
-		}
+			}
 
 		// otherwise we're in line-by-line mode, add this line to the list
 
 		else
-		{
+			{
 			qd.batchIx = queries.size();
 			qd.name = baseName + std::to_string(lineNum);
-			qd.seq = line;
-			queries.emplace_back(new Query(qd, threshold, repartitor, hwin, minimizer_size));
+			qd.seq  = line;
+			queries.emplace_back(new Query(qd,threshold, repartitor, hwin, hwin->minim_size()));
 			qd.name = "";
+			}
 		}
-	}
 
 	// if we were accumulating a sequence, add it to the list
 
 	if (not qd.name.empty())
-	{
+		{
 		if (qd.seq.empty())
 			cerr << "warning: ignoring empty sequence in \"" << filename << "\""
-				 << " (preceding line " << lineNum << ")" << endl;
+			     << " (preceding line " << lineNum << ")" << endl;
 		else
-		{
+			{
 			qd.batchIx = queries.size();
-			queries.emplace_back(new Query(qd, threshold, repartitor, hwin, minimizer_size));
+			queries.emplace_back(new Query(qd,threshold, repartitor, hwin, hwin->minim_size()));
+			}
 		}
+
 	}
-}
+

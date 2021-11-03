@@ -7,9 +7,7 @@
 #include <iostream>
 
 #include "bit_vector.h"
-#include "utilities.h"
 #include "commands.h"
-
 
 class BinaryTree
 	{
@@ -36,7 +34,7 @@ public:
 		if (children[0] != nullptr) delete children[0];
 		if (children[1] != nullptr) delete children[1];
 
-		if (false)
+		if (trackMemory)
 			{
 			if (bits != nullptr)
 				std::cerr << "@-" << bits << " discarding bits for node[" << nodeNum << "]" << std::endl;
@@ -53,7 +51,7 @@ public:
 		if (bCap != nullptr) delete bCap;
 		if (bDet != nullptr) delete bDet;
 
-		if (false)
+		if (trackMemory)
 			std::cerr << "@-" << this << " discarding BinaryTree node" << std::endl;
 		}
 

@@ -7,7 +7,6 @@
 
 #include "bloom_filter.h"
 #include "query.h"
-//#include "kmtricks/repartition.hpp"
 
 class FileManager;
 
@@ -41,7 +40,6 @@ class BloomTree
 	{
 public:
 	BloomTree(const std::string& name="", const std::string& bfFilename="");
-  BloomTree(const std::string& name, const std::string& bfFilename, const std::string& repartFileName, const std::string& winFileName);
 	BloomTree(BloomTree* tree);
 	virtual ~BloomTree();
 
@@ -50,7 +48,7 @@ public:
 	virtual void save(bool finished=true);
 	virtual void unloadable();
 
-	// virtual void relay_debug_settings();
+	virtual void relay_debug_settings();
 
 	virtual void add_child(BloomTree* offspring);
 	virtual void disown_children();
@@ -72,11 +70,19 @@ public:
 	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
 	virtual void batch_query (std::vector<Query*> queries,
-	                          bool completeKmerCounts=false);
+	                          bool isLeafOnly=false, bool distinctKmers=false,
+	                          bool completeKmerCounts=false,
+	                          bool adjustKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
 	                                  bool completeKmerCounts=false);
 	virtual void query_matches_leaves (Query* q);
+
+public:
+	virtual void batch_count_kmer_hits (std::vector<Query*> queries,
+	                                    bool isLeafOnly=false, bool distinctKmers=false);
+private:
+	virtual void perform_batch_count_kmer_hits (std::vector<Query*> queries);
 
 public:
 	virtual int lookup (const std::uint64_t pos) const;
@@ -124,16 +130,14 @@ public:
 	bool dbgTraversal           = false;
 	bool dbgSortKmerPositions   = false;
 	bool dbgKmerPositions       = false;
-	// bool dbgKmerPositionsByHash = false;
-	// bool dbgLookups             = false;
-	// bool dbgInhibitChildUpdate  = false;
-	// bool dbgRankSelectLookup    = false;
+	bool dbgKmerPositionsByHash = false;
+	bool dbgLookups             = false;
+	bool dbgInhibitChildUpdate  = false;
+	bool dbgAdjustPosList       = false;
+	bool dbgRankSelectLookup    = false;
 
 public:
-	std::string repartFileName;
-	std::string winFileName;
-public:
-	static BloomTree* read_topology(const std::string& filename);
+	static BloomTree* read_topology(const std::string& filename, bool onlyLeaves=false);
 	};
 
 #endif // bloom_tree_H
