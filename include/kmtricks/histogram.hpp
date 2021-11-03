@@ -208,6 +208,13 @@ private:
 
 using hist_t = std::shared_ptr<KHist>;
 
+inline hist_t get_hist_clone(hist_t hist)
+{
+  if (hist)
+    return hist->clone();
+  return nullptr;
+}
+
 inline std::vector<uint32_t> compute_merge_thresholds(std::vector<hist_t>& histograms,
                                                       double p,
                                                       const std::string& path)

@@ -49,7 +49,7 @@
 #ifdef WITH_HOWDE
 #include <cmd_cluster.h>
 #include <cmd_build_sbt.h>
-#include <cmd_query_km.h>
+#include <cmd_query.h>
 #endif
 
 namespace km {
@@ -178,14 +178,14 @@ struct main_count
           spdlog::debug("[push] - CountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<CountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            config._kmerSize, opt->c_ab_min, opt->lz4, hist->clone(), opt->clear));
+            config._kmerSize, opt->c_ab_min, opt->lz4, get_hist_clone(hist), opt->clear));
         }
         else if (opt->format == "kff")
         {
           spdlog::debug("[push] - KffCountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<KffCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            config._kmerSize, opt->c_ab_min, hist->clone(), opt->clear));
+            config._kmerSize, opt->c_ab_min, get_hist_clone(hist), opt->clear));
         }
       }
       else if (opt->format == "hash" || opt->format == "vector")
@@ -199,14 +199,14 @@ struct main_count
           pool.add_task(std::make_shared<HashCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
                 path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
                 hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4,
-                hist->clone(), opt->clear));
+                get_hist_clone(hist), opt->clear));
         }
         else
         {
           spdlog::debug("[push] - HashVecCountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<HashVecCountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4, hist->clone(), opt->clear));
+            hw.get_window_size_bits(), config._kmerSize, opt->c_ab_min, opt->lz4, get_hist_clone(hist), opt->clear));
         }
       }
     }
@@ -700,7 +700,7 @@ struct main_query
     for (size_t i=0; i<howde_query.size(); i++)
       arr[i] = strdup(howde_query.at(i).c_str());
 
-    QueryCommandKm query_cmd("queryKm");
+    QueryCommand query_cmd("queryKm");
     query_cmd.parse(howde_query.size(), arr);
     auto path = fs::current_path();
 
