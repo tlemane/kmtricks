@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <optional>
 
 // ext
 #include <kff_io.hpp>
