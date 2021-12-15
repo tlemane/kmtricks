@@ -135,23 +135,6 @@ public:
 	std::uint64_t filterInfo; // filter-dependent info for this bit vector;
 							// .. typically zero
 
-public:
-	static bool reportLoadTime;
-	static bool reportSaveTime;
-	static bool reportTotalLoadTime;
-	static bool reportTotalSaveTime;
-	static double totalLoadTime;
-	static double totalSaveTime;
-	static bool reportCreation;
-	static bool reportFileBytes;
-	static bool countFileBytes;
-	static std::uint64_t totalFileReads;
-	static std::uint64_t totalFileBytesRead;
-	static bool reportRankSelect;
-	static std::uint64_t totalRankNews;
-	static std::uint64_t totalSelectNews;
-	static std::uint64_t totalRankCalls;
-	static std::uint64_t totalSelectCalls;
 
 public:
 	static bool       valid_filename (const std::string& filename);

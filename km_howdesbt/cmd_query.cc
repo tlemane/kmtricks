@@ -89,18 +89,11 @@ void QueryCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  reportfilebytes" << endl;
-	s << "  countfilebytes" << endl;
-	s << "  reportopenclose" << endl;
-	s << "  reportrankselect" << endl;
 	s << "  btunload" << endl;
-	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  fmcontentload" << endl;
 	s << "  namemapping" << endl;
 	s << "  load" << endl;
-	s << "  reportloadtime" << endl;
-	s << "  reporttotalloadtime" << endl;
 	s << "  names" << endl;
 	s << "  input" << endl;
 	s << "  sort" << endl;
@@ -125,7 +118,7 @@ void QueryCommand::parse
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
 	sortByKmerCounts        = false;
 	checkConsistency        = false;
-	reportTime              = false;
+
 
 	// skip command name
 
@@ -237,12 +230,7 @@ void QueryCommand::parse
 
 
 		
-		// --time
-
-		if ((arg == "--time")
-		 || (arg == "--walltime"))
-			{ reportTime = true;  continue; }
-
+	
 		// --out=<filename>, etc.
 
 		if ((is_prefix_of (arg, "--out="))
@@ -319,26 +307,7 @@ QueryCommand::~QueryCommand()
 
 int QueryCommand::execute()
 	{
-	wall_time_ty startTime;
-	if (reportTime) startTime = get_wall_time();
 
-	if (contains(debug,"reportfilebytes"))
-		{
-		BloomFilter::reportFileBytes = true;
-		BitVector::reportFileBytes   = true;
-		}
-	if (contains(debug,"countfilebytes"))
-		{
-		BloomFilter::countFileBytes = true;
-		BitVector::countFileBytes   = true;
-		}
-	if (contains(debug,"reportopenclose"))
-		FileManager::reportOpenClose = true;
-	if (contains(debug,"reportrankselect"))
-		BitVector::reportRankSelect = true;
-
-	if (contains(debug,"bvcreation"))
-		BitVector::reportCreation = true;
 
 	// read the tree
 
@@ -355,17 +324,7 @@ int QueryCommand::execute()
 			root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
 		}
 
-	if (contains(debug,"reportloadtime"))
-		{
-		BloomFilter::reportLoadTime = true;
-		BitVector::reportLoadTime   = true;
-		}
 
-	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
-		{
-		BloomFilter::reportTotalLoadTime = true;
-		BitVector::reportTotalLoadTime   = true;
-		}
 
 
 
@@ -374,8 +333,7 @@ int QueryCommand::execute()
 	FileManager* manager = nullptr;
 	if (useFileManager)
 		{
-		if (contains(debug,"fmcontentload"))
-			FileManager::dbgContentLoad = true;
+
 
 		manager = new FileManager(root,/*validateConsistency*/false);
 
@@ -468,51 +426,9 @@ int QueryCommand::execute()
 	if (manager != nullptr)
 		delete manager;
 
-	if (contains(debug,"countfilebytes"))
-		{
-		u64 fileReads     = BloomFilter::totalFileReads;
-		u64 fileBytesRead = BloomFilter::totalFileBytesRead;
-		if (BloomFilter::totalFileReads == 0)
-			cerr << "BF fileBytesRead: " << fileBytesRead << "/0" << endl;
-		else
-			cerr << "BF fileBytesRead: " << fileBytesRead << "/" << fileReads
-			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
 
-		fileReads     = BitVector::totalFileReads;
-		fileBytesRead = BitVector::totalFileBytesRead;
-		if (fileReads == 0)
-			cerr << "BV fileBytesRead: " << fileBytesRead << "/0" << endl;
-		else
-			cerr << "BV fileBytesRead: " << fileBytesRead << "/" << fileReads
-			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
-		}
 
-	if (contains(debug,"reportrankselect"))
-		{
-		float rankAvg   = ((float) BitVector::totalRankCalls) / BitVector::totalRankNews;
-		float selectAvg = ((float) BitVector::totalSelectCalls) / BitVector::totalSelectNews;
 
-		cerr << "BV total rank() calls:   "
-		     << BitVector::totalRankCalls   << "/" << BitVector::totalRankNews
-		     << std::setprecision(1) << std::fixed << " (" << rankAvg << " avg)"
-		     << endl;
-		cerr << "BV total select() calls: "
-		     << BitVector::totalSelectCalls << "/" << BitVector::totalSelectNews
-		     << std::setprecision(1) << std::fixed << " (" << selectAvg << " avg)"
-		     << endl;
-		}
-
-	if (reportTime)
-		{
-		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "wallTime: " << elapsedTime << std::setprecision(6) << std::fixed << " secs" << endl;
-		}
-
-	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
-		{
-		double totalLoadTime = BloomFilter::totalLoadTime + BitVector::totalLoadTime;
-		cerr << "totalLoadTime: " << totalLoadTime << std::setprecision(6) << std::fixed << " secs" << endl;
-		}
 
 	return EXIT_SUCCESS;
 	}

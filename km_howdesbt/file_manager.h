@@ -33,8 +33,6 @@ public:
 	virtual void preload_content(const std::string& filename);
 	virtual void load_content(const std::string& filename,const std::string& whichNodeName="");
 
-public:
-	static bool dbgContentLoad;
 
 public:
 	BloomFilter* modelBf;
@@ -51,7 +49,6 @@ public:
 									// .. not
 
 public:
-	static bool reportOpenClose;
 	static std::ifstream* open_file  (const std::string& filename,
 	                                  std::ios_base::openmode mode=std::ios::in,
 	                                  bool positionAtStart=false);

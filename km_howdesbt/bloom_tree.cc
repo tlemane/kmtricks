@@ -98,8 +98,6 @@ void BloomTree::load()
 	{
 	if (bf == nullptr)
 		{
-		if (FileManager::dbgContentLoad)
-			cerr << "BloomTree::load() creating new BF for \"" << name << "\"" << endl;
 		bf = BloomFilter::bloom_filter(bfFilename);
 		}
 	if (manager != nullptr) bf->manager = manager;

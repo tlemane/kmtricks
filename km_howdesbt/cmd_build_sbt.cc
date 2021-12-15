@@ -65,12 +65,10 @@ void BuildSBTCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  reportrankselect" << endl;
 	s << "  bfsimplify" << endl;
 	s << "  btunload" << endl;
 	s << "  bfcreation" << endl;
 	s << "  bfmanager" << endl;
-	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  traversal" << endl;
@@ -278,17 +276,7 @@ void BuildSBTCommand::parse
 
 int BuildSBTCommand::execute()
 	{
-	if (contains(debug,"reportrankselect"))
-		BitVector::reportRankSelect = true;
-	if (contains(debug,"bfsimplify"))
-		BloomFilter::reportSimplify = true;
 
-	if (contains(debug,"bfcreation"))
-		BloomFilter::reportCreation = true;
-	if (contains(debug,"bfmanager"))
-		BloomFilter::reportManager = true;
-	if (contains(debug,"bvcreation"))
-		BitVector::reportCreation = true;
 
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 

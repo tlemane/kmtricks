@@ -46,22 +46,6 @@ using std::endl;
 //
 //----------
 
-bool   BloomFilter::reportSimplify      = false;
-
-bool   BloomFilter::reportLoadTime      = false;
-bool   BloomFilter::reportSaveTime      = false;
-bool   BloomFilter::reportTotalLoadTime = false;
-bool   BloomFilter::reportTotalSaveTime = false;
-double BloomFilter::totalLoadTime       = 0.0;
-double BloomFilter::totalSaveTime       = 0.0;
-
-bool   BloomFilter::reportCreation      = false;
-bool   BloomFilter::reportManager       = false;
-
-bool   BloomFilter::reportFileBytes     = false;
-bool   BloomFilter::countFileBytes      = false;
-u64    BloomFilter::totalFileReads      = 0;
-u64    BloomFilter::totalFileBytesRead  = 0;
 
 //----------
 //
@@ -193,8 +177,6 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 	if ((manager != nullptr) and (not bypassManager))
 		{
 		// $$$ this should probably honor stopOnMultipleContent
-		if (reportManager)
-			cerr << "asking manager to preload " << identity() << " " << this << endl;
 		manager->preload_content(filename);
 		// manager will set ready = true
 		}
@@ -202,21 +184,12 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 		{
 		wall_time_ty startTime;
 
-		if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
 		                                           /* positionAtStart*/ true);
 		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
 
-		if (reportLoadTime || reportTotalLoadTime)
-			{
-			double elapsedTime = elapsed_wall_time(startTime);
-			if (reportLoadTime)
-				cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
-			if (reportTotalLoadTime)
-				totalLoadTime += elapsedTime;  // $$$ danger of precision error?
-			}
 
 		vector<pair<string,BloomFilter*>> content
 		    = BloomFilter::identify_content(*in,filename);
@@ -267,8 +240,6 @@ void BloomFilter::load
 
 	if ((manager != nullptr) and (not bypassManager))
 		{
-		if (reportManager)
-			cerr << "asking manager to load " << identity() << " " << this << endl;
 		manager->load_content(filename,whichNodeName);
 		}
 	else
@@ -656,8 +627,6 @@ BitVector* BloomFilter::simplify_bit_vector
 
 	if (bv->is_all_zeros())
 		{
-		if (reportSimplify)
-			cerr << "Simplifying " << filename << "." << whichBv << " to all-zeros" << endl;
 		bvs[whichBv] = new ZerosBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
@@ -665,8 +634,6 @@ BitVector* BloomFilter::simplify_bit_vector
 
 	if (bv->is_all_ones())
 		{
-		if (reportSimplify)
-			cerr << "Simplifying " << filename << "." << whichBv << " to all-ones" << endl;
 		bvs[whichBv] = new OnesBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
@@ -1554,9 +1521,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	bffileprefix prefix;
 
-	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read ((char*) &prefix, sizeof(prefix));
-	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 
 	if (!in.good())
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1567,10 +1532,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(sizeof(prefix)) + ")"
 		     + " produced " + std::to_string(currentFilePos) + " bytes");
-	if (reportFileBytes)
-		cerr << "[BloomFilter identify_content] read " << sizeof(prefix) << " bytes " << filename << endl;
-	if (countFileBytes)
-		{ totalFileReads++;  totalFileBytesRead += sizeof(prefix); }
+	
 
 	if (prefix.magic == bffileheaderMagicUn)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1608,22 +1570,13 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
-	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
-	if (reportLoadTime || reportTotalLoadTime) elapsedTime += elapsed_wall_time(startTime);
 	prevFilePos = currentFilePos;  currentFilePos += in.gcount();
 	if (currentFilePos != prefix.headerSize)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
-	if (reportFileBytes)
-		cerr << "[BloomFilter identify_content] read " << remainingBytes << " bytes " << filename << endl;
-	if (countFileBytes)
-		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
-	if (reportLoadTime)
-		cerr << "[BloomFilter load-header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
-	if (reportTotalLoadTime)
-		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
+
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)
@@ -1797,8 +1750,6 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 		if (whichBv == 0)
 			{
-			if (reportCreation)
-				cerr << "about to construct BloomFilter for " << filename << " content " << whichBv << endl;
 			bf = bloom_filter(header->bfKind,
 			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
@@ -1819,14 +1770,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 				bf->setSize      = header->setSize;
 				}
 
-			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
 			bf->bvs[0] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 		else
 			{
-			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
 			bf->bvs[whichBv] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 

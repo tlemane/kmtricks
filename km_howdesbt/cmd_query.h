@@ -38,7 +38,6 @@ public:
 	bool sortByKmerCounts;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
-	bool reportTime;
 	bool completeKmerCounts;
 
 	std::vector<Query*> queries;

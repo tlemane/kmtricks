@@ -109,20 +109,6 @@ public:
 									// .. numBitVectors is 1
 	BitVector* bvs[maxBitVectors];
 
-public:
-	static bool reportSimplify;
-	static bool reportLoadTime;
-	static bool reportSaveTime;
-	static bool reportTotalLoadTime;
-	static bool reportTotalSaveTime;
-	static double totalLoadTime;
-	static double totalSaveTime;
-	static bool reportCreation;
-	static bool reportManager;
-	static bool reportFileBytes;
-	static bool countFileBytes;
-	static std::uint64_t totalFileReads;
-	static std::uint64_t totalFileBytesRead;
 
 public:
 	static std::string strip_filter_suffix

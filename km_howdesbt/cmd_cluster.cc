@@ -76,7 +76,6 @@ void ClusterCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  bvcreation" << endl;
 	s << "  interval" << endl;
 	s << "  offsets" << endl;
 	s << "  console" << endl;
@@ -371,8 +370,6 @@ ClusterCommand::~ClusterCommand()
 int ClusterCommand::execute()
 	{
 
-	if (contains(debug,"bvcreation"))
-		BitVector::reportCreation = true;
 
 	if (contains(debug,"interval"))
 		cerr << "interval is " << startPosition << ".." << endPosition << endl;
