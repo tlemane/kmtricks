@@ -608,7 +608,6 @@ struct main_index
 
     ClusterCommand cluster_cmd("cluster");
     cluster_cmd.parse(howde_index.size(), arr);
-    cluster_cmd.trackMemory = false;
     cluster_cmd.execute();
 
     for (size_t i=0; i<howde_index.size(); i++)

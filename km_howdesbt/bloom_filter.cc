@@ -55,7 +55,6 @@ bool   BloomFilter::reportTotalSaveTime = false;
 double BloomFilter::totalLoadTime       = 0.0;
 double BloomFilter::totalSaveTime       = 0.0;
 
-bool   BloomFilter::trackMemory         = false;
 bool   BloomFilter::reportCreation      = false;
 bool   BloomFilter::reportManager       = false;
 
@@ -92,8 +91,6 @@ BloomFilter::BloomFilter
 	//            may increase numBitVectors
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -125,8 +122,6 @@ BloomFilter::BloomFilter
 	if (_hashModulus == 0) hashModulus = _numBits;
 	                  else hashModulus = _hashModulus;
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -154,14 +149,10 @@ BloomFilter::BloomFilter
 
 	setup_hashers();
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
 	}
 
 BloomFilter::~BloomFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
 	if (hasher1 != nullptr) delete hasher1;
 	if (hasher2 != nullptr) delete hasher2;
@@ -179,7 +170,6 @@ string BloomFilter::identity() const
 
 void BloomFilter::setup_hashers()
 	{
-	// $$$ add trackMemory to hash constructor/destructor
 	if ((numHashes > 0) && (hasher1 == nullptr))
 		hasher1 = new HashCanonical(kmerSize,hashSeed1);
 	if ((numHashes > 1) && (hasher2 == nullptr))
@@ -289,7 +279,6 @@ void BloomFilter::load
 		for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
 			{
 			BitVector* bv = bvs[bvIx];
-			bv->reportLoad = reportLoad;
 			bv->load();
 			}
 		}
@@ -332,15 +321,11 @@ void BloomFilter::save()
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + filename + "\"");
 
-	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
 	// the component offsets and sizes until after we've written them
 
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
 
 	memset (header, 0, headerSize);
 	header->magic      = bffileheaderMagicUn;
@@ -401,8 +386,6 @@ void BloomFilter::save()
 
 	// clean up
 
-	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	if (header != nullptr) delete[] header;
 
@@ -835,9 +818,6 @@ void BloomFilter::squeeze_by
 			int fillValue = (compressor == bvcomp_zeros)? 0 : 1;
 			u64 resultNumBits = bitwise_count(srcBv->bits->data(),numBits);
 			sdslbitvector* resultBits = new sdslbitvector(resultNumBits,fillValue);
-			if (trackMemory)
-				cerr << "@+" << resultBits << " creating sdslbitvector for BitVector "
-				     << bvs[whichDstBv]->identity() << endl;
 
 			bvs[whichDstBv]->replace_bits(resultBits);
 			break;
@@ -1054,8 +1034,6 @@ AllSomeFilter::AllSomeFilter
 
 AllSomeFilter::~AllSomeFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor AllSomeFilter(" << identity() << ")" << endl;
 	}
 
 // add--
@@ -1138,8 +1116,6 @@ DeterminedFilter::DeterminedFilter
 
 DeterminedFilter::~DeterminedFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor DeterminedFilter(" << identity() << ")" << endl;
 	}
 
 int DeterminedFilter::lookup
@@ -1196,8 +1172,6 @@ DeterminedBriefFilter::DeterminedBriefFilter
 
 DeterminedBriefFilter::~DeterminedBriefFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor DeterminedBriefFilter(" << identity() << ")" << endl;
 	}
 
 
@@ -1632,8 +1606,6 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			 + " for file header");
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
-	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
@@ -1867,8 +1839,6 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			}
 		}
 
-	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " discarding bf file header for \"" << filename << "\"" << endl;
 
 	if (header != nullptr) delete[] header;
 

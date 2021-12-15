@@ -48,7 +48,6 @@ public:
 	virtual void save(bool finished=true);
 	virtual void unloadable();
 
-	virtual void relay_debug_settings();
 
 	virtual void add_child(BloomTree* offspring);
 	virtual void disown_children();
@@ -69,7 +68,7 @@ public:
 	virtual void construct_determined_brief_nodes (std::uint32_t compressor);
 	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
-	virtual void batch_query (std::vector<Query*> queries, bool distinctKmers=false,
+	virtual void batch_query (std::vector<Query*> queries, 
 	                          bool completeKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
@@ -100,13 +99,6 @@ public:
 										// true => tree may contain nodes that
 										//         .. share files with each other
 
-public:
-	bool reportLoad = false;
-	bool reportSave = false;
-	static bool inhibitBvSimplify;
-	static bool trackMemory;
-	static bool reportUnload;
-	static int  dbgTraversalCounter;
 
 public:
 	std::uint32_t queryStatsLen;
@@ -116,14 +108,6 @@ public:
 	std::uint32_t depth;				// object variables for use by "user"
 	std::uint32_t height;				// .. processes
 	std::uint32_t subTreeSize;
-
-public:
-	bool dbgTraversal           = false;
-	bool dbgSortKmerPositions   = false;
-	bool dbgKmerPositions       = false;
-	bool dbgKmerPositionsByHash = false;
-	bool dbgInhibitChildUpdate  = false;
-	bool dbgAdjustPosList       = false;
 
 public:
 	static BloomTree* read_topology(const std::string& filename);

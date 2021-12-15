@@ -27,7 +27,6 @@ using std::endl;
 //
 //----------
 
-bool           FileManager::trackMemory     = false;
 bool           FileManager::dbgContentLoad  = false;
 
 bool           FileManager::reportOpenClose = false;
@@ -71,9 +70,6 @@ FileManager::FileManager
 		if (filenameToNames.count(node->bfFilename) == 0)
 			{
 			filenameToNames[node->bfFilename] = new vector<string>;
-			if (trackMemory)
-				cerr << "@+" << filenameToNames[node->bfFilename]
-				     << " allocating names vector for FileManager.filenameToNames[" << node->bfFilename << "]" << endl;
 			alreadyPreloaded[node->bfFilename] = false;
 			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
@@ -92,25 +88,16 @@ FileManager::FileManager
 			}
 		}
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor FileManager" << endl;
 	}
 
 FileManager::~FileManager()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor FileManager" << endl;
 
 	if (modelBf != nullptr) delete modelBf;
 	for (auto iter : filenameToNames) 
 		{
 		vector<string>* names = iter.second;
-		if (trackMemory)
-			{
-			string bfFilename = iter.first;
-			cerr << "@-" << names
-			     << " discarding names vector for FileManager.filenameToNames[" << bfFilename << "]" << endl;
-			}
+
 		delete names;
 		}
 	}
@@ -126,7 +113,7 @@ void FileManager::preload_content
 
 	if (alreadyPreloaded[filename]) return;
 
-	// $$$ add trackMemory for in
+
 	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime) startTime = get_wall_time();
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
 	                                           /* positionAtStart*/ true);
@@ -216,7 +203,7 @@ void FileManager::preload_content
 
 	alreadyPreloaded[filename] = true;
 
-	// $$$ add trackMemory for in
+
 	FileManager::close_file(in);
 	}
 
@@ -247,7 +234,6 @@ void FileManager::load_content
 		if (dbgContentLoad)
 			cerr << "FileManager::load_content nodeName = \"" << nodeName << "\"" << endl;
 		BloomTree* node = nameToNode[nodeName];
-		node->bf->reportLoad = reportLoad;
 		node->bf->load(/*bypassManager*/ true);
 		}
 

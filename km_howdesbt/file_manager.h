@@ -34,8 +34,6 @@ public:
 	virtual void load_content(const std::string& filename,const std::string& whichNodeName="");
 
 public:
-	bool reportLoad = false;
-	static bool trackMemory;
 	static bool dbgContentLoad;
 
 public:

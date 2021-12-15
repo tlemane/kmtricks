@@ -89,7 +89,6 @@ void QueryCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  trackmemory" << endl;
 	s << "  reportfilebytes" << endl;
 	s << "  countfilebytes" << endl;
 	s << "  reportopenclose" << endl;
@@ -125,10 +124,7 @@ void QueryCommand::parse
 
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
 	sortByKmerCounts        = false;
-	distinctKmers           = false;
 	checkConsistency        = false;
-	justReportKmerCounts    = false;
-	reportNodesExamined     = false;
 	reportTime              = false;
 
 	// skip command name
@@ -229,13 +225,6 @@ void QueryCommand::parse
 			{ sortByKmerCounts = true;  continue; }
 
 
-		// --distinctkmers
-
-		if ((arg == "--distinctkmers")
-		 || (arg == "--distinct-kmers")
-		 || (arg == "--distinct"))
-			{ distinctKmers = true;  continue; }
-
 		// --consistencycheck, (unadvertised) --noconsistency
 
 		if (arg == "--consistencycheck")
@@ -245,21 +234,7 @@ void QueryCommand::parse
 		 || (arg == "--noconsistencycheck"))
 			{ checkConsistency = false;  continue; }
 
-		// --justcountkmers
 
-		if (arg == "--justcountkmers")
-			{
-			justReportKmerCounts = true;
-			continue;
-			}
-
-
-		// --stat:nodesexamined
-
-		if ((arg == "--stat:nodesexamined")
-		 || (arg == "--stats:nodesexamined")
-		 || (arg == "--nodesexamined"))
-			{ reportNodesExamined = true;  continue; }
 
 		
 		// --time
@@ -318,9 +293,6 @@ void QueryCommand::parse
 		chastise ("you have to provide a tree topology file");
 
 
-	if ((justReportKmerCounts) and (sortByKmerCounts))
-		chastise ("--sort cannot be used with --justcountkmers");
-
 
 	completeKmerCounts = sortByKmerCounts;
 
@@ -350,13 +322,6 @@ int QueryCommand::execute()
 	wall_time_ty startTime;
 	if (reportTime) startTime = get_wall_time();
 
-	if (contains(debug,"trackmemory"))
-		{
-		FileManager::trackMemory = true;
-		BloomTree::trackMemory   = true;
-		BloomFilter::trackMemory = true;
-		BitVector::trackMemory   = true;
-		}
 	if (contains(debug,"reportfilebytes"))
 		{
 		BloomFilter::reportFileBytes = true;
@@ -371,8 +336,7 @@ int QueryCommand::execute()
 		FileManager::reportOpenClose = true;
 	if (contains(debug,"reportrankselect"))
 		BitVector::reportRankSelect = true;
-	if (contains(debug,"btunload"))
-		BloomTree::reportUnload = true;
+
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 
@@ -403,13 +367,7 @@ int QueryCommand::execute()
 		BitVector::reportTotalLoadTime   = true;
 		}
 
-	if (contains(debug,"load"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->reportLoad = true;
-		}
+
 
 	// set up the file manager
 
@@ -420,8 +378,7 @@ int QueryCommand::execute()
 			FileManager::dbgContentLoad = true;
 
 		manager = new FileManager(root,/*validateConsistency*/false);
-		if (contains(debug,"load"))
-			manager->reportLoad = true;
+
 		if (contains(debug,"namemapping"))
 			{
 			for (auto iter : manager->filenameToNames)
@@ -473,88 +430,35 @@ int QueryCommand::execute()
 
 
 
-	if ((contains(debug,"traversal"))
-	 || (contains(debug,"lookups")))
+
+
+
+
+	// perform the query
+
+	root->batch_query(queries,completeKmerCounts);
+
+	// report results
+
+	if (sortByKmerCounts)
+		sort_matches_by_kmer_counts();
+
+	if (matchesFilename.empty())
 		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			{
-			node->dbgTraversal = (contains(debug,"traversal"));
-			}
-		}
-
-	if (contains(debug,"sort"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgSortKmerPositions = true;
-		}
-
-	if (contains(debug,"positions"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgKmerPositions = true;
-		}
-
-	if (contains(debug,"positionsbyhash"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgKmerPositionsByHash = true;
-		}
-
-	if (contains(debug,"adjustposlist"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgAdjustPosList = true;
-		}
-
-
-	// perform the query (or just report kmer counts)
-
-	if (justReportKmerCounts)
-		{
-		BloomFilter* bf = root->real_filter();
-		for (auto& q : queries)
-			{
-			q->kmerize(bf,distinctKmers);
-			cout << q->name << " " << q->kmerPositions.size() << endl;
-			}
-		}
-	else 
-		{
-		// perform the query
-
-		root->batch_query(queries,distinctKmers,completeKmerCounts);
-
-		// report results
-
-		if (sortByKmerCounts)
-			sort_matches_by_kmer_counts();
-
-		if (matchesFilename.empty())
-			{
-			if (completeKmerCounts)
-				print_matches_with_kmer_counts (cout);
-			else
-				print_matches (cout);
-			}
+		if (completeKmerCounts)
+			print_matches_with_kmer_counts (cout);
 		else
-			{
-			std::ofstream out(matchesFilename);
-			if (completeKmerCounts)
-				print_matches_with_kmer_counts (out);
-			else
-				print_matches (out);
-			}
+			print_matches (cout);
 		}
+	else
+		{
+		std::ofstream out(matchesFilename);
+		if (completeKmerCounts)
+			print_matches_with_kmer_counts (out);
+		else
+			print_matches (out);
+		}
+		
 
 //$$$ where do we delete the tree?  looks like a memory leak
 
@@ -696,8 +600,6 @@ void QueryCommand::print_matches
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
-		if (reportNodesExamined)
-			out << "# " << q->nodesExamined << " nodes examined" << endl;
 		for (auto& name : q->matches)
 			out << name << endl;
 		}
@@ -718,9 +620,6 @@ void QueryCommand::print_matches_with_kmer_counts
 		{
 			
 		out << "*" << q->name << " " << q->matches.size() << endl;
-		if (reportNodesExamined)
-			out << "# " << q->nodesExamined << " nodes examined" << endl;
-			
 
 		int matchIx = 0;
 		for (auto& name : q->matches)

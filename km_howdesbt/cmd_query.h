@@ -36,12 +36,8 @@ public:
 	std::string matchesFilename;
 	double generalQueryThreshold;
 	bool sortByKmerCounts;
-	bool distinctKmers;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
-	bool justReportKmerCounts;
-	bool countAllKmerHits;
-	bool reportNodesExamined;
 	bool reportTime;
 	bool completeKmerCounts;
 

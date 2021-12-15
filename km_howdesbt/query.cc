@@ -34,8 +34,7 @@ Query::Query
 		neededToFail(0),
 		numUnresolved(0),
 		numPassed(0),
-		numFailed(0),
-		nodesExamined(0)
+		numFailed(0)
 	{
 	batchIx = qd.batchIx;
 	name    = qd.name;
@@ -55,7 +54,6 @@ Query::Query
 		numUnresolved(0),
 		numPassed(0),
 		numFailed(0),
-		nodesExamined(0),
         m_repartitor(rep),
         m_hash_win(hashwin),
         m_minim_size(minimsize)

@@ -34,25 +34,13 @@ public:
 		if (children[0] != nullptr) delete children[0];
 		if (children[1] != nullptr) delete children[1];
 
-		if (trackMemory)
-			{
-			if (bits != nullptr)
-				std::cerr << "@-" << bits << " discarding bits for node[" << nodeNum << "]" << std::endl;
-			if (bCup != nullptr)
-				std::cerr << "@-" << bCup << " discarding bCup for node[" << nodeNum << "]" << std::endl;
-			if (bCap != nullptr)
-				std::cerr << "@-" << bCap << " discarding bCap for node[" << nodeNum << "]" << std::endl;
-			if (bDet != nullptr)
-				std::cerr << "@-" << bDet << " discarding bDet for node[" << nodeNum << "]" << std::endl;
-			}
+
 
 		if (bits != nullptr) delete bits;
 		if (bCup != nullptr) delete bCup;
 		if (bCap != nullptr) delete bCap;
 		if (bDet != nullptr) delete bDet;
 
-		if (trackMemory)
-			std::cerr << "@-" << this << " discarding BinaryTree node" << std::endl;
 		}
 
 	std::uint32_t nodeNum;
@@ -68,7 +56,7 @@ public:
 	std::uint64_t numDetInf;	// number of active bits in B_det
 	std::uint64_t numDetOne;	// number of bits for which B_det==1
 
-	bool trackMemory;
+
 	};
 
 
@@ -108,7 +96,7 @@ public:
 	double cullingThreshold;
 	bool renumberNodes;
 	bool inhibitBuild;
-	bool trackMemory;
+
 
 	double detRatioSum;
 	double detRatioSumofSquare;

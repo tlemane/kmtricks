@@ -69,7 +69,6 @@ bool   BitVector::reportTotalSaveTime = false;
 double BitVector::totalLoadTime       = 0.0;
 double BitVector::totalSaveTime       = 0.0;
 
-bool   BitVector::trackMemory         = false;
 bool   BitVector::reportCreation      = false;
 
 bool   BitVector::reportFileBytes     = false;
@@ -104,8 +103,7 @@ BitVector::BitVector
 		selector0(nullptr),
 		filterInfo(0)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 1" << endl;
+	;
 	}
 
 BitVector::BitVector
@@ -134,8 +132,6 @@ BitVector::BitVector
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 2" << endl;
 	}
 
 BitVector::BitVector
@@ -151,18 +147,10 @@ BitVector::BitVector
 	numBits = 0;
 	if (_numBits != 0) new_bits (_numBits);
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 3" << endl;
 	}
 
 BitVector::~BitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor BitVector(" << identity() << ")" << endl;
-
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for BitVector(" << identity() << " " << this << ")" << endl;
-
 	if (bits != nullptr) delete bits;
 	discard_rank_select();
 	}
@@ -181,8 +169,6 @@ void BitVector::load()
 
 	if (isResident) return;
 
-	if (reportLoad)
-		cerr << "loading " << identity() << endl;
 
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
@@ -222,8 +208,6 @@ void BitVector::serialized_in
 		     + "; attempt to serialized_in onto non-null bit vector");
 
 	bits = new sdslbitvector();
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	sdsl::load (*bits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
@@ -244,8 +228,6 @@ void BitVector::save()
 	{
 	wall_time_ty startTime;
 
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
 
 	if (bits == nullptr)
 		fatal ("internal error for " + identity()
@@ -296,8 +278,6 @@ size_t BitVector::serialized_out
 
 void BitVector::discard_bits()
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits != nullptr)
 		{
@@ -310,8 +290,6 @@ void BitVector::discard_bits()
 void BitVector::new_bits
    (u64 _numBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits != nullptr)
 		{
@@ -320,8 +298,6 @@ void BitVector::new_bits
 		}
 
 	bits = new sdslbitvector (_numBits, 0);
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	numBits = _numBits;
 	isResident = true;
@@ -334,12 +310,7 @@ void BitVector::replace_bits
 		fatal ("internal error for " + identity()
 		     + "; attempt to replace null bit vector");
 
-	if (trackMemory)
-		{
-		cerr << "replacing bits for BitVector(" << identity() << " " << this << ")"
-		     << " old=" << bits << " new=" << srcBits << endl;
-		cerr << "@-" << bits << " discarding bits for BitVector(" << identity() << " " << this << ")" << endl;
-		}
+
 
 	delete bits;
 	discard_rank_select();
@@ -351,8 +322,6 @@ void BitVector::replace_bits
 void BitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits != nullptr)
 		{
@@ -361,8 +330,6 @@ void BitVector::copy_from
 		}
 
 	bits = new sdslbitvector (*srcBits);
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	numBits = bits->size();
 	isResident = true;
@@ -518,8 +485,6 @@ void BitVector::squeeze_by
 	u64 commonNumBits = std::min(numBits,srcBits->size());
 	u64 expectedNumBits = bitwise_count(srcBits->data(),numBits);
 	sdslbitvector* resultBits = new sdslbitvector(expectedNumBits,0);
-	if (trackMemory)
-		cerr << "@+" << resultBits << " creating squeezeBits for BitVector(" << identity() << " " << this << ")" << endl;
 
 	u64 reportedNumBits = bitwise_squeeze
 	                        (/*src*/ bits->data(), /*spec*/ srcBits->data(), commonNumBits,
@@ -566,8 +531,6 @@ u64 BitVector::rank1
 		{
 		dbgRankSelect_CountRankNew;
 		ranker1 = new sdslrank1(bits);
-		if (trackMemory)
-			cerr << "@+" << ranker1 << " creating ranker1 for BitVector(" << identity() << " " << this << ")" << endl;
 		}
 
 	dbgRankSelect_CountRank;
@@ -593,8 +556,6 @@ u64 BitVector::select0
 		{
 		dbgRankSelect_CountSelectNew;
 		selector0 = new sdslselect0(bits);
-		if (trackMemory)
-			cerr << "@+" << selector0 << " creating selector0 for BitVector(" << identity() << " " << this << ")" << endl;
 		}
 
 	dbgRankSelect_CountSelect;
@@ -603,10 +564,6 @@ u64 BitVector::select0
 
 void BitVector::discard_rank_select ()
 	{
-	if ((trackMemory) && (ranker1 != nullptr))
-		cerr << "@-" << ranker1 << " discarding ranker1 for BitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (selector0 != nullptr))
-		cerr << "@-" << selector0 << " discarding selector0 for BitVector(" << identity() << " " << this << ")" << endl;
 
 	if (ranker1   != nullptr) { delete ranker1;    ranker1   = nullptr; }
 	if (selector0 != nullptr) { delete selector0;  selector0 = nullptr; }
@@ -666,8 +623,7 @@ RrrBitVector::RrrBitVector
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 1" << endl;
+	;
 	}
 
 RrrBitVector::RrrBitVector
@@ -703,8 +659,6 @@ RrrBitVector::RrrBitVector
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 RrrBitVector::RrrBitVector
@@ -716,17 +670,11 @@ RrrBitVector::RrrBitVector
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 3" << endl;
+		;
 	}
 
 RrrBitVector::~RrrBitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor RrrBitVector(" << identity() << ")" << endl;
-	if ((trackMemory) && (rrrBits != nullptr))
-		cerr << "@-" << rrrBits << " discarding rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
-
 	if (rrrBits != nullptr) delete rrrBits;
 	// bits will get deleted in BitVector's destructor
 	discard_rank_select();
@@ -759,16 +707,13 @@ void RrrBitVector::serialized_in
 	numBits = rrrBits->size();
 	isResident = true;
 
-	if (trackMemory)
-		cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 	}
 
 void RrrBitVector::save()
 	{
 	wall_time_ty startTime;
 
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
+
 
 	if ((rrrBits == nullptr) and (bits == nullptr))
 		fatal ("internal error for " + identity()
@@ -829,10 +774,6 @@ size_t RrrBitVector::serialized_out
 
 void RrrBitVector::discard_bits()
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (rrrBits != nullptr))
-		cerr << "@-" << rrrBits << " discarding rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	if      (bits    != nullptr) { delete bits;     bits    = nullptr; }
 	else if (rrrBits != nullptr) { delete rrrBits;  rrrBits = nullptr; }
@@ -842,8 +783,6 @@ void RrrBitVector::discard_bits()
 void RrrBitVector::new_bits
    (u64 _numBits)
 	{
-	if ((trackMemory) && (rrrBits != nullptr))
-		cerr << "@-" << rrrBits << " discarding rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (rrrBits != nullptr)
 		{
@@ -857,10 +796,6 @@ void RrrBitVector::new_bits
 void RrrBitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (rrrBits != nullptr))
-		cerr << "@-" << rrrBits << " discarding rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits != nullptr)
 		{
@@ -880,12 +815,8 @@ void RrrBitVector::copy_from
 	//numBits = rrrBits->size();
 	//isResident = true;
 	//
-	//if (trackMemory)
-	//	cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	bits = new sdslbitvector (*srcBits);
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 	numBits = bits->size();
 	isResident = true;
 	}
@@ -893,10 +824,6 @@ void RrrBitVector::copy_from
 void RrrBitVector::copy_from
    (const rrrbitvector* srcRrrBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (rrrBits != nullptr))
-		cerr << "@-" << rrrBits << " discarding rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits != nullptr)
 		{
@@ -913,8 +840,6 @@ void RrrBitVector::copy_from
 	numBits = rrrBits->size();
 	isResident = true;
 
-	if (trackMemory)
-		cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 	}
 
 void RrrBitVector::compress
@@ -930,10 +855,6 @@ void RrrBitVector::compress
 	rrrBits = new rrrbitvector (*bits);
 	numBits = rrrBits->size();
 
-	if (trackMemory)
-		cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
-	if (trackMemory)
-		cerr << "@-" << bits << " discarding bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	delete bits;  bits = nullptr;
 	discard_rank_select();
@@ -993,8 +914,6 @@ u64 RrrBitVector::rank1
 		{
 		dbgRankSelect_CountRankNew;
 		rrrRanker1 = new rrrrank1(rrrBits);
-		if (trackMemory)
-			cerr << "@+" << rrrRanker1 << " creating ranker1 for RrrBitVector(" << identity() << " " << this << ")" << endl;
 		}
 	dbgRankSelect_CountRank;
 	return rrrRanker1->rank(pos);
@@ -1014,8 +933,6 @@ u64 RrrBitVector::select0
 		{
 		dbgRankSelect_CountSelectNew;
 		rrrSelector0 = new rrrselect0(rrrBits);
-		if (trackMemory)
-			cerr << "@+" << rrrSelector0 << " creating selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
 		}
 	dbgRankSelect_CountSelect;
 	return rrrSelector0->select(rank+1);  // (rank+1 compensates for SDSL API)
@@ -1023,10 +940,6 @@ u64 RrrBitVector::select0
 
 void RrrBitVector::discard_rank_select ()
 	{
-	if ((trackMemory) && (rrrRanker1 != nullptr))
-		cerr << "@-" << rrrRanker1 << " discarding ranker1 for RrrBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (rrrSelector0 != nullptr))
-		cerr << "@-" << rrrSelector0 << " discarding selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (rrrRanker1   != nullptr) { delete rrrRanker1;    rrrRanker1   = nullptr; }
 	if (rrrSelector0 != nullptr) { delete rrrSelector0;  rrrSelector0 = nullptr; }
@@ -1084,8 +997,7 @@ RoarBitVector::RoarBitVector
 		writeAsUncompressed(false),
 		roarBits(nullptr)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 1" << endl;
+		;
 	}
 
 RoarBitVector::RoarBitVector
@@ -1119,8 +1031,6 @@ RoarBitVector::RoarBitVector
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 RoarBitVector::RoarBitVector
@@ -1130,16 +1040,11 @@ RoarBitVector::RoarBitVector
 		writeAsUncompressed(false),
 		roarBits(nullptr)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 3" << endl;
+		;
 	}
 
 RoarBitVector::~RoarBitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor RoarBitVector(" << identity() << ")" << endl;
-	if ((trackMemory) && (roarBits != nullptr))
-		cerr << "@-" << roarBits << " discarding roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (roarBits != nullptr) roaring_bitmap_free(roarBits);
 	// bits will get deleted in BitVector's destructor
@@ -1175,8 +1080,6 @@ void RoarBitVector::serialized_in
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " failed to allocate " + std::to_string(roarBytes) + " bytes"
 		     + " for \"" + filename + "\"");
-	if (trackMemory)
-		cerr << "@+" << serializedData << " allocating serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read (serializedData, roarBytes);
@@ -1196,10 +1099,6 @@ void RoarBitVector::serialized_in
 
     roarBits = roaring_bitmap_portable_deserialize(serializedData);
 
-	if (trackMemory)
-		cerr << "@+" << roarBits << " creating roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-	if (trackMemory)
-		cerr << "@-" << serializedData << " discarding serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	delete[] serializedData;
 	numBits = header.numBits;
@@ -1209,9 +1108,6 @@ void RoarBitVector::serialized_in
 void RoarBitVector::save()
 	{
 	wall_time_ty startTime;
-
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
 
 	if ((roarBits == nullptr) and (bits == nullptr))
 		fatal ("internal error for " + identity()
@@ -1276,8 +1172,6 @@ size_t RoarBitVector::serialized_out
 		fatal ("error: " + class_identity() + "::serialized_out(" + identity() + ")"
 		     + " failed to allocate " + std::to_string(totalBytes) + " bytes"
 		     + " for \"" + filename + "\"");
-	if (trackMemory)
-		cerr << "@+" << serializedData << " allocating serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	serializedData->roarBytes = roarBytes;
 	serializedData->numBits   = numBits;
@@ -1286,8 +1180,6 @@ size_t RoarBitVector::serialized_out
 	// $$$ ERROR_CHECK would like to check for errors in this
 	out.write ((char*) serializedData, totalBytes);
 
-	if (trackMemory)
-		cerr << "@-" << serializedData << " discarding serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	delete[] serializedData;
 	return totalBytes;
@@ -1295,10 +1187,6 @@ size_t RoarBitVector::serialized_out
 
 void RoarBitVector::discard_bits()
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (roarBits != nullptr))
-		cerr << "@-" << roarBits << " discarding roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if      (bits     != nullptr) { delete bits;                    bits     = nullptr; }
 	else if (roarBits != nullptr) { roaring_bitmap_free(roarBits);  roarBits = nullptr; }
@@ -1308,8 +1196,6 @@ void RoarBitVector::discard_bits()
 void RoarBitVector::new_bits
    (u64 _numBits)
 	{
-	if ((trackMemory) && (roarBits != nullptr))
-		cerr << "@-" << roarBits << " discarding roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (roarBits != nullptr)
 		{ roaring_bitmap_free(roarBits);  roarBits = nullptr; }
@@ -1320,17 +1206,11 @@ void RoarBitVector::new_bits
 void RoarBitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (roarBits != nullptr))
-		cerr << "@-" << roarBits << " discarding roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits     != nullptr) { delete bits;                    bits     = nullptr; }
 	if (roarBits != nullptr) { roaring_bitmap_free(roarBits);  roarBits = nullptr; }
 
 	bits = new sdslbitvector (*srcBits);
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 	numBits = bits->size();
 	isResident = true;
 
@@ -1343,10 +1223,6 @@ void RoarBitVector::copy_from
 void RoarBitVector::copy_from
    (const roaring_bitmap_t*	srcRoarBits)
 	{
-	if ((trackMemory) && (bits != nullptr))
-		cerr << "@-" << bits << " discarding bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-	if ((trackMemory) && (roarBits != nullptr))
-		cerr << "@-" << roarBits << " discarding roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	if (bits     != nullptr) { delete bits;  bits = nullptr; }
 	if (roarBits != nullptr) { roaring_bitmap_free(roarBits);  roarBits = nullptr; }
@@ -1369,10 +1245,6 @@ void RoarBitVector::compress
 	for (u64 pos=0 ; pos<numBits; pos++)
 		{ if ((*bits)[pos]) roaring_bitmap_add (roarBits, pos); }
 
-	if (trackMemory)
-		cerr << "@+" << roarBits << " creating roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-	if (trackMemory)
-		cerr << "@-" << bits << " discarding bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	delete bits;  bits = nullptr;
 	// note that numBits does not change
@@ -1481,22 +1353,18 @@ RawBitVector::RawBitVector
 	{
 	numBits = _numBits;
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RawBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 RawBitVector::RawBitVector
    (const u64 _numBits)
 	  :	BitVector(_numBits)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor RawBitVector(" << identity() << "), variant 2" << endl;
+		;
 	}
 
 RawBitVector::~RawBitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor RawBitVector(" << identity() << ")" << endl;
+		;
 	// bits will get deleted in BitVector's destructor
 	}
 
@@ -1510,8 +1378,6 @@ void RawBitVector::serialized_in
 	assert (numBits != 0);
 
 	bits = new sdslbitvector(numBits,0);
-	if (trackMemory)
-		cerr << "@+" << bits << " creating bits for RawBitVector(" << identity() << " " << this << ")" << endl;
 
 	u64* rawBits = bits->data();
 	u64 numBytes = (numBits+7) / 8;
@@ -1549,8 +1415,7 @@ ZerosBitVector::ZerosBitVector
 	const size_t _numBytes)
 	  :	BitVector(_filename, _offset, _numBytes)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor ZerosBitVector(" << identity() << "), variant 1" << endl;
+		;
 	}
 
 ZerosBitVector::ZerosBitVector
@@ -1564,14 +1429,10 @@ ZerosBitVector::ZerosBitVector
 
 	if (_numBits != 0) new_bits (_numBits);
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor ZerosBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 ZerosBitVector::~ZerosBitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor ZerosBitVector(" << identity() << ")" << endl;
 	if (bits != nullptr)
 		fatal ("internal error for " + identity()
 		     + "; destructor encountered non-null bit vector");
@@ -1765,22 +1626,16 @@ OnesBitVector::OnesBitVector
 	const size_t _numBytes)
 	  :	ZerosBitVector(_filename, _offset, _numBytes)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor OnesBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 OnesBitVector::OnesBitVector
    (const u64 _numBits)
 	  :	ZerosBitVector(_numBits)
 	{
-	if (trackMemory)
-		cerr << "@+" << this << " constructor OnesBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 OnesBitVector::~OnesBitVector()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor OnesBitVector(" << identity() << ")" << endl;
 	if (bits != nullptr)
 		fatal ("internal error for " + identity()
 		     + "; destructor encountered non-null bit vector");

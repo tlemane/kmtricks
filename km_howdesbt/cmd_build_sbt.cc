@@ -65,7 +65,6 @@ void BuildSBTCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  trackmemory" << endl;
 	s << "  reportrankselect" << endl;
 	s << "  bfsimplify" << endl;
 	s << "  btunload" << endl;
@@ -89,7 +88,6 @@ void BuildSBTCommand::parse
 
 	bfKind     = bfkind_simple;
 	compressor = bvcomp_uncompressed;
-	BloomTree::inhibitBvSimplify = false;
 
 	// skip command name
 
@@ -223,10 +221,7 @@ void BuildSBTCommand::parse
 			continue;
 			}
 
-		// (unadvertised) --nobvsimplify
 
-		if (arg == "--nobvsimplify")
-			{ BloomTree::inhibitBvSimplify = true;  continue; }
 
 		// (unadvertised) debug options
 
@@ -283,19 +278,11 @@ void BuildSBTCommand::parse
 
 int BuildSBTCommand::execute()
 	{
-	if (contains(debug,"trackmemory"))
-		{
-		FileManager::trackMemory = true;
-		BloomTree::trackMemory   = true;
-		BloomFilter::trackMemory = true;
-		BitVector::trackMemory   = true;
-		}
 	if (contains(debug,"reportrankselect"))
 		BitVector::reportRankSelect = true;
 	if (contains(debug,"bfsimplify"))
 		BloomFilter::reportSimplify = true;
-	if (contains(debug,"btunload"))
-		BloomTree::reportUnload = true;
+
 	if (contains(debug,"bfcreation"))
 		BloomFilter::reportCreation = true;
 	if (contains(debug,"bfmanager"))
@@ -310,18 +297,11 @@ int BuildSBTCommand::execute()
 
 	vector<BloomTree*> order;
 	root->post_order(order);
-	if (contains(debug,"load"))
-		{
-		for (const auto& node : order)
-			node->reportLoad = true;
-		}
+
 
 	bool hasOnlyChildren = false;
 	for (const auto& node : order)
 		{
-		node->reportSave   = true;
-		node->dbgTraversal = (contains(debug,"traversal"));
-		node->dbgInhibitChildUpdate = (contains(debug,"nochildupdate"));
 
 		if (node->num_children() == 1)
 			{

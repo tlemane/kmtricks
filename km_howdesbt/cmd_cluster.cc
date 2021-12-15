@@ -76,7 +76,6 @@ void ClusterCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  trackmemory" << endl;
 	s << "  bvcreation" << endl;
 	s << "  interval" << endl;
 	s << "  offsets" << endl;
@@ -371,13 +370,7 @@ ClusterCommand::~ClusterCommand()
 
 int ClusterCommand::execute()
 	{
-	if (contains(debug,"trackmemory"))
-		{
-		trackMemory              = true;
-		FileManager::trackMemory = true;
-		BloomFilter::trackMemory = true;
-		BitVector::trackMemory   = true;
-		}
+
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 
@@ -595,9 +588,6 @@ void ClusterCommand::cluster_greedily()
 		node[u] = new BinaryTree(u,bv->bits->data());
 		if (node[u] == nullptr)
 			fatal ("error: failed to create BinaryTree for node[" + std::to_string(u) + "]");
-		if (trackMemory)
-			cerr << "@+" << node[u] << " creating BinaryTree for node[" << u << "] (" << bv->filename << ")" << endl;
-		node[u]->trackMemory = trackMemory;
 
 		if (contains(debug,"bits"))
 			{ cerr << u << ": ";  dump_bits (cerr, node[u]->bits);  cerr << endl; }
@@ -665,19 +655,12 @@ void ClusterCommand::cluster_greedily()
 		if (wBits == nullptr)
 			fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 			     + " for node " + std::to_string(w) + "'s bit array");
-		if (trackMemory)
-			cerr << "@+" << wBits << " allocating bits for node[" << w << "]"
-			     << " (merges node[" << u << "] and node[" << v << "])" << endl;
 
 		bitwise_or (node[u]->bits, node[v]->bits, /*dst*/ wBits, numBits);
 
 		node[w] = new BinaryTree(w,wBits,node[u],node[v]);
 		if (node[w] == nullptr)
 			fatal ("error: failed to create BinaryTree for node[" + std::to_string(w) + "]");
-		if (trackMemory)
-			cerr << "@+" << node[w] << " creating BinaryTree for node[" << w << "]" << endl;
-		node[w]->trackMemory = trackMemory;
-
 		if (contains(debug,"bits"))
 			{ cerr << w << ": ";  dump_bits (cerr, wBits);  cerr << endl; }
 
@@ -695,8 +678,6 @@ void ClusterCommand::cluster_greedily()
 				if (node[u]->bCup == nullptr)
 					fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 					     + " for node " + std::to_string(u) + "'s bCup array");
-				if (trackMemory)
-					cerr << "@+" << node[u]->bCup << " allocating bCup for node[" << u << "]" << endl;
 				std::memcpy (/*to*/ node[u]->bCup, /*from*/ node[u]->bits, /*how much*/ numBytes);
 				}
 			else
@@ -708,8 +689,6 @@ void ClusterCommand::cluster_greedily()
 				if (node[v]->bCup == nullptr)
 					fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 					     + " for node " + std::to_string(v) + "'s bCup array");
-				if (trackMemory)
-					cerr << "@+" << node[v]->bCup << " allocating bits for node[" << v << "]" << endl;
 				std::memcpy (/*to*/ node[v]->bCup, /*from*/ node[v]->bits, /*how much*/ numBytes);
 				}
 			else
@@ -720,8 +699,6 @@ void ClusterCommand::cluster_greedily()
 			leafVectors[u]->discard_bits();
 		else if (!cullNodes)
 			{
-			if (trackMemory)
-				cerr << "@-" << node[u]->bits << " discarding bits for node[" << u << "]" << endl;
 			delete[] node[u]->bits;
 			}
 
@@ -729,8 +706,6 @@ void ClusterCommand::cluster_greedily()
 			leafVectors[v]->discard_bits();
 		else if (!cullNodes)
 			{
-			if (trackMemory)
-				cerr << "@-" << node[v]->bits << " discarding bits for node[" << v << "]" << endl;
 			delete[] node[v]->bits;
 			}
 
@@ -766,8 +741,6 @@ void ClusterCommand::cluster_greedily()
 		}
 	else
 		{
-		if (trackMemory)
-			cerr << "@-" << node[root]->bits << " discarding bits for node[" << root << "]" << endl;
 		delete[] node[root]->bits;
 		}
 
@@ -825,15 +798,11 @@ void ClusterCommand::compute_det_ratio
 	if (node->bCap == nullptr)
 		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 		     + " for node " + std::to_string(node->nodeNum) + "'s bCap array");
-	if (trackMemory)
-		cerr << "@+" << node->bCap << " allocating bCap for node[" << node->nodeNum << "]" << endl;
 
 	node->bDet = (u64*) new char[numBytes];
 	if (node->bDet == nullptr)
 		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 			 + " for node " + std::to_string(node->nodeNum) + "'s bDet array");
-	if (trackMemory)
-		cerr << "@+" << node->bDet << " allocating bDet for node[" << node->nodeNum << "]" << endl;
 
 	// if this is a leaf, just copy bCup to bCap, and 'compute' bDet from that
 	// $$$ we don't really need bDet, since it will be all ones
@@ -933,15 +902,6 @@ void ClusterCommand::compute_det_ratio
 			{
 			BinaryTree* child = node->children[childIx];
 
-			if (trackMemory)
-				{
-				if (child->bCup != nullptr)
-					cerr << "@-" << child->bCup << " discarding bCup for node[" << child->nodeNum << "]" << endl;
-				if (child->bCap != nullptr)
-					cerr << "@-" << child->bCap << " discarding bCap for node[" << child->nodeNum << "]" << endl;
-				if (child->bDet != nullptr)
-					cerr << "@-" << child->bDet << " discarding bDet for node[" << child->nodeNum << "]" << endl;
-				}
 
 			if (child->bCup != nullptr)
 				{ delete[] child->bCup;  child->bCup = nullptr; }
@@ -958,15 +918,6 @@ void ClusterCommand::compute_det_ratio
 
 	if (isRoot)
 		{
-		if (trackMemory)
-			{
-			if (node->bCup != nullptr)
-				cerr << "@-" << node->bCup << " discarding bCup for node[" << node->nodeNum << "]" << endl;
-			if (node->bCap != nullptr)
-				cerr << "@-" << node->bCap << " discarding bCap for node[" << node->nodeNum << "]" << endl;
-			if (node->bDet != nullptr)
-				cerr << "@-" << node->bDet << " discarding bDet for node[" << node->nodeNum << "]" << endl;
-			}
 
 		if (node->bCup != nullptr)
 			{ delete[] node->bCup;  node->bCup = nullptr; }

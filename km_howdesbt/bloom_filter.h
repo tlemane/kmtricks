@@ -110,8 +110,6 @@ public:
 	BitVector* bvs[maxBitVectors];
 
 public:
-	bool reportLoad = false;
-	bool reportSave = false;
 	static bool reportSimplify;
 	static bool reportLoadTime;
 	static bool reportSaveTime;
@@ -119,7 +117,6 @@ public:
 	static bool reportTotalSaveTime;
 	static double totalLoadTime;
 	static double totalSaveTime;
-	static bool trackMemory;
 	static bool reportCreation;
 	static bool reportManager;
 	static bool reportFileBytes;
@@ -151,7 +148,6 @@ public:
 public:
 	bool dbgBV               = false;	// some of these are only meaningful
 	bool dbgContains         = false;	// .. #defined in bloom_filter.cc
-	bool dbgAdjustPosList    = false;
 
 public:
 	static const std::uint64_t npos = -1;

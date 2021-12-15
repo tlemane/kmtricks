@@ -72,8 +72,6 @@ public:
 										// .. in all leaves of the subtree
 	std::uint64_t numFailed;			// number of kmers known to be absent
 										// .. in all leaves of the subtree
-	std::uint64_t nodesExamined;		// number of nodes that were "examined"
-										// by this query
 	bool adjustKmerCounts;				// true  => populate matchesAdjusted[]
 										// false => don't
     std::vector<std::string> matches;	// names of leaves that match this query
@@ -96,7 +94,6 @@ public:
     std::vector<std::uint64_t> numUnresolvedStack;
     std::vector<std::uint64_t> numPassedStack;
     std::vector<std::uint64_t> numFailedStack;
-    std::vector<std::uint64_t> dbgKmerPositionsHashStack;
 
     std::shared_ptr<km::Repartition> m_repartitor {nullptr};
     std::shared_ptr<km::HashWindow> m_hash_win {nullptr};

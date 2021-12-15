@@ -31,10 +31,6 @@ using std::endl;
 //
 //----------
 
-bool BloomTree::inhibitBvSimplify   = false;
-bool BloomTree::trackMemory         = false;
-bool BloomTree::reportUnload        = false;
-int  BloomTree::dbgTraversalCounter = -1;
 
 //----------
 //
@@ -57,13 +53,6 @@ BloomTree::BloomTree
 		nodesShareFiles(false),
 		queryStats(nullptr)
 	{
-	if (trackMemory)
-		{
-		if (bfFilename.empty())
-			cerr << "@+" << this << " constructor BloomTree(<no file>), variant 1" << endl;
-		else
-			cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
-		}
 	}
 
 BloomTree::BloomTree
@@ -85,31 +74,16 @@ BloomTree::BloomTree
 	for (const auto& child : root->children)
 		children.emplace_back (child);
 
-	if (trackMemory)
-		{
-		if (bfFilename.empty())
-			cerr << "@+" << this << " constructor BloomTree(<no file>), variant 2" << endl;
-		else
-			cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 2" << endl;
-		}
+
 	}
 
 BloomTree::~BloomTree()
 	{
-	if (trackMemory)
-		{
-		if (bfFilename.empty())
-			cerr << "@-" << this << " destructor BloomTree(<no file>)" << endl;
-		else
-			cerr << "@-" << this << " destructor BloomTree(" << bfFilename << ")" << endl;
-		}
+
 
 	if (bf != nullptr) delete bf;
 	for (const auto& subtree : children)
 		delete subtree;
-
-	if ((trackMemory) && (queryStats != nullptr))
-		cerr << "@-" << queryStats << " discarding stats for BloomTree(" << bfFilename << ")" << endl;
 
 	if (queryStats != nullptr) delete[] queryStats;
 	}
@@ -117,7 +91,6 @@ BloomTree::~BloomTree()
 void BloomTree::preload()
 	{
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
-	relay_debug_settings();
 	bf->preload();
 	}
 
@@ -129,9 +102,6 @@ void BloomTree::load()
 			cerr << "BloomTree::load() creating new BF for \"" << name << "\"" << endl;
 		bf = BloomFilter::bloom_filter(bfFilename);
 		}
-	relay_debug_settings();
-	bf->reportLoad = reportLoad;
-	bf->reportSave = reportSave;
 	if (manager != nullptr) bf->manager = manager;
 	bf->load(/*bypassManager*/false,/*whichNodeName*/name);
 	}
@@ -145,15 +115,13 @@ void BloomTree::save(bool finished)
 		BitVector* bv = bf->get_bit_vector(bvIx);
 		if (finished)
 			{
-			if (not inhibitBvSimplify)
-				bv = bf->simplify_bit_vector(bvIx);
+			bv = bf->simplify_bit_vector(bvIx);
 			bv->finished();
 			}
 		else
 			bv->unfinished();
 		}
 
-	relay_debug_settings();
 	bf->save();
 	}
 
@@ -161,8 +129,6 @@ void BloomTree::unloadable()
 	{
 	// $$$ eventually we will want a more sophisticated caching mechanism
 
-	if (reportUnload)
-		cerr << "marking " << name << " as unloadable" << endl;
 
 	if (bf != nullptr)
 		{
@@ -173,13 +139,6 @@ void BloomTree::unloadable()
 		}
 	}
 
-void BloomTree::relay_debug_settings()
-	{
-	if (bf != nullptr)
-		{
-		bf->dbgAdjustPosList    = dbgAdjustPosList;
-		}
-	}
 
 void BloomTree::add_child
    (BloomTree* offspring)
@@ -325,12 +284,6 @@ void BloomTree::construct_union_nodes (u32 compressor)
 
 	if (isLeaf)
 		{
-		if (dbgTraversal)
-			{
-			cerr << "\n=== loading leaf " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-			if (compressor != bvcomp_uncompressed)
-				cerr << "constructing compressed leaf for " << name << endl;
-			}
 
 		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->load();
@@ -345,7 +298,7 @@ void BloomTree::construct_union_nodes (u32 compressor)
 
 			BloomFilter newBf(bf,futureBfFilename);
 			newBf.new_bits(bvInput,compressor);
-			newBf.reportSave = reportSave;
+			
 			newBf.save();
 			}
 
@@ -354,13 +307,6 @@ void BloomTree::construct_union_nodes (u32 compressor)
 
 	// otherwise this is an internal node; first construct its descendants
 
-	if (dbgTraversal)
-		{
-		if (is_dummy())
-			cerr << "\n=== constructing children of (dummy node) ===" << endl;
-		else
-			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-		}
 
 	for (const auto& child : children)
 			child->construct_union_nodes(compressor);
@@ -386,17 +332,12 @@ void BloomTree::construct_union_nodes (u32 compressor)
 	// create this filter from the union of the child filters, then mark the
 	// children as unloadable
 
-	if (dbgTraversal)
-		cerr << "\n=== constructing " << name << " ===" << endl;
-
 	if (bf != nullptr)
 		fatal ("internal error: unexpected non-null filter for " + bfFilename);
 
 	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
-		if (dbgTraversal)
-			cerr << "loading " << child->name << endl;
 		child->load();  // nota bene: child should have already been loaded
 
 		if (child->bf == nullptr)
@@ -407,8 +348,6 @@ void BloomTree::construct_union_nodes (u32 compressor)
 		if (childBv->compressor() != bvcomp_uncompressed)
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
-		if (dbgTraversal)
-			cerr << "incorporating " << child->name << " into parent" << endl;
 
 		if (isFirstChild) // incorporate first child's filters
 			{
@@ -440,7 +379,6 @@ void BloomTree::construct_union_nodes (u32 compressor)
 
 	if (compressor == bvcomp_uncompressed)
 		{
-		bf->reportSave = reportSave;
 		save(/*finished*/ true);
 		}
 	else
@@ -448,7 +386,6 @@ void BloomTree::construct_union_nodes (u32 compressor)
 		BitVector* bvInput = bf->get_bit_vector(0);
 		BloomFilter newBf(bf,futureBfFilename);
 		newBf.new_bits(bvInput,compressor);
-		newBf.reportSave = reportSave;
 		newBf.save();
 		}
 
@@ -487,8 +424,6 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 
 	if (isLeaf)
 		{
-		if (dbgTraversal)
-			cerr << "\n=== constructing leaf (for allsome) " << name << " ===" << endl;
 
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
@@ -519,7 +454,6 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		//     .. need it to compute its parent, at which time we'll change it
 
 		bfFilename = newBfFilename;
-		bf->reportSave = reportSave;
 		save(finished);
 		unloadable();
 		return;
@@ -527,13 +461,6 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 
 	// otherwise this is an internal node; first construct its descendants
 
-	if (dbgTraversal)
-		{
-		if (is_dummy())
-			cerr << "\n=== constructing children of (dummy node) ===" << endl;
-		else
-			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-		}
 
 	for (const auto& child : children)
 		child->construct_allsome_nodes(compressor);
@@ -551,17 +478,12 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 
 	// create this filter from its child filters
 
-	if (dbgTraversal)
-		cerr << "\n=== constructing " << name << " ===" << endl;
-
 	if (bf != nullptr)
 		fatal ("internal error: unexpected non-null filter for " + bfFilename);
 
 	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
-		if (dbgTraversal)
-			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -577,8 +499,6 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		 && (childBvSome->compressor() != bvcomp_ones))
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
-		if (dbgTraversal)
-			cerr << "incorporating " << child->name << " into parent" << endl;
 
 		if (isFirstChild) // incorporate first child's filters
 			{
@@ -616,22 +536,17 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 	//   bvs[0] = Bsome(c) = B'some(c), no modification needed
 	//   bvs[1] = Ball(c)  = B'all(c) \ B'all(x)
 
-	if (not dbgInhibitChildUpdate)
+	BitVector* bvAll = bf->get_bit_vector(0);
+	for (const auto& child : children)
 		{
-		BitVector* bvAll = bf->get_bit_vector(0);
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update" << endl;
-			child->load();
+		child->load();
 
-			child->bf->mask_with(bvAll,0);
+		child->bf->mask_with(bvAll,0);
 
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
+		child->save(/*finished*/ true);
+		child->unloadable();
 		}
+
 
 	// if this node has no parent, we need to finish it now
 
@@ -644,7 +559,6 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 	//     .. need it to compute its parent, at which time we'll change it
 
 	bfFilename = newBfFilename;
-	bf->reportSave = reportSave;
 	save(finished);
 	unloadable();
 	}
@@ -673,8 +587,6 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 
 	if (isLeaf)
 		{
-		if (dbgTraversal)
-			cerr << "\n=== constructing leaf (for determined) " << name << " ===" << endl;
 
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
@@ -711,21 +623,12 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		//     .. need it to compute its parent, at which time we'll change it
 
 		bfFilename = newBfFilename;
-		bf->reportSave = reportSave;
 		save(finished);
 		unloadable();
 		return;
 		}
 
 	// otherwise this is an internal node; first construct its descendants
-
-	if (dbgTraversal)
-		{
-		if (is_dummy())
-			cerr << "\n=== constructing children of (dummy node) ===" << endl;
-		else
-			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-		}
 
 	for (const auto& child : children)
 		child->construct_determined_nodes(compressor);
@@ -748,8 +651,6 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	//                    = intersection, over children c, of Bhow(c)
 	//            z       = intersection, over children c, of (Bdet(c) intersect complement of Bhow(c))
 
-	if (dbgTraversal)
-		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	if (bf != nullptr)
 		fatal ("internal error: unexpected non-null filter for " + bfFilename);
@@ -757,8 +658,6 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
-		if (dbgTraversal)
-			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -770,8 +669,6 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
-		if (dbgTraversal)
-			cerr << "incorporating " << child->name << " into parent" << endl;
 
 		if (isFirstChild) // incorporate first child's filters
 			{
@@ -814,24 +711,20 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	//                                               = Bhow(c) intersect Bdet(c) intersect Idet(c)
 	//                                               = Bhow(c) intersect bvs[0]
 
-	if (not dbgInhibitChildUpdate)
+	
+	BitVector* bvDet = bf->get_bit_vector(0);
+	for (const auto& child : children)
 		{
-		BitVector* bvDet = bf->get_bit_vector(0);
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update" << endl;
-			child->load();
+		child->load();
 
-			child->bf->intersect_with_complement(bvDet,0);
-			BitVector* bvs0 = child->bf->get_bit_vector(0);
-			child->bf->intersect_with(bvs0,1);
+		child->bf->intersect_with_complement(bvDet,0);
+		BitVector* bvs0 = child->bf->get_bit_vector(0);
+		child->bf->intersect_with(bvs0,1);
 
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
+		child->save(/*finished*/ true);
+		child->unloadable();
 		}
+		
 
 	// if this node has no parent, we need to finish it now
 	//   Idet(x) = active bits of Bdet(x)            = all 1s
@@ -855,7 +748,6 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	//     .. need it to compute its parent, at which time we'll change it
 
 	bfFilename = newBfFilename;
-	bf->reportSave = reportSave;
 	save(finished);
 	unloadable();
 	}
@@ -884,8 +776,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 
 	if (isLeaf)
 		{
-		if (dbgTraversal)
-			cerr << "\n=== constructing leaf (for determined,brief) " << name << " ===" << endl;
 
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
@@ -926,7 +816,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		//     .. need it to compute its parent, at which time we'll change it
 
 		bfFilename = newBfFilename;
-		bf->reportSave = reportSave;
 		save(finished);
 		unloadable();
 		return;
@@ -934,13 +823,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 
 	// otherwise this is an internal node; first construct its descendants
 
-	if (dbgTraversal)
-		{
-		if (is_dummy())
-			cerr << "\n=== constructing children of (dummy node) ===" << endl;
-		else
-			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-		}
 
 	for (const auto& child : children)
 		child->construct_determined_brief_nodes(compressor);
@@ -963,8 +845,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	//                    = intersection, over children c, of Bhow(c)
 	//            z       = intersection, over children c, of (Bdet(c) intersect complement of Bhow(c))
 
-	if (dbgTraversal)
-		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	if (bf != nullptr)
 		fatal ("internal error: unexpected non-null filter for " + bfFilename);
@@ -972,8 +852,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
-		if (dbgTraversal)
-			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -985,8 +863,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
-		if (dbgTraversal)
-			cerr << "incorporating " << child->name << " into parent" << endl;
 
 		if (isFirstChild) // incorporate first child's filters
 			{
@@ -1028,45 +904,32 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	//   bvs[0]  = Bdet(c) with inactive bits removed = Bdet(c) squeeze Idet(c)
 	//   bvs[1]  = Bhow(c) with inactive bits removed = Bhow(c) squeeze Ihow(c)
 
-	if (not dbgInhibitChildUpdate)
+	sdslbitvector* bDetX = bf->get_bit_vector(0)->bits;
+	sdslbitvector* iDetC = new sdslbitvector(*bDetX);
+	bitwise_complement (/*dst*/ iDetC->data(), bf->numBits);
+
+	for (const auto& child : children)
 		{
-		sdslbitvector* bDetX = bf->get_bit_vector(0)->bits;
-		sdslbitvector* iDetC = new sdslbitvector(*bDetX);
-		if (trackMemory)
-			cerr << "@+" << iDetC << " creating iDetC sdslbitvector for parent " << bfFilename << endl;
-		bitwise_complement (/*dst*/ iDetC->data(), bf->numBits);
+		child->load();
 
-		for (const auto& child : children)
-			{
-			if (dbgTraversal)
-				cerr << "loading " << child->name << " for update and squeeze" << endl;
-			child->load();
+		sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;
+		sdslbitvector* iHowC = new sdslbitvector(*bHowC);
+		bitwise_and (/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
 
-			sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;
-			sdslbitvector* iHowC = new sdslbitvector(*bHowC);
-			if (trackMemory)
-				cerr << "@+" << iHowC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
-			bitwise_and (/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
+		child->bf->squeeze_by(iDetC,0);
+		child->bf->squeeze_by(iHowC,1);
 
-			child->bf->squeeze_by(iDetC,0);
-			child->bf->squeeze_by(iHowC,1);
+		delete iHowC;
 
-			if (trackMemory)
-				cerr << "@-" << iHowC << " discarding iHowC sdslbitvector for child " << child->bfFilename << endl;
-			delete iHowC;
+		child->bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
+		child->bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
 
-			child->bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
-			child->bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
-
-			child->bf->reportSave = reportSave;
-			child->save(/*finished*/ true);
-			child->unloadable();
-			}
-
-		if (trackMemory)
-			cerr << "@-" << iDetC << " discarding iDetC sdslbitvector for parent " << bfFilename << endl;
-		delete iDetC;
+		child->save(/*finished*/ true);
+		child->unloadable();
 		}
+
+		delete iDetC;
+		
 
 	// if this node has no parent, we need to finish it now
 	//   Idet(x) = active bits of Bdet(x)             = all 1s
@@ -1093,7 +956,6 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	//     .. need it to compute its parent, at which time we'll change it
 
 	bfFilename = newBfFilename;
-	bf->reportSave = reportSave;
 	save(finished);
 	unloadable();
 	}
@@ -1126,8 +988,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 	if (isLeaf)
 		{
-		if (dbgTraversal)
-			cerr << "pre-loading " << name << endl;
 		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->preload();
 		return;
@@ -1137,13 +997,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 	// note that we ignore leaf children at this point, to reduce our worst
 	// case memory footprint
 
-	if (dbgTraversal)
-		{
-		if (is_dummy())
-			cerr << "\n=== constructing children of (dummy node) ===" << endl;
-		else
-			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
-		}
 
 	for (const auto& child : children)
 		{
@@ -1165,8 +1018,7 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 	// create the filter from the intersection of the child filters, then mark
 	// the children as unloadable
 
-	if (dbgTraversal)
-		cerr << "\n=== constructing " << name << " ===" << endl;
+
 
 	if (bf != nullptr)
 		fatal ("internal error: unexpected non-null filter for " + bfFilename);
@@ -1176,14 +1028,10 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 		{
 		if (child->isLeaf)
 			{
-			if (dbgTraversal)
-				cerr << "pre-loading " << child->name << endl;
 			child->bf = BloomFilter::bloom_filter(child->bfFilename);
 			child->bf->preload();
 			}
 
-		if (dbgTraversal)
-			cerr << "loading " << child->name << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -1193,9 +1041,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 			fatal ("internal error: failed to load bit vector for " + child->bfFilename);
 		if (childBv->compressor() != bvcomp_uncompressed)
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
-
-		if (dbgTraversal)
-			cerr << "incorporating " << child->name << endl;
 
 		if (isFirstChild) // copy first child's filter
 			{
@@ -1217,7 +1062,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 		       " in construct_intersection_nodes(\"" + name + "\")"
 		     + ", non-leaf node has no children");
 
-	bf->reportSave = reportSave;
 	save();
 	}
 
@@ -1227,7 +1071,6 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	bool			distinctKmers,
 	bool			completeKmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
@@ -1243,9 +1086,7 @@ void BloomTree::batch_query
 
 	for (auto& q : queries)
 		{
-		q->kmerize(bf,distinctKmers);
-		if (dbgSortKmerPositions) q->sort_kmer_positions();
-		if (dbgKmerPositions)     q->dump_kmer_positions();
+		q->kmerize(bf);
 		}
 
 	// make a local copy of the query list (consisting of the same instances)
@@ -1269,7 +1110,6 @@ void BloomTree::batch_query
 		q->numUnresolved = numPositions;
 		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
-		q->nodesExamined = 0;
 
 		localQueries.emplace_back(q);
 
@@ -1277,8 +1117,6 @@ void BloomTree::batch_query
 
 	// perform the query
 
-	if (dbgTraversal)
-		dbgTraversalCounter = 0;
 
 	u64 activeQueries = localQueries.size();
 	if (activeQueries > 0)
@@ -1297,8 +1135,6 @@ void BloomTree::perform_batch_query
 
 	if (isDummy)
 		{
-		if (dbgTraversal)
-			cerr << "(skipping through dummy node)" << endl;
 
 		for (const auto& child : children)
 			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
@@ -1316,8 +1152,6 @@ void BloomTree::perform_batch_query
 			}
 		}
 
-	if (dbgTraversal)
-		cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
 
 	// save query state
 
@@ -1328,11 +1162,6 @@ void BloomTree::perform_batch_query
 		q->numPassedStack.emplace_back(q->numPassed);
 		q->numFailedStack.emplace_back(q->numFailed);
 
-		if (dbgKmerPositionsByHash)
-			{
-			u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-			q->dbgKmerPositionsHashStack.emplace_back(kmerPositionsHash);
-			}
 		}
 
 	// make sure this node's filter is resident
@@ -1347,7 +1176,6 @@ void BloomTree::perform_batch_query
 	while (qIx < activeQueries)
 		{ // note that activeQueries may change during this loop
 		Query* q = queries[qIx];
-		q->nodesExamined++;
 		bool queryPasses = false;
 		bool queryFails  = false;
 
@@ -1406,21 +1234,6 @@ void BloomTree::perform_batch_query
 		q->numUnresolved = positionsToTest;
 
 
-		if (dbgKmerPositions || dbgKmerPositionsByHash)
-			{
-			cerr << "positions after examining " << name;
-			if (!dbgKmerPositions)
-				cerr << " for " << q->name;
-			if (dbgKmerPositionsByHash)
-				{
-				u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-				cerr << " (H.before=" << q->dbgKmerPositionsHashStack.back()
-				     <<  " H.after="  << kmerPositionsHash << ")";
-				}
-			cerr << ":" << endl;
-			if (dbgKmerPositions)
-				q->dump_kmer_positions(q->numUnresolved);
-			}
 
 		// if the query passes, add it to the list of matches for all leaves in
 		// this subtree (nb: this 'subtree' may just be a leaf); note that if
@@ -1508,11 +1321,6 @@ void BloomTree::perform_batch_query
 			Query* q = queries[qIx];
 			bf->adjust_positions_in_list(q->kmerPositions,q->numUnresolved);
 
-			if (dbgKmerPositions)
-				{
-				cerr << "positions after r/s adjusting " << name << ":";
-				q->dump_kmer_positions(q->numUnresolved);
-				}
 			}
 		}
 
@@ -1533,11 +1341,6 @@ void BloomTree::perform_batch_query
 			Query* q = queries[qIx];
 			bf->restore_positions_in_list(q->kmerPositions,q->numUnresolved);
 
-			if (dbgKmerPositions)
-				{
-				cerr << "positions after r/s restoring " << name << ":";
-				q->dump_kmer_positions(q->numUnresolved);
-				}
 			}
 		}
 
@@ -1560,29 +1363,7 @@ void BloomTree::perform_batch_query
 		q->numFailed = q->numFailedStack.back();
 		q->numFailedStack.pop_back();
 
-		u64 dbgKmerPositionsHash = 0;
-		if (dbgKmerPositionsByHash)
-			{
-			dbgKmerPositionsHash = q->dbgKmerPositionsHashStack.back();
-			q->dbgKmerPositionsHashStack.pop_back();
-			}
 
-		if (dbgKmerPositions || dbgKmerPositionsByHash)
-			{
-			cerr << "positions restored to pre-" << name << " state";
-			if (!dbgKmerPositions)
-				cerr << " for " << q->name;
-			if (dbgKmerPositionsByHash)
-				{
-				u64 kmerPositionsHash = q->kmer_positions_hash(q->numUnresolved);
-				cerr << " (H=" << kmerPositionsHash << ")";
-				if (kmerPositionsHash != dbgKmerPositionsHash)
-					cerr << " BAD (expected " << dbgKmerPositionsHash << ")";
-				}
-			cerr << ":" << endl;
-			if (dbgKmerPositions)
-				q->dump_kmer_positions(q->numUnresolved);
-			}
 		}
 
 	}
@@ -1629,8 +1410,6 @@ void BloomTree::enable_query_stats
 	if (queryStats == nullptr)
 		fatal ("error: failed to allocate " + std::to_string(batchSize)
 		     + "-entry stats array for BloomTree(" + bfFilename + ")");
-	if (trackMemory)
-		cerr << "@+" << queryStats << " allocating stats for BloomTree(" << bfFilename << ")" << endl;
 	queryStatsLen = batchSize;
 
 	for (u32 ix=0 ; ix<queryStatsLen ; ix++)
