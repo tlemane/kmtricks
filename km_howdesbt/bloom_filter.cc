@@ -1201,6 +1201,22 @@ DeterminedBriefFilter::~DeterminedBriefFilter()
 	}
 
 
+int DeterminedBriefFilter::lookup
+   (const u64 pos) const
+	{
+	// we assume, without checking, that 0 <= pos < numBits
+
+	BitVector* bvDet = bvs[0];
+
+	if ((*bvDet)[pos] == 0) return unresolved;
+
+	BitVector* bvHow = bvs[1];
+	u64 howPos = bvDet->rank1(pos);
+
+	if ((*bvHow)[howPos] == 1) return present;
+	else                       return absent;
+	}
+
 void DeterminedBriefFilter::adjust_positions_in_list
    (vector<u64> &kmerPositions,
 	u64 numUnresolved)
