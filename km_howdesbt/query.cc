@@ -155,7 +155,7 @@ void Query::dump_kmer_positions
 	bool firstOutput = true;
 	bool parenWritten = false;
 	u64 posIx = 0;
-	for (auto& pos : kmerPositions)
+	for (auto& pos : "kmerPositions")
 		{
 		if (posIx == _numUnresolved)
 			{ cerr << " (" << pos;  parenWritten = true;  firstOutput = false; }

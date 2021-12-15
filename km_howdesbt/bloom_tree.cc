@@ -178,7 +178,6 @@ void BloomTree::relay_debug_settings()
 	if (bf != nullptr)
 		{
 		bf->dbgAdjustPosList    = dbgAdjustPosList;
-		bf->dbgRankSelectLookup = dbgRankSelectLookup;
 		}
 	}
 
@@ -1274,12 +1273,6 @@ void BloomTree::batch_query
 
 		localQueries.emplace_back(q);
 
-		if (dbgLookups)
-			{
-			cerr << q->name << ".numPositions = " << numPositions << endl;
-			cerr << q->name << ".neededToPass = " << q->neededToPass << endl;
-			cerr << q->name << ".neededToFail = " << q->neededToFail << endl;
-			}
 		}
 
 	// perform the query
@@ -1358,16 +1351,6 @@ void BloomTree::perform_batch_query
 		bool queryPasses = false;
 		bool queryFails  = false;
 
-		if (dbgLookups)
-			{
-			cerr << endl;
-			cerr << "  " << q->name << "(" << bfFilename << ")" << endl;
-			if (q->numUnresolved + q->numPassed + q->numFailed == q->numPositions)
-				cerr << "  U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << endl;
-			else
-				cerr << "  warning: we've lost some positions"
-				     << "; U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << " != " << q->numPositions << endl;
-			}
 
 		u64 positionsToTest = q->numUnresolved;
 		u64 posIx = 0;
@@ -1385,9 +1368,6 @@ void BloomTree::perform_batch_query
 
 			if (resolution == BloomFilter::absent)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " fail=" << (q->numFailed+1) << endl;
 				if (++q->numFailed >= q->neededToFail)
 					{ queryFails = true;  break; }
 				}
@@ -1396,18 +1376,12 @@ void BloomTree::perform_batch_query
 				// if we're NOT computing complete kmer counts, we can check
 				// whether we've observed enough hits to pass this node early
 
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " pass=" << (q->numPassed+1) << endl;
 				q->numPassed++;
 				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
 				}
 			else // if (resolution == BloomFilter::unresolved)
 				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " unres" << endl;
 				posIsResolved = false;
 				}
 
@@ -1431,16 +1405,6 @@ void BloomTree::perform_batch_query
 
 		q->numUnresolved = positionsToTest;
 
-		if (dbgLookups)
-			{
-			if (queryPasses)
-				cerr << "  " << q->name << " passes " << bfFilename << endl;
-			else if (queryFails)
-				cerr << "  " << q->name << " fails " << bfFilename << endl;
-			else
-				cerr << "  " << q->name << " vs " << bfFilename
-				     << " U+P+F = " << q->numUnresolved << "+" << q->numPassed << "+" << q->numFailed << endl;
-			}
 
 		if (dbgKmerPositions || dbgKmerPositionsByHash)
 			{

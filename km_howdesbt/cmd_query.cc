@@ -112,7 +112,6 @@ void QueryCommand::debug_help
 	s << "  positions" << endl;
 	s << "  positionsbyhash" << endl;
 	s << "  adjustposlist" << endl;
-	s << "  rankselectlookup" << endl;
 	}
 
 void QueryCommand::parse
@@ -482,7 +481,6 @@ int QueryCommand::execute()
 		for (const auto& node : order)
 			{
 			node->dbgTraversal = (contains(debug,"traversal"));
-			node->dbgLookups   = (contains(debug,"lookups"));
 			}
 		}
 
@@ -518,13 +516,6 @@ int QueryCommand::execute()
 			node->dbgAdjustPosList = true;
 		}
 
-	if (contains(debug,"rankselectlookup"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgRankSelectLookup = true;
-		}
 
 	// perform the query (or just report kmer counts)
 

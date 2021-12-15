@@ -122,10 +122,8 @@ public:
 	bool dbgSortKmerPositions   = false;
 	bool dbgKmerPositions       = false;
 	bool dbgKmerPositionsByHash = false;
-	bool dbgLookups             = false;
 	bool dbgInhibitChildUpdate  = false;
 	bool dbgAdjustPosList       = false;
-	bool dbgRankSelectLookup    = false;
 
 public:
 	static BloomTree* read_topology(const std::string& filename);

@@ -150,10 +150,8 @@ public:
 
 public:
 	bool dbgBV               = false;	// some of these are only meaningful
-	bool dbgAdd              = false;	// .. if bloom_filter_supportDebug is
 	bool dbgContains         = false;	// .. #defined in bloom_filter.cc
 	bool dbgAdjustPosList    = false;
-	bool dbgRankSelectLookup = false;
 
 public:
 	static const std::uint64_t npos = -1;

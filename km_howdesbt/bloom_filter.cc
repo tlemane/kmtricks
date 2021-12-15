@@ -40,90 +40,6 @@ using std::endl;
 //
 //----------
 
-//#define bloom_filter_supportDebug	// if this is #defined, extra code is added
-									// .. to allow debugging prints to be
-									// .. turned on and off;
-
-#ifndef bloom_filter_supportDebug
-#define dbgAdd_dump_pos_with_mer        ;
-#define dbgAdd_dump_h_pos_with_mer      ;
-#define dbgAdd_dump_pos                 ;
-#define dbgAdd_dump_h_pos               ;
-#define dbgContains_dump_pos_with_mer   ;
-#define dbgContains_dump_h_pos_with_mer ;
-#define dbgContains_dump_pos            ;
-#define dbgContains_dump_h_pos          ;
-#define dbgLookup_determined_brief1     ;
-#define dbgLookup_determined_brief2     ;
-#define dbgAdjust_pos_list1             ;
-#define dbgAdjust_pos_list2             ;
-#define dbgRestore_pos_list1            ;
-#define dbgRestore_pos_list2            ;
-#endif // not bloom_filter_supportDebug
-
-#ifdef bloom_filter_supportDebug
-
-#define dbgAdd_dump_pos_with_mer                                             \
-	if (dbgAdd) cerr << mer << " write " << pos << endl;
-
-#define dbgAdd_dump_h_pos_with_mer                                           \
-	if (dbgAdd) cerr << mer << " write" << h << " " << pos << endl;
-
-#define dbgAdd_dump_pos                                                      \
-	if (dbgAdd) cerr << "write " << pos << endl;
-
-#define dbgAdd_dump_h_pos                                                    \
-	if (dbgAdd) cerr << "write" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos_with_mer                                        \
-	if (dbgContains) cerr << mer << " read " << pos << endl;
-
-#define dbgContains_dump_h_pos_with_mer                                      \
-	if (dbgContains) cerr << mer << " read" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos                                                 \
-	if (dbgContains) cerr << "read " << pos << endl;
-
-#define dbgContains_dump_h_pos                                               \
-	if (dbgContains) cerr << "read" << h << " " << pos << endl;
-
-#define dbgLookup_determined_brief1                                          \
-	{                                                                        \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "    DeterminedBriefFilter::lookup(" << pos << ")" << endl;  \
-	if (dbgRankSelectLookup)                                                 \
-		{                                                                    \
-		if ((*bvDet)[pos] == 0)                                              \
-			cerr << "      bvDet[" << pos << "] == 0 --> unresolved" << endl;\
-		else                                                                 \
-			cerr << "      bvDet[" << pos << "] == 1" << endl;               \
-		}                                                                    \
-	}
-
-#define dbgLookup_determined_brief2                                          \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "      bvHow[" << howPos << "] == " << (*bvHow)[howPos]      \
-			<< " --> " << (((*bvHow)[howPos]==1)?"present":"absent")        \
-			<< endl;
-
-#define dbgAdjust_pos_list1                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  adjust_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgAdjust_pos_list2                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << (pos-rank) << endl;
-
-#define dbgRestore_pos_list1                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  restore_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgRestore_pos_list2                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << kmerPositions[posIx] << endl;
-
-#endif // bloom_filter_supportDebug
-
 //----------
 //
 // initialize class variables
@@ -981,7 +897,6 @@ void BloomFilter::add
 	if (pos < numBits)
 		{
 		(*bv).write_bit(pos);
-		dbgAdd_dump_pos_with_mer;
 		}
 
 	if (numHashes > 1)
@@ -994,7 +909,6 @@ void BloomFilter::add
 			if (pos < numBits)
 				{
 				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
-				dbgAdd_dump_h_pos_with_mer;
 				}
 			}
 		}
@@ -1010,7 +924,6 @@ void BloomFilter::add
 	if (pos < numBits)
 		{
 		(*bv).write_bit(pos);
-		dbgAdd_dump_pos;
 		}
 
 	if (numHashes > 1)
@@ -1023,7 +936,6 @@ void BloomFilter::add
 			if (pos < numBits)
 				{
 				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
-				dbgAdd_dump_h_pos;
 				}
 			}
 		}
@@ -1045,7 +957,6 @@ bool BloomFilter::contains
 	u64 pos = h1 % hashModulus;
 	if (pos < numBits)
 		{
-		dbgContains_dump_pos_with_mer;
 		if ((*bv)[pos] == 0) return false;
 		}
 
@@ -1058,7 +969,6 @@ bool BloomFilter::contains
 			pos = hashValues[h] % hashModulus;
 			if (pos < numBits)
 				{
-				dbgContains_dump_h_pos_with_mer;
 				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
@@ -1076,7 +986,6 @@ bool BloomFilter::contains
 	u64 pos = h1 % hashModulus;
 	if (pos < numBits)
 		{
-		dbgContains_dump_pos;
 		if ((*bv)[pos] == 0) return false;
 		}
 
@@ -1089,7 +998,6 @@ bool BloomFilter::contains
 			pos = hashValues[h] % hashModulus;
 			if (pos < numBits)
 				{
-				dbgContains_dump_h_pos;
 				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
@@ -1292,35 +1200,18 @@ DeterminedBriefFilter::~DeterminedBriefFilter()
 		cerr << "@-" << this << " destructor DeterminedBriefFilter(" << identity() << ")" << endl;
 	}
 
-int DeterminedBriefFilter::lookup
-   (const u64 pos) const
-	{
-	// we assume, without checking, that 0 <= pos < numBits
-
-	BitVector* bvDet = bvs[0];
-	dbgLookup_determined_brief1;
-	if ((*bvDet)[pos] == 0) return unresolved;
-
-	BitVector* bvHow = bvs[1];
-	u64 howPos = bvDet->rank1(pos);
-	dbgLookup_determined_brief2;
-	if ((*bvHow)[howPos] == 1) return present;
-	else                       return absent;
-	}
 
 void DeterminedBriefFilter::adjust_positions_in_list
    (vector<u64> &kmerPositions,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
-	dbgAdjust_pos_list1;
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
 		u64 pos  = kmerPositions[posIx];
 		u64 rank = bvDet->rank1(pos);
 		kmerPositions[posIx] = pos - rank;  // $$$ isn't this just rank0(pos)?
-		dbgAdjust_pos_list2;
 		}
 	}
 
@@ -1329,13 +1220,11 @@ void DeterminedBriefFilter::restore_positions_in_list
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
-	dbgRestore_pos_list1;
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
 		u64 pos = kmerPositions[posIx];
 		kmerPositions[posIx] = bvDet->select0(pos);
-		dbgRestore_pos_list2;
 		}
 	}
 
