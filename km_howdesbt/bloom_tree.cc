@@ -1228,10 +1228,8 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	bool			isLeafOnly,
 	bool			distinctKmers,
-	bool			completeKmerCounts,
-    bool            adjustKmerCounts)
+	bool			completeKmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
 	// the type of filter we have
@@ -1241,9 +1239,6 @@ void BloomTree::batch_query
 		fatal ("internal error: batch_query() unable to locate any bloom filter");
 	bf->preload();
 
-	if ((isLeafOnly) && (bf->kind() != bfkind_simple))
-		fatal ("batch_query() can't work for trees made of "
-		     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters");
 
 	// convert the queries to kmers/positions
 
@@ -1276,7 +1271,6 @@ void BloomTree::batch_query
 		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
 		q->nodesExamined = 0;
-		q->adjustKmerCounts = adjustKmerCounts;
 
 		localQueries.emplace_back(q);
 
@@ -1295,7 +1289,7 @@ void BloomTree::batch_query
 
 	u64 activeQueries = localQueries.size();
 	if (activeQueries > 0)
-		perform_batch_query(activeQueries,localQueries,completeKmerCounts);
+		perform_batch_query(activeQueries, localQueries, completeKmerCounts);
 	}
 
 void BloomTree::perform_batch_query
@@ -1641,182 +1635,8 @@ void BloomTree::query_matches_leaves
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
-		if (q->adjustKmerCounts)
-			{
-			if (not fpRateKnown)
-				{
-				if (not bf->setSizeKnown)
-					fatal ("failure: " + bfFilename + " doesn't support adjusted kmer counts"
-					   + "\n(it doesn't contain the information needed to estimate false positive rate)");
-				u64 numItems = bf->setSize;
-				fpRate = BloomFilter::false_positive_rate(bf->numHashes,bf->numBits,numItems);
-				fpRateKnown = true;
-				}
-
-			u64 querySize = q->numPositions;
-			u64 bfHits    = q->numPassed;
-			double observedContainment = ((double) bfHits) / querySize;
-			double adjustedContainment = (observedContainment-fpRate) / (1-fpRate);
-			if (adjustedContainment < 0.0) adjustedContainment = 0.0;
-			u64 adjustedHits = round(adjustedContainment * querySize);
-			q->matchesAdjustedHits.emplace_back (adjustedHits);
-			}
+		
 		}
-	}
-
-void BloomTree::batch_count_kmer_hits
-   (vector<Query*>	queries,
-	bool			isLeafOnly,
-	bool			distinctKmers)
-	{
-	// preload a root, and make sure that a leaf-only operation can work with
-	// the type of filter we have
-
-	BloomFilter* bf = real_filter();
-	if (bf == nullptr)
-		fatal ("internal error: batch_count_kmer_hits() unable to locate any bloom filter");
-	bf->preload();
-
-	if ((isLeafOnly) && (bf->kind() != bfkind_simple))
-		fatal ("batch_count_kmer_hits() can't work for trees made of "
-		     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters");
-
-	// convert the queries to kmers/positions
-
-	for (auto& q : queries)
-		{
-		q->kmerize(bf,distinctKmers);
-		if (dbgKmerPositions) q->dump_kmer_positions();
-		}
-
-	// make a local copy of the query list (consisting of the same instances)
-	// while initializing each query's search details; we'll use this single
-	// copy throughout the query process
-
-	vector<Query*> localQueries;
-
-	for (auto& q : queries)
-		{
-		u64 numPositions = q->kmerPositions.size();
-		if (numPositions == 0)
-			{
-			cerr << "warning: query \"" << q->name << "\" contains no searchable kmers" << endl;
-			continue; // (queries with no kmers are removed from the search)
-			}
-
-		q->numPassed     = 0;
-		q->numFailed     = 0;
-		q->numPositions  = numPositions;
-		q->numUnresolved = numPositions;
-		q->neededToPass  = ceil (q->threshold * numPositions);
-		q->neededToFail  = (numPositions - q->neededToPass) + 1;
-		q->nodesExamined = 0;
-		q->adjustKmerCounts = false;
-
-		localQueries.emplace_back(q);
-
-		if (dbgLookups)
-			{
-			cerr << q->name << ".numPositions = " << numPositions << endl;
-			cerr << q->name << ".neededToPass = " << q->neededToPass << endl;
-			cerr << q->name << ".neededToFail = " << q->neededToFail << endl;
-			}
-		}
-
-	// perform the query; note that calculation will only occur at leaves
-
-	if (dbgTraversal)
-		dbgTraversalCounter = 0;
-
-	if (localQueries.size() > 0)
-		perform_batch_count_kmer_hits (localQueries);
-	}
-
-void BloomTree::perform_batch_count_kmer_hits
-   (vector<Query*>	queries)
-	{
-	// skip non-leaf nodes
-
-	if (not isLeaf)
-		{
-		if (dbgTraversal)
-			{
-			if (isDummy) cerr << "(skipping through dummy node)" << endl;
-			        else cerr << "(skipping through non-leaf node " << name << ")" << endl;
-			}
-
-		for (const auto& child : children)
-			child->perform_batch_count_kmer_hits (queries);
-		return;
-		}
-
-	if (dbgTraversal)
-		cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
-
-	// make sure this node's filter is resident
-
-	load();
-
-	// operate on each query in the batch
-
-	for (auto& q : queries)
-		{
-		q->nodesExamined++;
-		q->numPassed = q->numFailed = 0;
-
-		for (u64 posIx=0 ; posIx<q->kmerPositions.size() ; posIx++)
-			{
-			u64 pos = q->kmerPositions[posIx];
-			int resolution = lookup(pos);
-
-			if (resolution == BloomFilter::absent)
-				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " fail=" << (q->numFailed+1) << endl;
-				q->numFailed++;
-				}
-			else if (resolution == BloomFilter::present)
-				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " pass=" << (q->numPassed+1) << endl;
-				q->numPassed++;
-				}
-			else // if (resolution == BloomFilter::unresolved)
-				{
-				if (dbgLookups)
-					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " unres" << endl;
-				cerr << "warning: " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
-					     << " is unresolved!" << endl;
-				}
-			}
-
-		if (dbgLookups)
-			{
-			bool queryPasses = (q->numPassed >= q->neededToPass);
-			bool queryFails  = (q->numFailed >= q->neededToFail);
-
-			if (queryPasses)
-				cerr << "  " << q->name << " passes " << bfFilename << endl;
-			else if (queryFails)
-				cerr << "  " << q->name << " fails " << bfFilename << endl;
-			else
-				cerr << "  " << q->name << " vs " << bfFilename
-				     << " P+F = " << q->numPassed << "+" << q->numFailed << endl;
-			}
-
-		// add the query to the list of 'matches' for this leaf, regardless of
-		// whether it passes or not
-
-		q->matches.emplace_back (name);
-		q->matchesNumPassed.emplace_back (q->numPassed);
-		}
-
-	// we don't need this node's filter to be resident any more
-
-	unloadable();
 	}
 
 
@@ -1867,43 +1687,7 @@ void BloomTree::clear_query_stats
 	stats.locallyFailed = 0;
 	}
 
-bool BloomTree::report_query_stats  // returns true if anything was reported
-   (std::ostream&   s,
-	Query*			q,
-	bool			quietly)
-	{
-	if (queryStats == nullptr)
-		fatal ("internal error: asking " + name
-		      + " to report query stats it never collected");
 
-	u32 batchIx = q->batchIx;
-	if (batchIx >= queryStatsLen)
-		fatal ("internal error: asking " + name +
-		      + " to report stats for query " + std::to_string(batchIx)
-		      + " queries, but it collected for " + std::to_string(queryStatsLen));
-
-	querystats* stats = &queryStats[batchIx];
-	if ((quietly) && (!stats->examined))
-		return false;
-
-	s << q->name
-	  << "\t" << name
-	  << "\t" << ((stats->examined)? "E" : "-")
-	  << "\t" << ((stats->passed)? "P" : ((stats->failed)? "F" : "-"));
-
-	if (stats->examined)
-		s << "\t" << stats->locallyPassed
-		  << "\t" << stats->locallyFailed
-		  << "\t" << stats->numPassed
-		  << "\t" << stats->numFailed
-		  << "\t" << stats->numUnresolved;
-	else
-		s << "\t-\t-\t-\t-\t-";
-
-	s << endl;
-
-	return true;
-	}
 
 //----------
 //
@@ -1915,9 +1699,6 @@ bool BloomTree::report_query_stats  // returns true if anything was reported
 //
 // Arguments:
 //	const string&	filename:	The name of the topology file to read from.
-//	bool			onlyLeaves:	true  => ignore non-leaves and produce a 'tree'
-//								         .. consisting of all the leaves.
-//								false => produce the full tree.
 //
 // Returns:
 //	The tree's root node.
@@ -2030,8 +1811,7 @@ static ParsedLine parse_topology_line
 // read_topology--
 
 BloomTree* BloomTree::read_topology
-   (const string&	filename,
-	bool			onlyLeaves)
+   (const string&	filename)
 	{
 	std::ifstream in (filename);
 	if (not in)
@@ -2055,96 +1835,45 @@ BloomTree* BloomTree::read_topology
 	// parse the topology file; this first method creates nodes for the entire
 	// tree
 
-	if (not onlyLeaves)
+	vector<BloomTree*> stack;
+	stack.push_back (root);
+
+	string line;
+	int lineNum = 0;
+	while (std::getline (in, line))
 		{
-		vector<BloomTree*> stack;
-		stack.push_back (root);
+		lineNum++;
+		line = strip_blank_ends (line);
+		if (line.empty()) continue;
 
-		string line;
-		int lineNum = 0;
-		while (std::getline (in, line))
-			{
-			lineNum++;
-			line = strip_blank_ends (line);
-			if (line.empty()) continue;
+		ParsedLine p = parse_topology_line(line, basePath);
+		if (p.hasProblem)
+			fatal ("error: unable to parse (\"" + filename
+					+ "\", line " + std::to_string(lineNum) + ")");
 
-			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.hasProblem)
-				fatal ("error: unable to parse (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
+		numNodes++;
+		BloomTree* node = new BloomTree(p.name,p.bfFilename);
+		if (p.hasBracketedFilename) nodesShareFiles = true;
 
-			numNodes++;
-			BloomTree* node = new BloomTree(p.name,p.bfFilename);
-			if (p.hasBracketedFilename) nodesShareFiles = true;
+		if ((numNodes == 0) and (p.level != 0))
+			fatal ("error: root must be at level zero (\"" + filename
+					+ "\", line " + std::to_string(lineNum) + ")");
 
-			if ((numNodes == 0) and (p.level != 0))
-				fatal ("error: root must be at level zero (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
+		while (stack.size() > p.level+1)
+			stack.pop_back ();
 
-			while (stack.size() > p.level+1)
-				stack.pop_back ();
+		if (p.level+1 != stack.size())
+			fatal ("error: tree depth jumps from level " + std::to_string(stack.size()-1)
+					+ " to " + std::to_string(p.level+1)
+					+ " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
 
-			if (p.level+1 != stack.size())
-				fatal ("error: tree depth jumps from level " + std::to_string(stack.size()-1)
-					 + " to " + std::to_string(p.level+1)
-					 + " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
+		BloomTree* parent = stack.back();
+		parent->add_child (node);
 
-			BloomTree* parent = stack.back();
-			parent->add_child (node);
-
-			stack.push_back (node);
-			}
+		stack.push_back (node);
 		}
+		
 
-	// this second parsing method creates nodes only for the leaves
-
-	else
-		{
-		string prevBfFilename = "";
-		string prevName       = "";
-		size_t prevLevel      = 0;
-
-		string line;
-		int lineNum = 0;
-		while (std::getline (in, line))
-			{
-			lineNum++;
-			line = strip_blank_ends (line);
-			if (line.empty()) continue;
-
-			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.hasProblem)
-				fatal ("error: unable to parse (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
-
-			numNodes++;
-			if ((numNodes == 0) and (p.level != 0))
-				fatal ("error: root must be at level zero (\"" + filename
-					 + "\", line " + std::to_string(lineNum) + ")");
-
-			if (p.level > prevLevel+1)
-				fatal ("error: tree depth jumps from level " + std::to_string(prevLevel+1)
-					 + " to " + std::to_string(p.level+1)
-					 + " (\"" + filename + "\", line " + std::to_string(lineNum) + ")");
-
-			if ((p.level <= prevLevel) and (not prevBfFilename.empty()))
-				{
-				BloomTree* leaf = new BloomTree(prevName,prevBfFilename);
-				if (p.hasBracketedFilename) nodesShareFiles = true;
-				root->add_child (leaf);
-				}
-
-			prevBfFilename = p.bfFilename;
-			prevName       = p.name;
-			prevLevel      = p.level;
-			}
-
-		if (not prevBfFilename.empty())
-			{
-			BloomTree* leaf = new BloomTree(prevName,prevBfFilename);
-			root->add_child (leaf);
-			}
-		}
 
 	in.close();
 

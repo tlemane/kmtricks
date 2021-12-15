@@ -102,9 +102,6 @@ public:
     std::shared_ptr<km::HashWindow> m_hash_win {nullptr};
     uint64_t m_m_size;
     uint64_t m_minim_size;
-public:
-	bool dbgKmerize    = false;
-	bool dbgKmerizeAll = false;
 
 public:
 	static void read_query_file (std::istream& in, const std::string& filename,

@@ -135,13 +135,6 @@ void Query::kmerize
 			if (populateKmers) kmers.emplace_back(mer);
 			}
 
-		if (dbgKmerize || dbgKmerizeAll)
-			{
-			if (pos != BloomFilter::npos)
-				cerr << mer << " -> " << pos << endl;
-			else if (dbgKmerizeAll)
-				cerr << mer << " -> (no)" << endl;
-			}
 		}
 	}
 

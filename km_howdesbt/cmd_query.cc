@@ -125,17 +125,12 @@ void QueryCommand::parse
 	// defaults
 
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
-	adjustKmerCounts        = false;
 	sortByKmerCounts        = false;
-	onlyLeaves              = false;
 	distinctKmers           = false;
 	checkConsistency        = false;
 	justReportKmerCounts    = false;
-	countAllKmerHits        = false;
 	reportNodesExamined     = false;
-	collectNodeStats        = false;
 	reportTime              = false;
-	backwardCompatibleStyle = false;
 
 	// skip command name
 
@@ -203,14 +198,14 @@ void QueryCommand::parse
 
         if (is_prefix_of(arg, "--repart="))
         {
-          repartFileName = argVal;
-          continue;
+			repartFileName = argVal;
+			continue;
         }
 
         if (is_prefix_of(arg, "--win="))
         {
-          winFileName = argVal;
-          continue;
+			winFileName = argVal;
+			continue;
         }
 
 		// --threshold=<F>
@@ -229,25 +224,11 @@ void QueryCommand::parse
 			continue;
 			}
 
-		// --adjust
-
-		if (arg == "--adjust")
-			{ adjustKmerCounts = true;  continue; }
-
 		// --sort
 
 		if (arg == "--sort")
 			{ sortByKmerCounts = true;  continue; }
 
-		// --leafonly, etc.
-
-		if ((arg == "--leafonly")
-		 || (arg == "--leaf-only")
-		 || (arg == "--leavesonly")
-		 || (arg == "--leaves-only")
-		 || (arg == "--onlyleaves")
-		 || (arg == "--only-leaves"))
-			{ onlyLeaves = true;  continue; }
 
 		// --distinctkmers
 
@@ -270,18 +251,9 @@ void QueryCommand::parse
 		if (arg == "--justcountkmers")
 			{
 			justReportKmerCounts = true;
-			countAllKmerHits     = false;
 			continue;
 			}
 
-		// --countallkmerhits
-
-		if (arg == "--countallkmerhits")
-			{
-			justReportKmerCounts = false;
-			countAllKmerHits     = true;
-			continue;
-			}
 
 		// --stat:nodesexamined
 
@@ -290,21 +262,12 @@ void QueryCommand::parse
 		 || (arg == "--nodesexamined"))
 			{ reportNodesExamined = true;  continue; }
 
-		// --backwardcompatible (unadvertised)
-
-		if (arg == "--backwardcompatible")
-			{ backwardCompatibleStyle = true;  continue; }
-
+		
 		// --time
 
 		if ((arg == "--time")
 		 || (arg == "--walltime"))
 			{ reportTime = true;  continue; }
-
-		// --collectnodestats (unadvertised)
-
-		if (arg == "--collectnodestats")
-			{ collectNodeStats = true;  continue; }
 
 		// --out=<filename>, etc.
 
@@ -355,27 +318,12 @@ void QueryCommand::parse
 	if (treeFilename.empty())
 		chastise ("you have to provide a tree topology file");
 
-	if (countAllKmerHits)
-		onlyLeaves = true;
-
-	if (collectNodeStats)
-		{
-		if (justReportKmerCounts)
-			chastise ("--collectnodestats cannot be used with --justcountkmers");
-		if (countAllKmerHits)
-			chastise ("--collectnodestats cannot be used with --countallkmerhits");
-		}
-
-	if ((justReportKmerCounts) and (adjustKmerCounts))
-		chastise ("--adjust cannot be used with --justcountkmers");
 
 	if ((justReportKmerCounts) and (sortByKmerCounts))
 		chastise ("--sort cannot be used with --justcountkmers");
 
-	if ((backwardCompatibleStyle) and (not adjustKmerCounts) and (not sortByKmerCounts))
-		chastise ("--backwardcompatible cannot be used without one of --adjust or --sort");
 
-	completeKmerCounts = (adjustKmerCounts) or (sortByKmerCounts);
+	completeKmerCounts = sortByKmerCounts;
 
 	// assign threshold to any unassigned queries
 
@@ -431,7 +379,7 @@ int QueryCommand::execute()
 
 	// read the tree
 
-	BloomTree* root = BloomTree::read_topology(treeFilename,onlyLeaves);
+	BloomTree* root = BloomTree::read_topology(treeFilename);
 	useFileManager = root->nodesShareFiles;
 
 	vector<BloomTree*> order;
@@ -463,15 +411,6 @@ int QueryCommand::execute()
 		for (const auto& node : order)
 			node->reportLoad = true;
 		}
-
-	// leaf-only search doesn't work with certain types of filters
-	//
-	// nota bene: we like to reject the command if onlyLeaves is true and the
-	// filters are not of type bfkind_simple; but we don't know the filter
-	// types until we preload them, and we can't preload them until we find a
-	// non-empty file (note that with a file manager we could hypothetically
-	// have every filter in one big file); so we delay rejection until we get
-	// into the actual query method (e.g. batch_query or batch_count_kmer_hits)
 
 	// set up the file manager
 
@@ -531,31 +470,9 @@ int QueryCommand::execute()
 			}
 		}
 
-	// if we're to collect per-node query stats, tell each node that it is to
-	// collect stats
-
-	if (collectNodeStats)
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-
-		u32 batchSize = queries.size();
-		for (const auto& node : order)
-			node->enable_query_stats(batchSize);
-		}
-
 	// propagate debug information into the queries and/or tree nodes
 
-	if (contains(debug,"kmerize"))
-		{
-		for (auto& q : queries)
-			q->dbgKmerize = true;
-		}
-	if (contains(debug,"kmerizeall"))
-		{
-		for (auto& q : queries)
-			q->dbgKmerizeAll = true;
-		}
+
 
 	if ((contains(debug,"traversal"))
 	 || (contains(debug,"lookups")))
@@ -620,30 +537,11 @@ int QueryCommand::execute()
 			cout << q->name << " " << q->kmerPositions.size() << endl;
 			}
 		}
-	else if (countAllKmerHits)
-		{
-		// perform the query (sort of)
-
-		root->batch_count_kmer_hits(queries,onlyLeaves,distinctKmers);
-
-		// report results
-
-		if (sortByKmerCounts)
-			sort_matches_by_kmer_counts();
-
-		if (matchesFilename.empty())
-			print_kmer_hit_counts (cout);
-		else
-			{
-			std::ofstream out(matchesFilename);
-			print_kmer_hit_counts (out);
-			}
-		}
-	else
+	else 
 		{
 		// perform the query
 
-		root->batch_query(queries,onlyLeaves,distinctKmers,completeKmerCounts,adjustKmerCounts);
+		root->batch_query(queries,distinctKmers,completeKmerCounts);
 
 		// report results
 
@@ -664,27 +562,6 @@ int QueryCommand::execute()
 				print_matches_with_kmer_counts (out);
 			else
 				print_matches (out);
-			}
-
-		// report per-node query stats
-
-		if (collectNodeStats)
-			{
-			vector<BloomTree*> preOrder;
-			root->pre_order(preOrder);
-
-			bool needSpacer = false;
-			for (auto& q : queries)
-				{
-				if (needSpacer) cerr << endl;
-
-				needSpacer = false;
-				for (const auto& node : preOrder)
-					{
-					bool reportedSomething = node->report_query_stats(cerr,q);
-					if (reportedSomething) needSpacer = true;
-					}
-				}
 			}
 		}
 
@@ -788,66 +665,32 @@ void QueryCommand::read_queries()
 
 void QueryCommand::sort_matches_by_kmer_counts (void)
 	{
-	if (adjustKmerCounts)
+	for (auto& q : queries)
 		{
-		for (auto& q : queries)
+		vector<pair<u64,string>> matches;
+		int matchIx = 0;
+		for (auto& name : q->matches)
 			{
-			vector<tuple<u64,string,u64>> matches;
-			int matchIx = 0;
-			for (auto& name : q->matches)
-				{
-				u64 numPassed    = q->matchesNumPassed[matchIx];
-				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
+			u64 numPassed = q->matchesNumPassed[matchIx];
+			// (numPassed is negated sort will give decreasing order)
+			matches.emplace_back(-(numPassed+1),name);
+			matchIx++;
+			}
 
-				// (adjustedHits is negated sort will give decreasing order)
-				matches.emplace_back(std::make_tuple(-(adjustedHits+1),name,numPassed));
-				matchIx++;
-				}
+		sort(matches.begin(),matches.end());
 
-			sort(matches.begin(),matches.end());
+		matchIx = 0;
+		for (const auto& matchPair : matches)
+			{
+			u64    negNumPassed = matchPair.first;
+			string name         = matchPair.second;
 
-			matchIx = 0;
-			for (const auto& matchTriplet : matches)
-				{
-				u64    negAdjustedHits;
-				string name;
-				u64    numPassed;
-				std::tie(negAdjustedHits,name,numPassed) = matchTriplet;
-				q->matches            [matchIx] = name;
-				q->matchesNumPassed   [matchIx] = numPassed;
-				q->matchesAdjustedHits[matchIx] = (-negAdjustedHits) - 1;
-				matchIx++;
-				}
+			q->matches         [matchIx] = name;
+			q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
+			matchIx++;
 			}
 		}
-	else
-		{
-		for (auto& q : queries)
-			{
-			vector<pair<u64,string>> matches;
-			int matchIx = 0;
-			for (auto& name : q->matches)
-				{
-				u64 numPassed = q->matchesNumPassed[matchIx];
-				// (numPassed is negated sort will give decreasing order)
-				matches.emplace_back(-(numPassed+1),name);
-				matchIx++;
-				}
-
-			sort(matches.begin(),matches.end());
-
-			matchIx = 0;
-			for (const auto& matchPair : matches)
-				{
-				u64    negNumPassed = matchPair.first;
-				string name         = matchPair.second;
-
-				q->matches         [matchIx] = name;
-				q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
-				matchIx++;
-				}
-			}
-		}
+		
 	}
 
 //----------
@@ -882,20 +725,18 @@ void QueryCommand::print_matches_with_kmer_counts
 
 	for (auto& q : queries)
 		{
-		if (not backwardCompatibleStyle)
-			{
-			out << "*" << q->name << " " << q->matches.size() << endl;
-			if (reportNodesExamined)
-				out << "# " << q->nodesExamined << " nodes examined" << endl;
-			}
+			
+		out << "*" << q->name << " " << q->matches.size() << endl;
+		if (reportNodesExamined)
+			out << "# " << q->nodesExamined << " nodes examined" << endl;
+			
 
 		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[matchIx];
 
-			if (backwardCompatibleStyle)
-				out << q->name << " ";
+			
 
 			out << name
 			    << " " << numPassed << "/" << q->numPositions;
@@ -903,16 +744,6 @@ void QueryCommand::print_matches_with_kmer_counts
 				out << " 0"; // instead of dividing by zero
 			else
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
-
-			if (adjustKmerCounts)
-				{
-				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
-				out << " " << adjustedHits << "/" << q->numPositions;
-				if (q->numPositions == 0)
-					out << " 0"; // instead of dividing by zero
-				else
-					out << " " << std::setprecision(6) << std::fixed << (adjustedHits/float(q->numPositions));
-				}
 
 			out << endl;
 			matchIx++;

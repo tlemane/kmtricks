@@ -69,26 +69,17 @@ public:
 	virtual void construct_determined_brief_nodes (std::uint32_t compressor);
 	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
-	virtual void batch_query (std::vector<Query*> queries,
-	                          bool isLeafOnly=false, bool distinctKmers=false,
-	                          bool completeKmerCounts=false,
-	                          bool adjustKmerCounts=false);
+	virtual void batch_query (std::vector<Query*> queries, bool distinctKmers=false,
+	                          bool completeKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
 	                                  bool completeKmerCounts=false);
 	virtual void query_matches_leaves (Query* q);
 
 public:
-	virtual void batch_count_kmer_hits (std::vector<Query*> queries,
-	                                    bool isLeafOnly=false, bool distinctKmers=false);
-private:
-	virtual void perform_batch_count_kmer_hits (std::vector<Query*> queries);
-
-public:
 	virtual int lookup (const std::uint64_t pos) const;
 	virtual void enable_query_stats(const std::uint32_t batchSize);
 	virtual void clear_query_stats(querystats& stats);
-	virtual bool report_query_stats(std::ostream& s,Query* q,bool quietly=true);
 
 public:
 	bool isDummy;						// a dummy has no filter; the root might
@@ -137,7 +128,7 @@ public:
 	bool dbgRankSelectLookup    = false;
 
 public:
-	static BloomTree* read_topology(const std::string& filename, bool onlyLeaves=false);
+	static BloomTree* read_topology(const std::string& filename);
 	};
 
 #endif // bloom_tree_H

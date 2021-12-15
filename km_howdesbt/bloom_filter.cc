@@ -103,8 +103,8 @@ using std::endl;
 #define dbgLookup_determined_brief2                                          \
 	if (dbgRankSelectLookup)                                                 \
 		cerr << "      bvHow[" << howPos << "] == " << (*bvHow)[howPos]      \
-		     << " --> " << (((*bvHow)[howPos]==1)?"present":"absent")        \
-		     << endl;
+			<< " --> " << (((*bvHow)[howPos]==1)?"present":"absent")        \
+			<< endl;
 
 #define dbgAdjust_pos_list1                                                  \
 	if (dbgAdjustPosList)                                                    \
