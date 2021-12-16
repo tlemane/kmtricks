@@ -61,20 +61,6 @@ void BuildSBTCommand::usage
 	s << "  --roar               create the nodes as roar-compressed bit vector(s)" << endl;
 	}
 
-void BuildSBTCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "--debug= options" << endl;
-	s << "  bfsimplify" << endl;
-	s << "  btunload" << endl;
-	s << "  bfcreation" << endl;
-	s << "  bfmanager" << endl;
-	s << "  topology" << endl;
-	s << "  load" << endl;
-	s << "  traversal" << endl;
-	s << "  nochildupdate" << endl;
-	}
-
 void BuildSBTCommand::parse
    (int		_argc,
 	char**	_argv)
@@ -117,10 +103,7 @@ void BuildSBTCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		if ((arg == "--help=debug")
-		 || (arg == "--help:debug")
-		 || (arg == "?debug"))
-			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
+		
 
 		// --outtree=<filename>
 

@@ -84,28 +84,6 @@ void QueryCommand::usage
 //	s << "  --backwardcompatible (requires --adjust or --sort) output is backward" << endl;
 //	s << "                       compatible with order_query_results.sh" << endl;
 	}
-
-void QueryCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "--debug= options" << endl;
-	s << "  btunload" << endl;
-	s << "  topology" << endl;
-	s << "  fmcontentload" << endl;
-	s << "  namemapping" << endl;
-	s << "  load" << endl;
-	s << "  names" << endl;
-	s << "  input" << endl;
-	s << "  sort" << endl;
-	s << "  smerize" << endl;
-	s << "  smerizeall" << endl;
-	s << "  traversal" << endl;
-	s << "  lookups" << endl;
-	s << "  positions" << endl;
-	s << "  positionsbyhash" << endl;
-	s << "  adjustposlist" << endl;
-	}
-
 void QueryCommand::parse
    (int		_argc,
 	char**	_argv)
@@ -137,7 +115,7 @@ void QueryCommand::parse
 
 		string::size_type argValIx = arg.find('=');
 		if (argValIx == string::npos) argVal = "";
-		                         else argVal = arg.substr(argValIx+1);
+		else argVal = arg.substr(argValIx+1);
 
 		// --help, etc.
 
@@ -150,10 +128,6 @@ void QueryCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		if ((arg == "--help=debug")
-		 || (arg == "--help:debug")
-		 || (arg == "?debug"))
-			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
 
 		// --tree=<filename>, etc.
 
@@ -316,14 +290,6 @@ int QueryCommand::execute()
 
 	vector<BloomTree*> order;
 
-	if (contains(debug,"topology"))
-		{
-		if (useFileManager)
-			root->print_topology(cerr,/*level*/0,/*format*/topofmt_containers);
-		else
-			root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
-		}
-
 
 
 
@@ -333,21 +299,7 @@ int QueryCommand::execute()
 	FileManager* manager = nullptr;
 	if (useFileManager)
 		{
-
-
 		manager = new FileManager(root,/*validateConsistency*/false);
-
-		if (contains(debug,"namemapping"))
-			{
-			for (auto iter : manager->filenameToNames)
-				{
-				string          filename  = iter.first;
-				vector<string>* nodeNames = iter.second;
-				cerr << filename << " contains:" << endl;
-				for (const auto& nodeName : *nodeNames)
-					cerr << "  " << nodeName << endl;
-				}
-			}
 		}
 
 	// if we're not using a file manager, we may still want to do a consistency

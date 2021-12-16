@@ -72,22 +72,6 @@ void ClusterCommand::usage
 	s << "  --build           perform clustering, then build the uncompressed nodes" << endl;
 	}
 
-void ClusterCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "--debug= options" << endl;
-	s << "  interval" << endl;
-	s << "  offsets" << endl;
-	s << "  console" << endl;
-	s << "  bits" << endl;
-	s << "  distances" << endl;
-	s << "  queue" << endl;
-	s << "  mergings" << endl;
-	s << "  numbers" << endl;
-	s << "  cull" << endl;
-	s << "  detratio" << endl;
-	s << "  detratiodistrib" << endl;
-	}
 
 void ClusterCommand::parse
    (int		_argc,
@@ -137,10 +121,7 @@ void ClusterCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		if ((arg == "--help=debug")
-		 || (arg == "--help:debug")
-		 || (arg == "?debug"))
-			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
+		
 
 		// --list=<filename>
 

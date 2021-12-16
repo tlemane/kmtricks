@@ -1167,7 +1167,7 @@ void BloomTree::perform_batch_query
 	load();
 
 	// operate on each query in the batch
-	//……… ideally, we'd like to perform this for all siblings, then unload the
+	//……… ideally, we'd like to perform this for all siblings, then unload the
 	//……… .. siblings, before we descend to the siblings' children
 
 	qIx = 0;
@@ -1188,9 +1188,9 @@ void BloomTree::perform_batch_query
 			// Attribution: the technique of swapping resolved positions to the
 			// end of the list was inspired by reference [1]
 
-			u64 pos = q->smerHashes[posIx];
+			u64 hashvalue = q->smerHashes[posIx];
 			bool posIsResolved = true;
-			int resolution = lookup(pos);
+			int resolution = lookup(hashvalue);
 
 			if (resolution == BloomFilter::absent)
 				{
@@ -1211,7 +1211,7 @@ void BloomTree::perform_batch_query
 				posIsResolved = false;
 				}
 
-			// if pos is resolved, swap it with the end of list, and shorten
+			// if hashvalue is resolved, swap it with the end of list, and shorten
 			// the list; note that we *don't* increase posIx in this case, as
 			// the next iteration needs to process the position we just swapped
 			// into that slot
@@ -1220,10 +1220,10 @@ void BloomTree::perform_batch_query
 				{
 				positionsToTest--;
 				q->smerHashes[posIx] = q->smerHashes[positionsToTest];
-				q->smerHashes[positionsToTest] = pos;
+				q->smerHashes[positionsToTest] = hashvalue;
 				}
 
-			// otherwise, move on to the next pos
+			// otherwise, move on to the next hashvalue 
 
 			else
 				posIx++;

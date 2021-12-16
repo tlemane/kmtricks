@@ -813,8 +813,8 @@ u64 BloomFilter::mer_to_position
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-	u64 pos = hasher1->hash(mer) % hashModulus;
-	if (pos < numBits) return pos;
+	u64 hashvalue = hasher1->hash(mer) % hashModulus;
+	if (hashvalue < numBits) return hashvalue;
 	              else return npos;  // position is *not* in the filter
 	}
 
@@ -823,8 +823,8 @@ u64 BloomFilter::mer_to_position
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-	u64 pos = hasher1->hash(merData) % hashModulus;
-	if (pos < numBits) return pos;
+	u64 hashvalue = hasher1->hash(merData) % hashModulus;
+	if (hashvalue < numBits) return hashvalue;
 	              else return npos;  // position is *not* in the filter
 	}
 
@@ -840,10 +840,10 @@ void BloomFilter::add
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(mer);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		(*bv).write_bit(pos);
+		(*bv).write_bit(hashvalue);
 		}
 
 	if (numHashes > 1)
@@ -852,10 +852,10 @@ void BloomFilter::add
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(mer));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
+				(*bv).write_bit(hashvalue); // $$$ MULTI_VECTOR write each bit to a different vector
 				}
 			}
 		}
@@ -867,10 +867,10 @@ void BloomFilter::add
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(merData);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		(*bv).write_bit(pos);
+		(*bv).write_bit(hashvalue);
 		}
 
 	if (numHashes > 1)
@@ -879,10 +879,10 @@ void BloomFilter::add
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(merData));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
+				(*bv).write_bit(hashvalue); // $$$ MULTI_VECTOR write each bit to a different vector
 				}
 			}
 		}
@@ -901,10 +901,10 @@ bool BloomFilter::contains
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(mer);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		if ((*bv)[pos] == 0) return false;
+		if ((*bv)[hashvalue] == 0) return false;
 		}
 
 	if (numHashes > 1)
@@ -913,10 +913,10 @@ bool BloomFilter::contains
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(mer));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
+				if ((*bv)[hashvalue] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
 		}
@@ -930,10 +930,10 @@ bool BloomFilter::contains
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(merData);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		if ((*bv)[pos] == 0) return false;
+		if ((*bv)[hashvalue] == 0) return false;
 		}
 
 	if (numHashes > 1)
@@ -942,10 +942,10 @@ bool BloomFilter::contains
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(merData));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
+				if ((*bv)[hashvalue] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
 		}
@@ -954,12 +954,12 @@ bool BloomFilter::contains
 	}
 
 int BloomFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bv = bvs[0];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if ((*bv)[pos] == 0) return absent;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if ((*bv)[hashvalue] == 0) return absent;
 	                else return unresolved;
 	}
 
@@ -1034,14 +1034,14 @@ bool AllSomeFilter::contains
 	}
 
 int AllSomeFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bvAll  = bvs[0];
 	BitVector* bvSome = bvs[1];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if      ((*bvAll) [pos] == 1) return present;
-	else if ((*bvSome)[pos] == 0) return absent;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if      ((*bvAll) [hashvalue] == 1) return present;
+	else if ((*bvSome)[hashvalue] == 0) return absent;
 	else                          return unresolved;
 	}
 
@@ -1086,14 +1086,14 @@ DeterminedFilter::~DeterminedFilter()
 	}
 
 int DeterminedFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bvDet = bvs[0];
 	BitVector* bvHow = bvs[1];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if      ((*bvDet)[pos] == 0) return unresolved;
-	else if ((*bvHow)[pos] == 1) return present;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if      ((*bvDet)[hashvalue] == 0) return unresolved;
+	else if ((*bvHow)[hashvalue] == 1) return present;
 	else                         return absent;
 	}
 
@@ -1143,16 +1143,16 @@ DeterminedBriefFilter::~DeterminedBriefFilter()
 
 
 int DeterminedBriefFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
-	// we assume, without checking, that 0 <= pos < numBits
+	// we assume, without checking, that 0 <= hashvalue < numBits
 
 	BitVector* bvDet = bvs[0];
 
-	if ((*bvDet)[pos] == 0) return unresolved;
+	if ((*bvDet)[hashvalue] == 0) return unresolved;
 
 	BitVector* bvHow = bvs[1];
-	u64 howPos = bvDet->rank1(pos);
+	u64 howPos = bvDet->rank1(hashvalue);
 
 	if ((*bvHow)[howPos] == 1) return present;
 	else                       return absent;
@@ -1166,9 +1166,9 @@ void DeterminedBriefFilter::adjust_positions_in_list
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos  = smerHashes[posIx];
-		u64 rank = bvDet->rank1(pos);
-		smerHashes[posIx] = pos - rank;  // $$$ isn't this just rank0(pos)?
+		u64 hashvalue  = smerHashes[posIx];
+		u64 rank = bvDet->rank1(hashvalue);
+		smerHashes[posIx] = hashvalue - rank;  // $$$ isn't this just rank0(hashvalue)?
 		}
 	}
 
@@ -1180,8 +1180,8 @@ void DeterminedBriefFilter::restore_positions_in_list
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos = smerHashes[posIx];
-		smerHashes[posIx] = bvDet->select0(pos);
+		u64 hashvalue = smerHashes[posIx];
+		smerHashes[posIx] = bvDet->select0(hashvalue);
 		}
 	}
 
