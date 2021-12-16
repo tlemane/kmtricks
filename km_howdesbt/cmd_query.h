@@ -23,10 +23,10 @@ public:
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 	virtual void read_queries (void);
-	virtual void sort_matches_by_kmer_counts (void);
+	virtual void sort_matches_by_smer_counts (void);
 	virtual void print_matches(std::ostream& out) const;
-	virtual void print_matches_with_kmer_counts(std::ostream& out) const;
-	virtual void print_kmer_hit_counts(std::ostream& out) const;
+	virtual void print_matches_with_smer_counts(std::ostream& out) const;
+	virtual void print_smer_hit_counts(std::ostream& out) const;
 
 	std::string treeFilename;
     std::string repartFileName;
@@ -35,10 +35,10 @@ public:
 	std::vector<double> queryThresholds;
 	std::string matchesFilename;
 	double generalQueryThreshold;
-	bool sortByKmerCounts;
+	bool sortBySmerCounts;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
-	bool completeKmerCounts;
+	bool completeSmerCounts;
 
 	std::vector<Query*> queries;
 	};

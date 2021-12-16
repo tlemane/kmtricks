@@ -58,7 +58,7 @@ BloomFilter::BloomFilter
 	  :	ready(false),
 		manager(nullptr),
 		filename(_filename),
-		kmerSize(0),
+		smerSize(0),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(0),
@@ -79,7 +79,7 @@ BloomFilter::BloomFilter
 
 BloomFilter::BloomFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
@@ -88,7 +88,7 @@ BloomFilter::BloomFilter
 	  :	ready(true),
 		manager(nullptr),
 		filename(_filename),
-		kmerSize(_kmerSize),
+		smerSize(_smerSize),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(_numHashes),
@@ -113,7 +113,7 @@ BloomFilter::BloomFilter
 	const string& newFilename)
 	  :	ready(true),
 		manager(nullptr),
-		kmerSize(templateBf->kmerSize),
+		smerSize(templateBf->smerSize),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(templateBf->numHashes),
@@ -155,9 +155,9 @@ string BloomFilter::identity() const
 void BloomFilter::setup_hashers()
 	{
 	if ((numHashes > 0) && (hasher1 == nullptr))
-		hasher1 = new HashCanonical(kmerSize,hashSeed1);
+		hasher1 = new HashCanonical(smerSize,hashSeed1);
 	if ((numHashes > 1) && (hasher2 == nullptr))
-		hasher2 = new HashCanonical(kmerSize,hashSeed2);
+		hasher2 = new HashCanonical(smerSize,hashSeed2);
 	}
 
 bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
@@ -316,7 +316,7 @@ void BloomFilter::save()
 	header->version      = bffileheaderVersion;
 	header->bfKind       = kind();
 	header->padding1     = 0;
-	header->kmerSize     = kmerSize;
+	header->smerSize     = smerSize;
 	header->numHashes    = numHashes;
 	header->hashSeed1    = hashSeed1;
 	header->hashSeed2    = hashSeed2;
@@ -369,7 +369,7 @@ void BloomFilter::save()
 void BloomFilter::copy_properties
    (const BloomFilter*	templateBf)
 	{
-	kmerSize    = templateBf->kmerSize;
+	smerSize    = templateBf->smerSize;
 	numHashes   = templateBf->numHashes;
 	hashSeed1   = templateBf->hashSeed1;
 	hashSeed2   = templateBf->hashSeed2;
@@ -437,14 +437,14 @@ bool BloomFilter::is_consistent_with
    (const BloomFilter*	bf,
 	bool				beFatal) const
 	{
-	if (bf->kmerSize != kmerSize)
+	if (bf->smerSize != smerSize)
 		{
 		if (not beFatal) return false;
-		fatal ("error: inconsistent kmer size " + std::to_string(bf->kmerSize)
+		fatal ("error: inconsistent smer size " + std::to_string(bf->smerSize)
 			 + " in \"" + bf->filename + "\""
-			 + " (expected " + std::to_string(kmerSize)
+			 + " (expected " + std::to_string(smerSize)
 			 + " like in \"" + filename + "\")"
-			 + "\n(all bloom filters are required to have the same kmer size)");
+			 + "\n(all bloom filters are required to have the same smer size)");
 		}
 
 	if (bf->numHashes != numHashes)
@@ -803,9 +803,9 @@ void BloomFilter::squeeze_by
 	}
 
 // mer_to_position--
-//	Report the position of a kmer in the filter; we return BloomFilter::npos if
-//	the kmer's position is not within the filter (this is *not* the same as the
-//	kmer being present in the set represent by the filter); the kmer can be a
+//	Report the position of a smer in the filter; we return BloomFilter::npos if
+//	the smer's position is not within the filter (this is *not* the same as the
+//	smer being present in the set represent by the filter); the smer can be a
 //	string or 2-bit encoded data
 
 u64 BloomFilter::mer_to_position
@@ -829,12 +829,12 @@ u64 BloomFilter::mer_to_position
 	}
 
 // add--
-//	Add a kmer to the filter; the kmer can be a string or 2-bit encoded data
+//	Add a smer to the filter; the smer can be a string or 2-bit encoded data
 
 void BloomFilter::add
    (const string& mer)
 	{
-	// nota bene: we don't enforce mer.length == kmerSize
+	// nota bene: we don't enforce mer.length == smerSize
 	// nota bene: we don't canonicalize the string; revchash handles that
 
 	BitVector* bv = bvs[0];
@@ -889,13 +889,13 @@ void BloomFilter::add
 	}
 
 // contains--
-//	returns true if the bloom filter contains the given kmer (or false
-//	positive), false otherwise; the kmer can be a string or 2-bit encoded data
+//	returns true if the bloom filter contains the given smer (or false
+//	positive), false otherwise; the smer can be a string or 2-bit encoded data
 
 bool BloomFilter::contains
    (const string& mer) const
 	{
-	// nota bene: we don't enforce mer.length == kmerSize
+	// nota bene: we don't enforce mer.length == smerSize
 	// nota bene: we don't canonicalize the string; revchash handles that
 
 	BitVector* bv = bvs[0];
@@ -978,13 +978,13 @@ AllSomeFilter::AllSomeFilter
 
 AllSomeFilter::AllSomeFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _kmerSize,
+	  :	BloomFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1060,13 +1060,13 @@ DeterminedFilter::DeterminedFilter
 
 DeterminedFilter::DeterminedFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _kmerSize,
+	  :	BloomFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1116,13 +1116,13 @@ DeterminedBriefFilter::DeterminedBriefFilter
 
 DeterminedBriefFilter::DeterminedBriefFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	DeterminedFilter(_filename, _kmerSize,
+	  :	DeterminedFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1159,29 +1159,29 @@ int DeterminedBriefFilter::lookup
 	}
 
 void DeterminedBriefFilter::adjust_positions_in_list
-   (vector<u64> &kmerPositions,
+   (vector<u64> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos  = kmerPositions[posIx];
+		u64 pos  = smerHashes[posIx];
 		u64 rank = bvDet->rank1(pos);
-		kmerPositions[posIx] = pos - rank;  // $$$ isn't this just rank0(pos)?
+		smerHashes[posIx] = pos - rank;  // $$$ isn't this just rank0(pos)?
 		}
 	}
 
 void DeterminedBriefFilter::restore_positions_in_list
-   (vector<u64> &kmerPositions,
+   (vector<u64> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos = kmerPositions[posIx];
-		kmerPositions[posIx] = bvDet->select0(pos);
+		u64 pos = smerHashes[posIx];
+		smerHashes[posIx] = bvDet->select0(pos);
 		}
 	}
 
@@ -1418,7 +1418,7 @@ BloomFilter* BloomFilter::bloom_filter
 BloomFilter* BloomFilter::bloom_filter
    (const u32		bfKind,
 	const string&	filename,
-	u32				kmerSize,
+	u32				smerSize,
 	u32				numHashes,
 	u64				hashSeed1,
 	u64				hashSeed2,
@@ -1429,20 +1429,20 @@ BloomFilter* BloomFilter::bloom_filter
 		{
 		case bfkind_simple:
 		case bfkind_intersection:  // internally treated the same as bfkind_simple
-			return new BloomFilter      (filename,kmerSize,
+			return new BloomFilter      (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_allsome:
-			return new AllSomeFilter    (filename,kmerSize,
+			return new AllSomeFilter    (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined:
-			return new DeterminedFilter (filename,kmerSize,
+			return new DeterminedFilter (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined_brief:
 			return new DeterminedBriefFilter
-			                            (filename,kmerSize,
+			                            (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		default:
@@ -1751,7 +1751,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		if (whichBv == 0)
 			{
 			bf = bloom_filter(header->bfKind,
-			                  filename, header->kmerSize,
+			                  filename, header->smerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
 
@@ -1795,7 +1795,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 //----------
 //
 // false_positive_rate--
-//	Estimate the kmer false positive rate of a bloom filter.
+//	Estimate the smer false positive rate of a bloom filter.
 //
 //----------
 //

@@ -1069,7 +1069,7 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	bool			completeKmerCounts)
+	bool			completeSmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
 	// the type of filter we have
@@ -1080,11 +1080,11 @@ void BloomTree::batch_query
 	bf->preload();
 
 
-	// convert the queries to kmers/positions
+	// convert the queries to smers/positions
 
 	for (auto& q : queries)
 		{
-		q->kmerize(bf);
+		q->smerize(bf);
 		}
 
 	// make a local copy of the query list (consisting of the same instances)
@@ -1095,19 +1095,19 @@ void BloomTree::batch_query
 
 	for (auto& q : queries)
 		{
-		u64 numPositions = q->kmerPositions.size();
-		if (numPositions == 0)
+		u64 numHashes = q->smerHashes.size();
+		if (numHashes == 0)
 			{
-			cerr << "warning: query \"" << q->name << "\" contains no searchable kmers" << endl;
-			continue; // (queries with no kmers are removed from the search)
+			cerr << "warning: query \"" << q->name << "\" contains no searchable smers" << endl;
+			continue; // (queries with no smers are removed from the search)
 			}
 
 		q->numPassed     = 0;
 		q->numFailed     = 0;
-		q->numPositions  = numPositions;
-		q->numUnresolved = numPositions;
-		q->neededToPass  = ceil (q->threshold * numPositions);
-		q->neededToFail  = (numPositions - q->neededToPass) + 1;
+		q->numHashes  = numHashes;
+		q->numUnresolved = numHashes;
+		q->neededToPass  = ceil (q->threshold * numHashes);
+		q->neededToFail  = (numHashes - q->neededToPass) + 1;
 
 		localQueries.emplace_back(q);
 
@@ -1118,13 +1118,13 @@ void BloomTree::batch_query
 
 	u64 activeQueries = localQueries.size();
 	if (activeQueries > 0)
-		perform_batch_query(activeQueries, localQueries, completeKmerCounts);
+		perform_batch_query(activeQueries, localQueries, completeSmerCounts);
 	}
 
 void BloomTree::perform_batch_query
    (u64				activeQueries,
 	vector<Query*>	queries,
-	bool			completeKmerCounts)
+	bool			completeSmerCounts)
 	{
 	u64				incomingQueries = activeQueries;
 	u64				qIx;
@@ -1135,7 +1135,7 @@ void BloomTree::perform_batch_query
 		{
 
 		for (const auto& child : children)
-			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
+			child->perform_batch_query(activeQueries,queries,completeSmerCounts);
 		return;
 		}
 
@@ -1188,7 +1188,7 @@ void BloomTree::perform_batch_query
 			// Attribution: the technique of swapping resolved positions to the
 			// end of the list was inspired by reference [1]
 
-			u64 pos = q->kmerPositions[posIx];
+			u64 pos = q->smerHashes[posIx];
 			bool posIsResolved = true;
 			int resolution = lookup(pos);
 
@@ -1199,11 +1199,11 @@ void BloomTree::perform_batch_query
 				}
 			else if (resolution == BloomFilter::present)
 				{
-				// if we're NOT computing complete kmer counts, we can check
+				// if we're NOT computing complete smer counts, we can check
 				// whether we've observed enough hits to pass this node early
 
 				q->numPassed++;
-				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
+				if ((not completeSmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
 				}
 			else // if (resolution == BloomFilter::unresolved)
@@ -1219,8 +1219,8 @@ void BloomTree::perform_batch_query
 			if ((posIsResolved) and (not isLeaf))
 				{
 				positionsToTest--;
-				q->kmerPositions[posIx] = q->kmerPositions[positionsToTest];
-				q->kmerPositions[positionsToTest] = pos;
+				q->smerHashes[posIx] = q->smerHashes[positionsToTest];
+				q->smerHashes[positionsToTest] = pos;
 				}
 
 			// otherwise, move on to the next pos
@@ -1235,10 +1235,10 @@ void BloomTree::perform_batch_query
 
 		// if the query passes, add it to the list of matches for all leaves in
 		// this subtree (nb: this 'subtree' may just be a leaf); note that if
-		// we're computing complete kmer counts, we have to check whether the
+		// we're computing complete smer counts, we have to check whether the
 		// node passes here because we avoided that test earlier
 
-		if ((completeKmerCounts) and (isLeaf) and (q->numPassed >= q->neededToPass))
+		if ((completeSmerCounts) and (isLeaf) and (q->numPassed >= q->neededToPass))
 			queryPasses = true;
 
 		if (queryPasses)
@@ -1284,7 +1284,7 @@ void BloomTree::perform_batch_query
 			}
 		}
 
-	// unless we're going to adjust kmers/positions, we don't need this node's
+	// unless we're going to adjust smers/positions, we don't need this node's
 	// filter to be resident any more
 
 	bool isPositionAdjustor = bf->is_position_adjustor();
@@ -1307,7 +1307,7 @@ void BloomTree::perform_batch_query
 		fatal ();
 		}
 
-	// adjust kmer/position lists as we move down the tree; for most node types
+	// adjust smer/position lists as we move down the tree; for most node types
 	// this would be a null operation, but for nodes that use rank/select the
 	// position values are modified to reflect the removal of inactive bits in
 	// the bloom filters
@@ -1317,7 +1317,7 @@ void BloomTree::perform_batch_query
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
-			bf->adjust_positions_in_list(q->kmerPositions,q->numUnresolved);
+			bf->adjust_positions_in_list(q->smerHashes,q->numUnresolved);
 
 			}
 		}
@@ -1327,22 +1327,22 @@ void BloomTree::perform_batch_query
 	if (activeQueries > 0)
 		{
 		for (const auto& child : children)
-			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
+			child->perform_batch_query(activeQueries,queries,completeSmerCounts);
 		}
 
-	// restore kmer/position lists as we move up the tree
+	// restore smer/position lists as we move up the tree
 
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx<activeQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
-			bf->restore_positions_in_list(q->kmerPositions,q->numUnresolved);
+			bf->restore_positions_in_list(q->smerHashes,q->numUnresolved);
 
 			}
 		}
 
-	// if we were adjusting kmers/positions, we finally don't need this node's
+	// if we were adjusting smers/positions, we finally don't need this node's
 	// filter to be resident any more
 
 	if (isPositionAdjustor) unloadable();

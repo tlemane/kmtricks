@@ -23,7 +23,7 @@ public:
 
 public:
 	BloomFilter(const std::string& filename);
-	BloomFilter(const std::string& filename, uint32_t kmerSize,
+	BloomFilter(const std::string& filename, uint32_t smerSize,
 	            std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	            std::uint64_t numBits, std::uint64_t hashModulus=0);
 	BloomFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -76,18 +76,18 @@ public:
 	virtual std::uint64_t num_bits()     const { return numBits; }
 
 	virtual bool is_position_adjustor () { return false; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &kmerPositions,
+	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &kmerPositions,
+	virtual void restore_positions_in_list (std::vector<std::uint64_t> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
 
 public:
 	bool ready;						// ready is false until we know the bloom
-									// filter's attributes (e.g. kmerSize, hash
+									// filter's attributes (e.g. smerSize, hash
 									// functions, etc.)
 	FileManager* manager;
 	std::string filename;
-	std::uint32_t kmerSize;
+	std::uint32_t smerSize;
 
 	HashCanonical* hasher1, *hasher2;
 	std::uint32_t numHashes;		// how many hash values are generated for
@@ -101,7 +101,7 @@ public:
 
 	bool          setSizeKnown;		// true  => the setSize field is valid
 									// false => the value of setSize is unknown
-	std::uint64_t setSize;			// number of distinct kmers that were
+	std::uint64_t setSize;			// number of distinct smers that were
 									// .. inserted during construction
 
 	int numBitVectors;				// how many bit vectors are in use
@@ -121,7 +121,7 @@ public:
 	    (const std::string& filename);
 	static BloomFilter* bloom_filter
 	    (const std::uint32_t bfKind,
-	     const std::string& filename, uint32_t kmerSize,
+	     const std::string& filename, uint32_t smerSize,
 	     std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	     std::uint64_t numBits, std::uint64_t hashModulus=0);
 	static BloomFilter* bloom_filter
@@ -152,7 +152,7 @@ class AllSomeFilter: public BloomFilter
 
 public:
 	AllSomeFilter(const std::string& filename);
-	AllSomeFilter(const std::string& filename, uint32_t kmerSize,
+	AllSomeFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	AllSomeFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -178,7 +178,7 @@ class DeterminedFilter: public BloomFilter
 
 public:
 	DeterminedFilter(const std::string& filename);
-	DeterminedFilter(const std::string& filename, uint32_t kmerSize,
+	DeterminedFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -207,7 +207,7 @@ public:
 
 public:
 	DeterminedBriefFilter(const std::string& filename);
-	DeterminedBriefFilter(const std::string& filename, uint32_t kmerSize,
+	DeterminedBriefFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedBriefFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -219,9 +219,9 @@ public:
 	virtual int lookup (const std::uint64_t pos) const;
 
 	virtual bool is_position_adjustor  () { return true; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &kmerPositions,
+	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &smerHashes,
 	                                        std::uint64_t numUnresolved);
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &kmerPositions,
+	virtual void restore_positions_in_list (std::vector<std::uint64_t> &smerHashes,
 	                                        std::uint64_t numUnresolved);
 	};
 

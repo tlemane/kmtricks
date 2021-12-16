@@ -97,8 +97,8 @@ void QueryCommand::debug_help
 	s << "  names" << endl;
 	s << "  input" << endl;
 	s << "  sort" << endl;
-	s << "  kmerize" << endl;
-	s << "  kmerizeall" << endl;
+	s << "  smerize" << endl;
+	s << "  smerizeall" << endl;
 	s << "  traversal" << endl;
 	s << "  lookups" << endl;
 	s << "  positions" << endl;
@@ -116,7 +116,7 @@ void QueryCommand::parse
 	// defaults
 
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
-	sortByKmerCounts        = false;
+	sortBySmerCounts        = false;
 	checkConsistency        = false;
 
 
@@ -215,7 +215,7 @@ void QueryCommand::parse
 		// --sort
 
 		if (arg == "--sort")
-			{ sortByKmerCounts = true;  continue; }
+			{ sortBySmerCounts = true;  continue; }
 
 
 		// --consistencycheck, (unadvertised) --noconsistency
@@ -282,7 +282,7 @@ void QueryCommand::parse
 
 
 
-	completeKmerCounts = sortByKmerCounts;
+	completeSmerCounts = sortBySmerCounts;
 
 	// assign threshold to any unassigned queries
 
@@ -375,44 +375,28 @@ int QueryCommand::execute()
 
 	read_queries ();
 
-	if (contains(debug,"input"))
-		{
-		for (auto& q : queries)
-			{
-			cerr << ">" << q->name << endl;
-			cerr << q->seq << endl;
-			}
-		}
-
-	// propagate debug information into the queries and/or tree nodes
-
-
-
-
-
-
 
 	// perform the query
 
-	root->batch_query(queries,completeKmerCounts);
+	root->batch_query(queries,completeSmerCounts);
 
 	// report results
 
-	if (sortByKmerCounts)
-		sort_matches_by_kmer_counts();
+	if (sortBySmerCounts)
+		sort_matches_by_smer_counts();
 
 	if (matchesFilename.empty())
 		{
-		if (completeKmerCounts)
-			print_matches_with_kmer_counts (cout);
+		if (completeSmerCounts)
+			print_matches_with_smer_counts (cout);
 		else
 			print_matches (cout);
 		}
 	else
 		{
 		std::ofstream out(matchesFilename);
-		if (completeKmerCounts)
-			print_matches_with_kmer_counts (out);
+		if (completeSmerCounts)
+			print_matches_with_smer_counts (out);
 		else
 			print_matches (out);
 		}
@@ -469,12 +453,12 @@ void QueryCommand::read_queries()
 
 //----------
 //
-// sort_matches_by_kmer_counts--
-//	Sort query matches by decreasing kmer hit counts.
+// sort_matches_by_smer_counts--
+//	Sort query matches by decreasing smer hit counts.
 //
 //----------
 
-void QueryCommand::sort_matches_by_kmer_counts (void)
+void QueryCommand::sort_matches_by_smer_counts (void)
 	{
 	for (auto& q : queries)
 		{
@@ -523,11 +507,11 @@ void QueryCommand::print_matches
 
 //----------
 //
-// print_matches_with_kmer_counts--
+// print_matches_with_smer_counts--
 //
 //----------
 
-void QueryCommand::print_matches_with_kmer_counts
+void QueryCommand::print_matches_with_smer_counts
    (std::ostream& out) const
 	{
 	std::ios::fmtflags saveOutFlags(out.flags());
@@ -545,11 +529,11 @@ void QueryCommand::print_matches_with_kmer_counts
 			
 
 			out << name
-			    << " " << numPassed << "/" << q->numPositions;
-			if (q->numPositions == 0)
+			    << " " << numPassed << "/" << q->numHashes;
+			if (q->numHashes == 0)
 				out << " 0"; // instead of dividing by zero
 			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
+				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
 
 			out << endl;
 			matchIx++;
@@ -561,11 +545,11 @@ void QueryCommand::print_matches_with_kmer_counts
 
 //----------
 //
-// print_kmer_hit_counts--
+// print_smer_hit_counts--
 //
 //----------
 
-void QueryCommand::print_kmer_hit_counts
+void QueryCommand::print_smer_hit_counts
    (std::ostream& out) const
 	{
 	std::ios::fmtflags saveOutFlags(out.flags());
@@ -589,11 +573,11 @@ void QueryCommand::print_kmer_hit_counts
 			bool queryPasses = (numPassed >= q->neededToPass);
 
 			out << q->name << " vs " << name
-				<< " " << numPassed << "/" << q->numPositions;
-			if (q->numPositions == 0)
+				<< " " << numPassed << "/" << q->numHashes;
+			if (q->numHashes == 0)
 				out << " 0"; // instead of dividing by zero
 			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
+				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
 			if (queryPasses) out << " hit";
 			out << endl;
 			matchIx++;

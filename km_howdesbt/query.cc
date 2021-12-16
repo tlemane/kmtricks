@@ -29,7 +29,7 @@ Query::Query
    (const querydata& qd,
 	double _threshold)
 	  :	threshold(_threshold),
-		numPositions(0),
+		numHashes(0),
 		neededToPass(0),
 		neededToFail(0),
 		numUnresolved(0),
@@ -48,7 +48,7 @@ Query::Query
     std::shared_ptr<km::HashWindow> hashwin,
     uint32_t minimsize)
 	  :	threshold(_threshold),
-		numPositions(0),
+		numHashes(0),
 		neededToPass(0),
 		neededToFail(0),
 		numUnresolved(0),
@@ -78,28 +78,28 @@ struct KmerHash
   }
 };
 
-void Query::kmerize
+void Query::smerize
    (BloomFilter*	bf,
 	bool			distinct,
-	bool			populateKmers)
+	bool			populateSmers)
 	{
 	bf->preload();
-	u32 kmerSize = bf->kmerSize;
+	u32 smerSize = bf->smerSize;
 
 	if (bf->numHashes > 1)
 		fatal ("internal error: "
 		     + bf->identity() + " uses more than one hash function");
 
-	kmerPositions.clear();
-	kmers.clear();
+	smerHashes.clear();
+	smers.clear();
 
-	// if the sequence is too short, there are no kmers
+	// if the sequence is too short, there are no smers
 
-	if (seq.length() < kmerSize)
+	if (seq.length() < smerSize)
 		return;
 
-	// scan the sequence's kmers, convert to hash positions, and collect the
-	// distinct positions; optionally collect the corresponding kmers
+	// scan the sequence's smers, convert to hash positions, and collect the
+	// distinct positions; optionally collect the corresponding smers
 
     set<u64> positionSet;
 	pair<set<u64>::iterator,bool> status;
@@ -109,13 +109,13 @@ void Query::kmerize
 	for (size_t ix=0; ix<seq.length() ; ix++)
 		{
 		if (not nt_is_acgt(seq[ix])) { goodNtRunLen = 0;  continue; }
-		if (++goodNtRunLen < kmerSize) continue;
+		if (++goodNtRunLen < smerSize) continue;
 
-		string mer = seq.substr(ix+1-kmerSize,kmerSize);
+		string mer = seq.substr(ix+1-smerSize,smerSize);
         u64 pos = 0;
         if (m_repartitor)
         {
-          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(kmerSize, mer, m_hash_win, m_repartitor, m_minim_size, pos);
+          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, mer, m_hash_win, m_repartitor, m_minim_size, pos);
         }
         else
         {
@@ -129,19 +129,19 @@ void Query::kmerize
 				if (status.second == false) // pos was already in the set
 					continue;
 				}
-			kmerPositions.emplace_back(pos);
-			if (populateKmers) kmers.emplace_back(mer);
+			smerHashes.emplace_back(pos);
+			if (populateSmers) smers.emplace_back(mer);
 			}
 
 		}
 	}
 
-void Query::sort_kmer_positions ()
+void Query::sort_smer_positions ()
 	{
-	sort (kmerPositions.begin(), kmerPositions.end());
+	sort (smerHashes.begin(), smerHashes.end());
 	}
 
-void Query::dump_kmer_positions
+void Query::dump_smer_positions
    (u64 _numUnresolved)
 	{
 	// we dump the list as, e.g.
@@ -153,7 +153,7 @@ void Query::dump_kmer_positions
 	bool firstOutput = true;
 	bool parenWritten = false;
 	u64 posIx = 0;
-	for (auto& pos : "kmerPositions")
+	for (auto& pos : "smerHashes")
 		{
 		if (posIx == _numUnresolved)
 			{ cerr << " (" << pos;  parenWritten = true;  firstOutput = false; }
@@ -171,7 +171,7 @@ void Query::dump_kmer_positions
 	cerr << endl;
 	}
 
-u64 Query::kmer_positions_hash
+u64 Query::smer_positions_hash
    (u64 _numUnresolved)
 	{
 	// we compute a simple permutation-invariant hash on a prefix of the list;
@@ -181,7 +181,7 @@ u64 Query::kmer_positions_hash
 	u64 posXor = 0;
 
 	u64 posIx = 0;
-	for (auto& pos : kmerPositions)
+	for (auto& pos : smerHashes)
 		{
 		if (posIx == _numUnresolved)
 			break;

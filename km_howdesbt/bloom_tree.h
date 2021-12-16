@@ -69,10 +69,10 @@ public:
 	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
 	virtual void batch_query (std::vector<Query*> queries, 
-	                          bool completeKmerCounts=false);
+	                          bool completeSmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
-	                                  bool completeKmerCounts=false);
+	                                  bool completeSmerCounts=false);
 	virtual void query_matches_leaves (Query* q);
 
 public:
