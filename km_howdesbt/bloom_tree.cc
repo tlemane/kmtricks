@@ -1358,15 +1358,13 @@ void BloomTree::perform_batch_query
 
 		q->numPassed = q->numPassedStack.back();
 		q->numPassedStack.pop_back();
+		// remove previously added present hashes - PIERRE
+		q->presentHashes.resize(q->numPassed);
 
 		q->numFailed = q->numFailedStack.back();
 		q->numFailedStack.pop_back();
 
-		// remove previously added present hashes - PIERRE
-		uint64_t nbPresentToRemove = q->numPassed;
-		if (not q->numPassedStack.empty()) nbPresentToRemove -= q->numPassedStack.back();
-		std::cerr<<q->presentHashes.size()<<" "<< nbPresentToRemove << " " << q->numPassedStack.empty() << std::endl;
-		q->presentHashes.resize(q->presentHashes.size() - nbPresentToRemove);
+	
 
 		}
 
@@ -1390,6 +1388,7 @@ void BloomTree::query_matches_leaves
 		// In q->presentHashesStack (vector<unordered_set<uint_64>>)
 		std::unordered_set <std::uint64_t> local_presentHashes (q->presentHashes.begin(), q->presentHashes.end());
 		q->presentHashesStack.push_back( local_presentHashes );
+		// Note: local_presentHashes.size() may be smaller than q->numPassed as hash values may be repeated
 		}
 	}
 
