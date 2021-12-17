@@ -1387,7 +1387,8 @@ void BloomTree::query_matches_leaves
 		// Store resolved positive hash values here.
 		// In q->presentHashesStack (vector<unordered_set<uint_64>>)
 		std::unordered_set <std::uint64_t> local_presentHashes (q->presentHashes.begin(), q->presentHashes.end());
-		q->presentHashesStack.push_back( local_presentHashes );
+		q->presentHashesStack.push_back(std::move(local_presentHashes));
+		
 		// Note: local_presentHashes.size() may be smaller than q->numPassed as hash values may be repeated
 		}
 	}
