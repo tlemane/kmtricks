@@ -1,6 +1,7 @@
 #ifndef query_H
 #define query_H
 
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -59,8 +60,10 @@ public:
 										// .. assure that the smerHashes[ix]
 										// .. corresponds to smers[ix] for each
 										// .. ix
-
-	std::uint64_t numHashes;			// total size of smerHashes
+	std::vector <uint64_t> presentHashes ; // contains hash value of 
+										// .. positive smers at a 
+										// .. given node of the tree
+										// $$$ think up a destructor
 	std::uint64_t neededToPass;			// number of smers required, to judge
 										// .. the query as a "pass"
 	std::uint64_t neededToFail;			// number of smers required, to judge
@@ -79,18 +82,12 @@ public:
 										// .. each match; only valid if the
 										// .. search reached the leaf without
 										// .. having been pruned
-    std::vector<std::uint64_t> matchesAdjustedHits;  // adjusted value of
-										// .. numPassed (corresponding to each
-										// .. match), to .. account for
-										// .. estimated bloom filter false
-										// .. positives; only valid if the
-										// .. search reached the leaf without
-										// .. having been pruned, and only if
-										// .. adjustsmerCounts is true
-
-										// stacks to maintain numUnresolved,
-										// .. numPassed, and numFailed as we
-										// .. move up and down the tree
+	std::uint64_t numHashes;            // total size of smerHashes
+	std::vector<std::unordered_set <uint64_t>> presentHashesStack ; // for each leave 
+										// .. that matches this query,
+										// .. store positive kmer set
+										// $$$ think up a destructor
+	
     std::vector<std::uint64_t> numUnresolvedStack;
     std::vector<std::uint64_t> numPassedStack;
     std::vector<std::uint64_t> numFailedStack;

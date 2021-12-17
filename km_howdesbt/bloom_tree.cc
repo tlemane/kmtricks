@@ -1116,17 +1116,17 @@ void BloomTree::batch_query
 	// perform the query
 
 
-	u64 activeQueries = localQueries.size();
-	if (activeQueries > 0)
-		perform_batch_query(activeQueries, localQueries, completeSmerCounts);
+	u64 nbActiveQueries = localQueries.size();
+	if (nbActiveQueries > 0)
+		perform_batch_query(nbActiveQueries, localQueries, completeSmerCounts);
 	}
 
 void BloomTree::perform_batch_query
-   (u64				activeQueries,
+	(u64			nbActiveQueries,
 	vector<Query*>	queries,
 	bool			completeSmerCounts)
 	{
-	u64				incomingQueries = activeQueries;
+	u64				nbIncomingQueries = nbActiveQueries;
 	u64				qIx;
 
 	// skip through dummy nodes
@@ -1135,7 +1135,7 @@ void BloomTree::perform_batch_query
 		{
 
 		for (const auto& child : children)
-			child->perform_batch_query(activeQueries,queries,completeSmerCounts);
+			child->perform_batch_query(nbActiveQueries,queries,completeSmerCounts);
 		return;
 		}
 
@@ -1143,7 +1143,7 @@ void BloomTree::perform_batch_query
 
 	if (queryStats != nullptr)
 		{
-		for (qIx=0 ; qIx<incomingQueries ; qIx++)
+		for (qIx=0 ; qIx<nbIncomingQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
 			queryStats[q->batchIx].examined = true;
@@ -1153,7 +1153,7 @@ void BloomTree::perform_batch_query
 
 	// save query state
 
-	for (qIx=0 ; qIx<incomingQueries ; qIx++)
+	for (qIx=0 ; qIx<nbIncomingQueries ; qIx++)
 		{
 		Query* q = queries[qIx];
 		q->numUnresolvedStack.emplace_back(q->numUnresolved);
@@ -1171,8 +1171,8 @@ void BloomTree::perform_batch_query
 	//……… .. siblings, before we descend to the siblings' children
 
 	qIx = 0;
-	while (qIx < activeQueries)
-		{ // note that activeQueries may change during this loop
+	while (qIx < nbActiveQueries)
+		{ // note that nbActiveQueries may change during this loop
 		Query* q = queries[qIx];
 		bool queryPasses = false;
 		bool queryFails  = false;
@@ -1199,10 +1199,11 @@ void BloomTree::perform_batch_query
 				}
 			else if (resolution == BloomFilter::present)
 				{
+					// PIERRE
+				q->presentHashes.push_back(hashvalue);
+				q->numPassed++;
 				// if we're NOT computing complete smer counts, we can check
 				// whether we've observed enough hits to pass this node early
-
-				q->numPassed++;
 				if ((not completeSmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
 				}
@@ -1252,9 +1253,9 @@ void BloomTree::perform_batch_query
 
 		if (queryPasses or queryFails)
 			{
-			activeQueries--;
-			queries[qIx] = queries[activeQueries];
-			queries[activeQueries] = q;
+			nbActiveQueries--;
+			queries[qIx] = queries[nbActiveQueries];
+			queries[nbActiveQueries] = q;
 			}
 		else
 			{
@@ -1292,16 +1293,16 @@ void BloomTree::perform_batch_query
 
 	// sanity check: if we're at a leaf, we should have resolved all queries
 
-	if ((isLeaf) and (activeQueries > 0))
+	if ((isLeaf) and (nbActiveQueries > 0))
 		{
 		cerr << "internal error: failed to resolve queries at leaf"
 			 << " \"" << bfFilename << "\"" << endl;
 		cerr << "unresolved queries:";
-		for (qIx=0 ; qIx<activeQueries ; qIx++)
+		for (qIx=0 ; qIx<nbActiveQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
 			if (qIx == 0) cerr << " " << q->name;
-			         else cerr << ", " << q->name;
+			else cerr << ", " << q->name;
 			}
 		cerr << endl;
 		fatal ();
@@ -1314,7 +1315,7 @@ void BloomTree::perform_batch_query
 
 	if (isPositionAdjustor)
 		{
-		for (qIx=0 ; qIx<activeQueries ; qIx++)
+		for (qIx=0 ; qIx < nbActiveQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
 			bf->adjust_positions_in_list(q->smerHashes,q->numUnresolved);
@@ -1324,17 +1325,17 @@ void BloomTree::perform_batch_query
 
 	// pass whatever queries remain down to the subtrees
 
-	if (activeQueries > 0)
+	if (nbActiveQueries > 0)
 		{
 		for (const auto& child : children)
-			child->perform_batch_query(activeQueries,queries,completeSmerCounts);
+			child->perform_batch_query(nbActiveQueries,queries,completeSmerCounts);
 		}
 
 	// restore smer/position lists as we move up the tree
 
 	if (isPositionAdjustor)
 		{
-		for (qIx=0 ; qIx<activeQueries ; qIx++)
+		for (qIx=0 ; qIx<nbActiveQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
 			bf->restore_positions_in_list(q->smerHashes,q->numUnresolved);
@@ -1349,7 +1350,7 @@ void BloomTree::perform_batch_query
 
 	// restore query state
 
-	for (qIx=0 ; qIx<incomingQueries ; qIx++)
+	for (qIx=0 ; qIx<nbIncomingQueries ; qIx++)
 		{
 		Query* q = queries[qIx];
 		q->numUnresolved = q->numUnresolvedStack.back();
@@ -1361,6 +1362,11 @@ void BloomTree::perform_batch_query
 		q->numFailed = q->numFailedStack.back();
 		q->numFailedStack.pop_back();
 
+		// remove previously added present hashes - PIERRE
+		uint64_t nbPresentToRemove = q->numPassed;
+		if (not q->numPassedStack.empty()) nbPresentToRemove -= q->numPassedStack.back();
+		std::cerr<<q->presentHashes.size()<<" "<< nbPresentToRemove << " " << q->numPassedStack.empty() << std::endl;
+		q->presentHashes.resize(q->presentHashes.size() - nbPresentToRemove);
 
 		}
 
@@ -1373,12 +1379,17 @@ void BloomTree::query_matches_leaves
 		{
 		for (const auto& child : children)
 			child->query_matches_leaves (q);
-		}
+		} 
 	else
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
-		
+
+		// PIERRE 16 DEC 2021. 
+		// Store resolved positive hash values here.
+		// In q->presentHashesStack (vector<unordered_set<uint_64>>)
+		std::unordered_set <std::uint64_t> local_presentHashes (q->presentHashes.begin(), q->presentHashes.end());
+		q->presentHashesStack.push_back( local_presentHashes );
 		}
 	}
 

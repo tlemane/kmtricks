@@ -960,7 +960,7 @@ int BloomFilter::lookup
 
 	// we assume, without checking, that 0 <= hashvalue < numBits
 	if ((*bv)[hashvalue] == 0) return absent;
-	                else return unresolved;
+	else return unresolved;
 	}
 
 //----------
