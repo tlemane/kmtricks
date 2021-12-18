@@ -875,6 +875,14 @@ km_options_t query_cli(std::shared_ptr<bc::Parser<1>> cli, query_options_t optio
     ->checker(bc::check::f::range(0.0, 1.0))
     ->setter(options->threshold);
 
+  
+  query_cmd->add_param("--z",
+                       "value. If bigger than 0, need z+1 indexed words (called s-mers) to obtain a k-mer (k=s+z)")
+    ->meta("INT")
+    ->def("0")
+    ->checker(bc::check::f::range(0, 1000))
+    ->setter(options->z);
+
   query_cmd->add_param("--sort", "sort matched leaves by the number of query k-mers present")
     ->as_flag()
     ->setter(options->sort);

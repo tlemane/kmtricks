@@ -687,6 +687,7 @@ struct main_query
     ss << opt->query << " ";
     ss << "--repart=" << fmt::format("{}_gatb/repartition.minimRepart", KmDir::get().m_repart_storage) << " ";
     ss << "--win=" << KmDir::get().m_hash_win << " ";
+    ss << "--z=" << opt->z << " ";
     if (opt->check) ss << "--consistencycheck ";
     if (opt->sort) ss << "--sort ";
     if (opt->output != "stdout") ss << "--out=" << opt->output;

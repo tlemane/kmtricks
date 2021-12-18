@@ -38,6 +38,7 @@ public:
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
 	bool completeSmerCounts;
+	int z; 							// findere strategy
 
 	std::vector<Query*> queries;
 	};

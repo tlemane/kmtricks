@@ -35,6 +35,7 @@ struct query_options : km_options
   double threshold;
   bool sort;
   bool check;
+  int z;
   std::string display()
   {
     std::stringstream ss;
@@ -44,6 +45,7 @@ struct query_options : km_options
     RECORD(ss, threshold);
     RECORD(ss, sort);
     RECORD(ss, check);
+    RECORD(ss, z);
     std::string ret = ss.str(); ret.pop_back(); ret.pop_back();
     return ret;
   }

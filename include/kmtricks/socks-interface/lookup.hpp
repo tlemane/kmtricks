@@ -35,6 +35,7 @@ struct lookup_options : km_options
   double threshold;
   std::string out_type;
   std::string query;
+  int z;
 
   std::string display()
   {
@@ -44,6 +45,7 @@ struct lookup_options : km_options
     RECORD(ss, out_type);
     RECORD(ss, query);
     RECORD(ss, threshold);
+    RECORD(ss, z);
     return ss.str();
   }
 };

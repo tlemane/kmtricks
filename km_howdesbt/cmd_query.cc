@@ -74,15 +74,20 @@ void QueryCommand::usage
 	s << "                       and report the number of kmers present" << endl;
 	s << "                       (by default we just report the matched leaves without" << endl;
 	s << "                       regard to which matches are better)" << endl;
+	s << "	--z=<F>				 If z is bigger than 0, apply the findere strategy." << endl;
+	s << " 						 In such case, a k-mer is considered as present" <<endl;
+	s << " 						 if all its s-mers are presents," << endl;
+	s << " 						 with k = s+z, and s being the size of the words indexed in"<< endl;
+	s << " 						 bloom filters. Hence, with z=0 (defaut value), no fidere " <<endl;
+	s << " 						 approach is applied, and words indexed in the blomm filters" <<endl;
+	s << " 						 are queried" << endl; 
 	s << "  --consistencycheck   before searching, check that bloom filter properties are" << endl;
 	s << "                       consistent across the tree" << endl;
 	s << "                       (not needed with --usemanager)" << endl;
 	s << "  --time               report wall time and node i/o time" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
-// (no longer advertised -- order_query_results.sh isn't part of the distribution)
-//	s << "  --backwardcompatible (requires --adjust or --sort) output is backward" << endl;
-//	s << "                       compatible with order_query_results.sh" << endl;
+
 	}
 void QueryCommand::parse
    (int		_argc,
@@ -96,6 +101,7 @@ void QueryCommand::parse
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
 	sortBySmerCounts        = false;
 	checkConsistency        = false;
+	z						= 0;
 
 
 	// skip command name
@@ -167,6 +173,13 @@ void QueryCommand::parse
         if (is_prefix_of(arg, "--win="))
         {
 			winFileName = argVal;
+			continue;
+        }
+
+		// --z=<F>
+		if (is_prefix_of(arg, "--z="))
+        {
+			z = std::stod (argVal);
 			continue;
         }
 
@@ -253,7 +266,6 @@ void QueryCommand::parse
 
 	if (treeFilename.empty())
 		chastise ("you have to provide a tree topology file");
-
 
 
 	completeSmerCounts = sortBySmerCounts;
