@@ -424,6 +424,11 @@ void QueryCommand::read_queries()
 
 void QueryCommand::sort_matches_by_smer_counts (void)
 	{
+	// todo pierre: reorder also q->presentHashesStack in case z>0
+	// todo pierre: currently only 
+	// todo pierre: - names (q->matches)
+	// todo pierre: - numPassed (q->matchesNumPassed)
+	// todo pierre: are reordered wrt to smer counts
 	for (auto& q : queries)
 		{
 		vector<pair<u64,string>> matches;
@@ -478,6 +483,8 @@ void QueryCommand::print_matches
 void QueryCommand::print_matches_with_smer_counts
    (std::ostream& out) const
 	{
+		// todo pierre: if z>0: recompute hash of s-mers, and apply findere process to output positive kmers composed of 
+		// todo pierre: z positive smers 
 	std::ios::fmtflags saveOutFlags(out.flags());
 
 	for (auto& q : queries)
@@ -513,7 +520,7 @@ void QueryCommand::print_matches_with_smer_counts
 //
 //----------
 
-void QueryCommand::print_smer_hit_counts
+void QueryCommand::print_smer_hit_counts // useless $$$ remove
    (std::ostream& out) const
 	{
 	std::ios::fmtflags saveOutFlags(out.flags());
