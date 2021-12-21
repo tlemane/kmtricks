@@ -466,6 +466,9 @@ void QueryCommand::sort_matches_by_smer_counts (void)
 void QueryCommand::print_matches
    (std::ostream& out) const
 	{
+		// $$$ delete this function afeter removing completeSmerCounts option (always true with findere)
+		cerr<<" print_matches deprecated "<<endl;
+		exit(EXIT_FAILURE);
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
@@ -474,12 +477,86 @@ void QueryCommand::print_matches
 		}
 	}
 
+
+
+/**
+ * @brief From hash values associated to smers to a vector of Positive kmers
+ * @param sequence: input sequence.
+ * @param local_presentHashes: s-mer hash values positive for this sequence
+ * @param smerSize size of indexed s-mers
+ * @param z determines k, the  size of queried k-mers (k=s+z)
+ * @return The result of findere's query on the sequence.
+ */
+std::vector<bool> positiveKmers(const std::string& sequence, const std::unordered_set<std::uint64_t>& local_presentHashes, const unsigned int& smerSize, const unsigned int& z) {
+    const unsigned int kmerSize = smerSize + z; 
+    unsigned long long size = sequence.size();
+    std::vector<bool> response(size - kmerSize + 1, false);
+    unsigned long long stretchLength = 0;  // number of consecutive positives kmers
+    unsigned long long j = 0;              // index of the query vector
+    bool extending_stretch = true;
+    while (j < size - smerSize + 1) {
+		// TODO : get the s.substr(j, k) hash value;
+		const uint64_t smer_hash_value = 0; 
+		if (local_presentHashes.contains(smer_hash_value)) {
+            if (extending_stretch) {
+                stretchLength++;
+                j++;
+            } else {
+                extending_stretch = true;
+                j = j - z;
+            }
+        } else {
+            if (stretchLength >= z) {
+                for (unsigned long long t = j - stretchLength; t < j - z; t++) response[t] = true;
+            }
+            stretchLength = 0;
+            extending_stretch = false;
+            j = j + z + 1;
+        }
+    }
+    // Last values:
+    if (stretchLength >= z) {
+        for (unsigned long long t = size - smerSize + 1 - stretchLength; t < size - kmerSize + 1; t++) response[t] = true;
+    }
+
+    return response;
+}
+
+
+
+/**
+ * @brief Computes the number of shared position between the query and the index given the response of findere.
+ * @param bv The result of the query.
+ * @param kmerSize the value of k.
+ * @return The number of shared position between the query and the index.
+ */
+unsigned long long get_nb_positions_covered(std::vector<bool> bv, const unsigned int kmerSize) {
+    unsigned long long nb_positions_covered = 0;  // NB pos covered by at least one shared K-mer
+    long long last_covered_position = -1;
+    long long pos = 0;
+    for (auto shared : bv) {
+        if (shared) {
+            if (last_covered_position < pos) {
+                nb_positions_covered += kmerSize;
+            } else {
+                nb_positions_covered += pos + kmerSize - last_covered_position - 1;
+            }
+
+            last_covered_position = pos + kmerSize - 1;
+        }
+        pos++;
+    }
+    return nb_positions_covered;
+}
+
+
+
+
 //----------
 //
 // print_matches_with_smer_counts--
 //
 //----------
-
 void QueryCommand::print_matches_with_smer_counts
    (std::ostream& out) const
 	{
@@ -506,50 +583,6 @@ void QueryCommand::print_matches_with_smer_counts
 			else
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
 
-			out << endl;
-			matchIx++;
-			}
-		}
-
-	out.flags(saveOutFlags);
-	}
-
-//----------
-//
-// print_smer_hit_counts--
-//
-//----------
-
-void QueryCommand::print_smer_hit_counts // useless $$$ remove
-   (std::ostream& out) const
-	{
-	std::ios::fmtflags saveOutFlags(out.flags());
-
-	for (auto& q : queries)
-		{
-		int matchCount = 0;
-		for (size_t matchIx=0 ; matchIx<q->matches.size() ; matchIx++)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			bool queryPasses = (numPassed >= q->neededToPass);
-			if (queryPasses) matchCount++;
-			}
-
-		out << "*" << q->name << " " << matchCount << endl;
-
-		int matchIx = 0;
-		for (auto& name : q->matches)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			bool queryPasses = (numPassed >= q->neededToPass);
-
-			out << q->name << " vs " << name
-				<< " " << numPassed << "/" << q->numHashes;
-			if (q->numHashes == 0)
-				out << " 0"; // instead of dividing by zero
-			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
-			if (queryPasses) out << " hit";
 			out << endl;
 			matchIx++;
 			}

@@ -317,7 +317,7 @@ void Query::read_query_file
 
 		else if (haveFastaHeaders)
 			{
-			qd.seq += line;
+			qd.seq += line; // $$$ pierre: why to store the sequence ?
 			}
 
 		// otherwise we're in line-by-line mode, add this line to the list

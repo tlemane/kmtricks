@@ -60,8 +60,8 @@ public:
 										// .. assure that the smerHashes[ix]
 										// .. corresponds to smers[ix] for each
 										// .. ix
-	std::vector <uint64_t> presentHashes ; // contains hash value of 
-										// .. positive smers at a 
+	std::vector <uint64_t> presentHashes ; // contains  hash values 
+										// .. of positive smers at a 
 										// .. given node of the tree
 										// $$$ think up a destructor
 	std::uint64_t neededToPass;			// number of smers required, to judge
@@ -85,7 +85,7 @@ public:
 	std::uint64_t numHashes;            // total size of smerHashes
 	std::vector<std::unordered_set <uint64_t>> presentHashesStack ; // for each leave 
 										// .. that matches this query,
-										// .. store positive kmer set
+										// .. store positive positions of kmer set
 										// $$$ think up a destructor
 	
     std::vector<std::uint64_t> numUnresolvedStack;

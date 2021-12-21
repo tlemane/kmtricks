@@ -1104,7 +1104,7 @@ void BloomTree::batch_query
 
 		q->numPassed     = 0;
 		q->numFailed     = 0;
-		q->numHashes  = numHashes;
+		q->numHashes  	 = numHashes;
 		q->numUnresolved = numHashes;
 		q->neededToPass  = ceil (q->threshold * numHashes);
 		q->neededToFail  = (numHashes - q->neededToPass) + 1;
