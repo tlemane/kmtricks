@@ -298,6 +298,7 @@ int QueryCommand::execute()
 	// read the tree
 
 	BloomTree* root = BloomTree::read_topology(treeFilename);
+
 	useFileManager = root->nodesShareFiles;
 
 	vector<BloomTree*> order;
@@ -334,6 +335,7 @@ int QueryCommand::execute()
 				node->bf->is_consistent_with (modelBf, /*beFatal*/ true);
 			}
 		}
+	
 
 	// read the queries
 
@@ -344,26 +346,58 @@ int QueryCommand::execute()
 
 	root->batch_query(queries,completeSmerCounts);
 
+
+	// get the smer size
+	// TODO dirty, how to easily get the s value?
+	unsigned int smerSize = 0;
+	BloomFilter* modelBf = nullptr;
+
+	if (order.size() == 0)
+		root->post_order(order);
+	for (const auto& node : order)
+		{
+		node->preload();
+		smerSize = node->bf->smerSize;
+		break;
+		}			
+		
+	// const unsigned int smerSize = root->bf->smerSize;
+
 	// report results
 
-	if (sortBySmerCounts)
-		sort_matches_by_smer_counts();
+	// findere approach
+	if (z > 0){
+		if (sortBySmerCounts) // todo SORT ALSO POSITIVE HASHES SETS
+			std::cerr << "warning results with findere (z>0) unsorted" << std::endl;
+		
+		if (matchesFilename.empty())
+				print_matches_with_kmer_counts_and_spans (cout, smerSize, z);
+		else
+			{
+			std::ofstream out(matchesFilename);
+			print_matches_with_kmer_counts_and_spans (out, smerSize, z);
+			}
+	} // findere
+	else { // no indere
+		if (sortBySmerCounts)
+			sort_matches_by_smer_counts(); 
 
-	if (matchesFilename.empty())
-		{
-		if (completeSmerCounts)
-			print_matches_with_smer_counts (cout);
+		if (matchesFilename.empty())
+			{
+			if (completeSmerCounts)
+				print_matches_with_smer_counts (cout);
+			else
+				print_matches (cout);
+			}
 		else
-			print_matches (cout);
-		}
-	else
-		{
-		std::ofstream out(matchesFilename);
-		if (completeSmerCounts)
-			print_matches_with_smer_counts (out);
-		else
-			print_matches (out);
-		}
+			{
+			std::ofstream out(matchesFilename);
+			if (completeSmerCounts)
+				print_matches_with_smer_counts (out);
+			else
+				print_matches (out);
+			}
+	} // no findere
 		
 
 //$$$ where do we delete the tree?  looks like a memory leak
@@ -488,7 +522,7 @@ void QueryCommand::print_matches
  * @param z determines k, the  size of queried k-mers (k=s+z)
  * @return The result of findere's query on the sequence.
  */
-std::vector<bool> QueryCommand::positiveKmers(const std::string& sequence, 
+std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence, 
 											const std::unordered_set<std::uint64_t>& local_presentHashes, 
 											const unsigned int& smerSize, 
 											const unsigned int& z) const {
@@ -505,7 +539,7 @@ std::vector<bool> QueryCommand::positiveKmers(const std::string& sequence,
 	
     while (j < size - smerSize + 1) {
 		// get the s.substr(j, k) hash value;
-		const uint64_t smer_hash_value = 0; 
+		uint64_t smer_hash_value = 0; 
 		km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, 
 											sequence.substr(j, smerSize), 
 											hash_win, 
@@ -514,7 +548,7 @@ std::vector<bool> QueryCommand::positiveKmers(const std::string& sequence,
 											smer_hash_value);
 
 
-		if (local_presentHashes.contains(smer_hash_value)) {
+		if (local_presentHashes.count(smer_hash_value) > 0) {
             if (extending_stretch) {
                 stretchLength++;
                 j++;
@@ -566,6 +600,63 @@ unsigned long long get_nb_positions_covered(std::vector<bool> bv, const unsigned
     return nb_positions_covered;
 }
 
+
+
+
+//----------
+//
+// print_matches_with_smer_counts--
+//
+//----------
+void QueryCommand::print_matches_with_kmer_counts_and_spans
+   (	std::ostream& out,
+		const unsigned int& smerSize, 
+		const unsigned int& z
+   ) const
+	{
+	// as z>0: recompute hash of s-mers, and apply findere process to output positive kmers 
+	std::ios::fmtflags saveOutFlags(out.flags());
+
+
+
+	for (auto& q : queries)
+		{
+			
+		out << "*" << q->name << " " << q->matches.size() << endl;
+		std::string   seq = q->seq;
+		int matchIx = 0;
+		for (auto& name : q->matches)
+			{
+			u64 numPassed = q->matchesNumPassed[matchIx];
+			std::unordered_set<std::uint64_t> local_presentHashes = q->presentHashesStack[matchIx];
+			std::vector<bool> positive_kmers = get_positive_kmers(	seq, 
+																	local_presentHashes, 
+																	smerSize, 
+																	z );
+
+			unsigned long long nb_positions_covered = 
+				get_nb_positions_covered(positive_kmers, smerSize + z);
+			
+
+			out << name
+			    << " smers" << numPassed << "/" << q->numHashes;
+			if (q->numHashes == 0)
+				out << " 0"; // instead of dividing by zero
+			else
+				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
+
+			out << " Nb kmers " << std::count(positive_kmers.begin(), positive_kmers.end(), true) << " ";
+			out << " Span kmers " << nb_positions_covered;
+			out << " vector " ;
+			for (auto i: positive_kmers)
+    			cout << i << ' ';
+			out << endl;
+			matchIx++;
+			}
+		}
+
+	out.flags(saveOutFlags);
+	}
 
 
 //----------
