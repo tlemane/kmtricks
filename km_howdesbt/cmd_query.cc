@@ -479,6 +479,7 @@ void QueryCommand::print_matches
 
 
 
+
 /**
  * @brief From hash values associated to smers to a vector of Positive kmers
  * @param sequence: input sequence.
@@ -487,16 +488,32 @@ void QueryCommand::print_matches
  * @param z determines k, the  size of queried k-mers (k=s+z)
  * @return The result of findere's query on the sequence.
  */
-std::vector<bool> positiveKmers(const std::string& sequence, const std::unordered_set<std::uint64_t>& local_presentHashes, const unsigned int& smerSize, const unsigned int& z) {
+std::vector<bool> QueryCommand::positiveKmers(const std::string& sequence, 
+											const std::unordered_set<std::uint64_t>& local_presentHashes, 
+											const unsigned int& smerSize, 
+											const unsigned int& z) const {
     const unsigned int kmerSize = smerSize + z; 
     unsigned long long size = sequence.size();
     std::vector<bool> response(size - kmerSize + 1, false);
     unsigned long long stretchLength = 0;  // number of consecutive positives kmers
     unsigned long long j = 0;              // index of the query vector
     bool extending_stretch = true;
+
+	// todo: do this only once at  QueryCommand creation
+    std::shared_ptr<km::Repartition> repartitor = std::make_shared<km::Repartition>(repartFileName, "");
+    std::shared_ptr<km::HashWindow> hash_win = std::make_shared<km::HashWindow>(winFileName);
+	
     while (j < size - smerSize + 1) {
-		// TODO : get the s.substr(j, k) hash value;
+		// get the s.substr(j, k) hash value;
 		const uint64_t smer_hash_value = 0; 
+		km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, 
+											sequence.substr(j, smerSize), 
+											hash_win, 
+											repartitor, 
+											hash_win->minim_size(), 
+											smer_hash_value);
+
+
 		if (local_presentHashes.contains(smer_hash_value)) {
             if (extending_stretch) {
                 stretchLength++;
@@ -548,7 +565,6 @@ unsigned long long get_nb_positions_covered(std::vector<bool> bv, const unsigned
     }
     return nb_positions_covered;
 }
-
 
 
 

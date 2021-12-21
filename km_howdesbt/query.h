@@ -16,6 +16,18 @@
 #include <kmtricks/repartition.hpp>
 #include <kmtricks/loop_executor.hpp>
 
+
+template<size_t KSIZE>
+struct KmerHash
+{
+  void operator()(const std::string& mer, std::shared_ptr<km::HashWindow> hw, std::shared_ptr<km::Repartition> repart, uint32_t  minim, uint64_t& pos)
+  {
+    km::Kmer<KSIZE> kmer(mer); km::Kmer<KSIZE> cano = kmer.canonical();
+    uint32_t part = repart->get_partition(cano.minimizer(minim).value());
+    pos = km::KmerHashers<1>::WinHasher<KSIZE>(part, hw->get_window_size_bits())(cano);
+  }
+};
+
 //----------
 //
 // classes in this module--

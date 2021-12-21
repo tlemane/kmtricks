@@ -67,23 +67,13 @@ Query::~Query()
 	{
 	}
 
-template<size_t KSIZE>
-struct KmerHash
-{
-  void operator()(const std::string& mer, std::shared_ptr<km::HashWindow> hw, std::shared_ptr<km::Repartition> repart, uint32_t  minim, uint64_t& pos)
-  {
-    km::Kmer<KSIZE> kmer(mer); km::Kmer<KSIZE> cano = kmer.canonical();
-    uint32_t part = repart->get_partition(cano.minimizer(minim).value());
-    pos = km::KmerHashers<1>::WinHasher<KSIZE>(part, hw->get_window_size_bits())(cano);
-  }
-};
 
 void Query::smerize
    (BloomFilter*	bf,
 	bool			distinct,
 	bool			populateSmers)
 	{
-	bf->preload();
+	bf->preload(); // $$$ pierre: why preload the bf for each query ?
 	u32 smerSize = bf->smerSize;
 
 	if (bf->numHashes > 1)
@@ -301,7 +291,7 @@ void Query::read_query_file
 				else
 					{
 					qd.batchIx = queries.size();
-					queries.emplace_back(new Query(qd,threshold, repartitor, hwin, hwin->minim_size()));
+					queries.emplace_back(new Query(qd, threshold, repartitor, hwin, hwin->minim_size()));
 					}
 				}
 
