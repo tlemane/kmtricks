@@ -367,39 +367,17 @@ int QueryCommand::execute()
 
 	// report results
 
+	if (sortBySmerCounts)
+		sort_matches_by_smer_counts(); 
 	// findere approach
-	if (z >= 0){
-		if (sortBySmerCounts) // todo SORT ALSO POSITIVE HASHES SETS
-			std::cerr << "warning results with findere (z>0) unsorted" << std::endl;
-		
-		if (matchesFilename.empty())
-				print_matches_with_kmer_counts_and_spans (cout, smerSize, z);
-		else
-			{
-			std::ofstream out(matchesFilename);
-			print_matches_with_kmer_counts_and_spans (out, smerSize, z);
-			}
-	} // findere
-	else { // no indere
-		if (sortBySmerCounts)
-			sort_matches_by_smer_counts(); 
-
-		if (matchesFilename.empty())
-			{
-			if (completeSmerCounts)
-				print_matches_with_smer_counts (cout);
-			else
-				print_matches (cout);
-			}
-		else
-			{
-			std::ofstream out(matchesFilename);
-			if (completeSmerCounts)
-				print_matches_with_smer_counts (out);
-			else
-				print_matches (out);
-			}
-	} // no findere
+	if (matchesFilename.empty())
+			print_matches_with_kmer_counts_and_spans (cout, smerSize, z);
+	else
+		{
+		std::ofstream out(matchesFilename);
+		print_matches_with_kmer_counts_and_spans (out, smerSize, z);
+		}
+	
 		
 
 //$$$ where do we delete the tree?  looks like a memory leak
