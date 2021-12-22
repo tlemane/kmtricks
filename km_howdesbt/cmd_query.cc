@@ -124,7 +124,6 @@ void QueryCommand::parse
 		else argVal = arg.substr(argValIx+1);
 
 		// --help, etc.
-
 		if ((arg == "--help")
 		 || (arg == "-help")
 		 || (arg == "--h")
@@ -268,6 +267,10 @@ void QueryCommand::parse
 		chastise ("you have to provide a tree topology file");
 
 
+
+	repartitor = std::make_shared<km::Repartition>(repartFileName, "");
+	hash_win = std::make_shared<km::HashWindow>(winFileName);
+
 	completeSmerCounts = sortBySmerCounts;
 
 	// assign threshold to any unassigned queries
@@ -361,12 +364,11 @@ int QueryCommand::execute()
 		break;
 		}			
 		
-	// const unsigned int smerSize = root->bf->smerSize;
 
 	// report results
 
 	// findere approach
-	if (z > 0){
+	if (z >= 0){
 		if (sortBySmerCounts) // todo SORT ALSO POSITIVE HASHES SETS
 			std::cerr << "warning results with findere (z>0) unsorted" << std::endl;
 		
@@ -533,20 +535,22 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
     unsigned long long j = 0;              // index of the query vector
     bool extending_stretch = true;
 
-	// todo: do this only once at  QueryCommand creation
-    std::shared_ptr<km::Repartition> repartitor = std::make_shared<km::Repartition>(repartFileName, "");
-    std::shared_ptr<km::HashWindow> hash_win = std::make_shared<km::HashWindow>(winFileName);
-	
+	cerr << " PIERRE " << size - smerSize + 1<< " vs " <<local_presentHashes.size() << endl;
+	cerr << " PIERRE positive ";
+	for (auto hashv : local_presentHashes)
+		cerr << hashv << " ";
+	cerr << endl;
+	cerr << " PIERRE queried ";
     while (j < size - smerSize + 1) {
 		// get the s.substr(j, k) hash value;
-		uint64_t smer_hash_value = 0; 
+		uint64_t smer_hash_value; 
 		km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, 
 											sequence.substr(j, smerSize), 
 											hash_win, 
 											repartitor, 
 											hash_win->minim_size(), 
 											smer_hash_value);
-
+		cerr << smer_hash_value << " ";
 
 		if (local_presentHashes.count(smer_hash_value) > 0) {
             if (extending_stretch) {
@@ -565,6 +569,7 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
             j = j + z + 1;
         }
     }
+	cerr << endl; // todo remove
     // Last values:
     if (stretchLength >= z) {
         for (unsigned long long t = size - smerSize + 1 - stretchLength; t < size - kmerSize + 1; t++) response[t] = true;
@@ -621,9 +626,9 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 
 	for (auto& q : queries)
 		{
-			
 		out << "*" << q->name << " " << q->matches.size() << endl;
 		std::string   seq = q->seq;
+
 		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
@@ -645,11 +650,12 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 			else
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
 
-			out << " Nb kmers " << std::count(positive_kmers.begin(), positive_kmers.end(), true) << " ";
-			out << " Span kmers " << nb_positions_covered;
-			out << " vector " ;
+			out << " --Nb kmers " << std::count(positive_kmers.begin(), positive_kmers.end(), true) << " ";
+			out << " --Span kmers " << nb_positions_covered;
+			out << " --vector " ;
 			for (auto i: positive_kmers)
     			cout << i << ' ';
+			out << " --size local_presentHashes " << local_presentHashes.size();
 			out << endl;
 			matchIx++;
 			}
@@ -667,8 +673,6 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 void QueryCommand::print_matches_with_smer_counts
    (std::ostream& out) const
 	{
-		// todo pierre: if z>0: recompute hash of s-mers, and apply findere process to output positive kmers composed of 
-		// todo pierre: z positive smers 
 	std::ios::fmtflags saveOutFlags(out.flags());
 
 	for (auto& q : queries)

@@ -52,6 +52,10 @@ public:
 	bool completeSmerCounts;
 	int z; 							// findere strategy
 
+	// needed for findere approach: from smers to hash values when printing results
+    std::shared_ptr<km::Repartition> repartitor; 
+    std::shared_ptr<km::HashWindow> hash_win; 
+
 	std::vector<Query*> queries;
 	};
 

@@ -1201,6 +1201,7 @@ void BloomTree::perform_batch_query
 				{
 					// PIERRE
 				q->presentHashes.push_back(hashvalue);
+				cerr<<" PIERRE PUSHED BACK "<<hashvalue<<endl;
 				q->numPassed++;
 				// if we're NOT computing complete smer counts, we can check
 				// whether we've observed enough hits to pass this node early
@@ -1241,6 +1242,7 @@ void BloomTree::perform_batch_query
 
 		if ((completeSmerCounts) and (isLeaf) and (q->numPassed >= q->neededToPass))
 			queryPasses = true;
+		
 
 		if (queryPasses)
 			query_matches_leaves (q);
@@ -1312,14 +1314,12 @@ void BloomTree::perform_batch_query
 	// this would be a null operation, but for nodes that use rank/select the
 	// position values are modified to reflect the removal of inactive bits in
 	// the bloom filters
-
 	if (isPositionAdjustor)
 		{
 		for (qIx=0 ; qIx < nbActiveQueries ; qIx++)
 			{
 			Query* q = queries[qIx];
 			bf->adjust_positions_in_list(q->smerHashes,q->numUnresolved);
-
 			}
 		}
 
@@ -1339,7 +1339,6 @@ void BloomTree::perform_batch_query
 			{
 			Query* q = queries[qIx];
 			bf->restore_positions_in_list(q->smerHashes,q->numUnresolved);
-
 			}
 		}
 
@@ -1356,10 +1355,13 @@ void BloomTree::perform_batch_query
 		q->numUnresolved = q->numUnresolvedStack.back();
 		q->numUnresolvedStack.pop_back();
 
+		// assert (q->presentHashes.size() == q->numPassed);
 		q->numPassed = q->numPassedStack.back();
 		q->numPassedStack.pop_back();
+
 		// remove previously added present hashes - PIERRE
 		q->presentHashes.resize(q->numPassed);
+
 
 		q->numFailed = q->numFailedStack.back();
 		q->numFailedStack.pop_back();
@@ -1382,12 +1384,13 @@ void BloomTree::query_matches_leaves
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
-
+		// cerr << " PIERRE name "<<name<<" q name "<<q->name<<" q->numPassed " << q->numPassed << endl;
 		// PIERRE 16 DEC 2021. 
 		// Store resolved positive hash values here.
 		// In q->presentHashesStack (vector<unordered_set<uint_64>>)
+		assert(q->numPassed == q->presentHashes.size()); // todo remove when tested
 		std::unordered_set <std::uint64_t> local_presentHashes (q->presentHashes.begin(), q->presentHashes.end());
-		q->presentHashesStack.push_back(std::move(local_presentHashes));
+		q->presentHashesStack.emplace_back(std::move(local_presentHashes));
 		
 		// Note: local_presentHashes.size() may be smaller than q->numPassed as hash values may be repeated
 		}
@@ -1395,9 +1398,9 @@ void BloomTree::query_matches_leaves
 
 
 int BloomTree::lookup
-   (const u64 pos) const
+   (const u64 hash_value) const
 	{
-	int resolution = bf->lookup(pos);
+	int resolution = bf->lookup(hash_value);
 	if  (resolution != BloomFilter::unresolved)
 		return resolution;
 	else if (isLeaf)
