@@ -28,8 +28,8 @@ public:
 	virtual void sort_matches_by_smer_counts (void);
 	virtual void print_matches(std::ostream& out) const;
 	virtual void print_matches_with_smer_counts(std::ostream& out) const;
-	virtual std::vector<bool> get_positive_kmers(const std::string& sequence, 
-											const std::unordered_set<std::uint64_t>& local_presentHashes, 
+	std::vector<bool> get_positive_kmers(const std::string& sequence, 
+											const std::unordered_set<std::size_t>& local_presentHashes, 
 											const unsigned int& smerSize, 
 											const unsigned int& z) const;
 	virtual void print_matches_with_kmer_counts_and_spans

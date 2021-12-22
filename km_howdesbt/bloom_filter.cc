@@ -802,13 +802,13 @@ void BloomFilter::squeeze_by
 	bvs[whichDstBv]->squeeze_by(srcBits);
 	}
 
-// mer_to_position--
+// mer_to_hash_value--
 //	Report the position of a smer in the filter; we return BloomFilter::npos if
 //	the smer's position is not within the filter (this is *not* the same as the
 //	smer being present in the set represent by the filter); the smer can be a
 //	string or 2-bit encoded data
 
-u64 BloomFilter::mer_to_position
+u64 BloomFilter::mer_to_hash_value
    (const string& mer) const
 	{
 	// nota bene: we don't enforce numHashes == 1
@@ -818,7 +818,7 @@ u64 BloomFilter::mer_to_position
 	              else return npos;  // position is *not* in the filter
 	}
 
-u64 BloomFilter::mer_to_position
+u64 BloomFilter::mer_to_hash_value
    (const u64* merData) const
 	{
 	// nota bene: we don't enforce numHashes == 1
@@ -1159,29 +1159,29 @@ int DeterminedBriefFilter::lookup
 	}
 
 void DeterminedBriefFilter::adjust_positions_in_list
-   (vector<u64> &smerHashes,
+   (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 hashvalue  = smerHashes[posIx];
-		u64 rank = bvDet->rank1(hashvalue);
-		smerHashes[posIx] = hashvalue - rank;  // $$$ isn't this just rank0(hashvalue)?
+		uint64_t hashvalue  = smerHashes[posIx].first;
+		uint64_t rank = bvDet->rank1(hashvalue);
+		smerHashes[posIx].first = hashvalue - rank;  // $$$ isn't this just rank0(hashvalue)?
 		}
 	}
 
 void DeterminedBriefFilter::restore_positions_in_list
-   (vector<u64> &smerHashes,
+   (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 hashvalue = smerHashes[posIx];
-		smerHashes[posIx] = bvDet->select0(hashvalue);
+		u64 hashvalue = smerHashes[posIx].first;
+		smerHashes[posIx].first = bvDet->select0(hashvalue);
 		}
 	}
 

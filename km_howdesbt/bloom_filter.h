@@ -64,8 +64,8 @@ public:
 	virtual void squeeze_by (BitVector* srcBv, int whichDstBv=0);
 	virtual void squeeze_by (const sdslbitvector* srcBits, int whichDstBv=0);
 
-	virtual std::uint64_t mer_to_position(const std::string& mer) const;
-	virtual std::uint64_t mer_to_position(const std::uint64_t* merData) const;
+	virtual std::uint64_t mer_to_hash_value(const std::string& mer) const;
+	virtual std::uint64_t mer_to_hash_value(const std::uint64_t* merData) const;
 	virtual void add (const std::string& mer);
 	virtual void add (const std::uint64_t* merData);
 	virtual bool contains (const std::string& mer) const;
@@ -76,9 +76,9 @@ public:
 	virtual std::uint64_t num_bits()     const { return numBits; }
 
 	virtual bool is_position_adjustor () { return false; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &smerHashes,
+	virtual void adjust_positions_in_list  (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &smerHashes,
+	virtual void restore_positions_in_list (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
 
 public:
@@ -219,9 +219,9 @@ public:
 	virtual int lookup (const std::uint64_t pos) const;
 
 	virtual bool is_position_adjustor  () { return true; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &smerHashes,
+	virtual void adjust_positions_in_list  (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved);
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &smerHashes,
+	virtual void restore_positions_in_list (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved);
 	};
 

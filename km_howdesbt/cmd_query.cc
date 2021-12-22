@@ -460,7 +460,7 @@ void QueryCommand::read_queries()
 
 void QueryCommand::sort_matches_by_smer_counts (void)
 	{
-	// todo pierre: reorder also q->presentHashesStack in case z>0
+	// todo pierre: reorder also q->pos_present_smers_stack in case z>0
 	// todo pierre: currently only 
 	// todo pierre: - names (q->matches)
 	// todo pierre: - numPassed (q->matchesNumPassed)
@@ -525,7 +525,7 @@ void QueryCommand::print_matches
  * @return The result of findere's query on the sequence.
  */
 std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence, 
-											const std::unordered_set<std::uint64_t>& local_presentHashes, 
+											const std::unordered_set<std::size_t>& local_pos_present_smers, 
 											const unsigned int& smerSize, 
 											const unsigned int& z) const {
     const unsigned int kmerSize = smerSize + z; 
@@ -535,24 +535,9 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
     unsigned long long j = 0;              // index of the query vector
     bool extending_stretch = true;
 
-	cerr << " PIERRE " << size - smerSize + 1<< " vs " <<local_presentHashes.size() << endl;
-	cerr << " PIERRE positive ";
-	for (auto hashv : local_presentHashes)
-		cerr << hashv << " ";
-	cerr << endl;
-	cerr << " PIERRE queried ";
-    while (j < size - smerSize + 1) {
-		// get the s.substr(j, k) hash value;
-		uint64_t smer_hash_value; 
-		km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, 
-											sequence.substr(j, smerSize), 
-											hash_win, 
-											repartitor, 
-											hash_win->minim_size(), 
-											smer_hash_value);
-		cerr << smer_hash_value << " ";
-
-		if (local_presentHashes.count(smer_hash_value) > 0) {
+    while (j < size - smerSize + 1) 
+	{
+		if (local_pos_present_smers.count(j) > 0) {
             if (extending_stretch) {
                 stretchLength++;
                 j++;
@@ -569,7 +554,6 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
             j = j + z + 1;
         }
     }
-	cerr << endl; // todo remove
     // Last values:
     if (stretchLength >= z) {
         for (unsigned long long t = size - smerSize + 1 - stretchLength; t < size - kmerSize + 1; t++) response[t] = true;
@@ -633,9 +617,9 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[matchIx];
-			std::unordered_set<std::uint64_t> local_presentHashes = q->presentHashesStack[matchIx];
+			std::unordered_set<size_t> const local_pos_present_smers = q->pos_present_smers_stack[matchIx];
 			std::vector<bool> positive_kmers = get_positive_kmers(	seq, 
-																	local_presentHashes, 
+																	local_pos_present_smers, 
 																	smerSize, 
 																	z );
 
@@ -655,7 +639,6 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 			out << " --vector " ;
 			for (auto i: positive_kmers)
     			cout << i << ' ';
-			out << " --size local_presentHashes " << local_presentHashes.size();
 			out << endl;
 			matchIx++;
 			}

@@ -69,9 +69,7 @@ Query::~Query()
 
 
 void Query::smerize
-   (BloomFilter*	bf,
-	bool			distinct,
-	bool			populateSmers)
+   (BloomFilter*	bf)
 	{
 	bf->preload(); // $$$ pierre: why preload the bf for each query ?
 	u32 smerSize = bf->smerSize;
@@ -81,7 +79,6 @@ void Query::smerize
 		     + bf->identity() + " uses more than one hash function");
 
 	smerHashes.clear();
-	smers.clear();
 
 	// if the sequence is too short, there are no smers
 
@@ -91,7 +88,6 @@ void Query::smerize
 	// scan the sequence's smers, convert to hash positions, and collect the
 	// distinct positions; optionally collect the corresponding smers
 
-    set<u64> positionSet;
 	pair<set<u64>::iterator,bool> status;
 
 	size_t goodNtRunLen = 0;
@@ -102,93 +98,25 @@ void Query::smerize
 		if (++goodNtRunLen < smerSize) continue;
 
 		string mer = seq.substr(ix+1-smerSize,smerSize);
-        u64 pos = 0;
+        u64 hash_value = 0;
         if (m_repartitor)
         {
-          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, mer, m_hash_win, m_repartitor, m_minim_size, pos);
+          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, mer, m_hash_win, m_repartitor, m_minim_size, hash_value);
         }
         else
         {
-		  pos = bf->mer_to_position(mer);
+		  hash_value = bf->mer_to_hash_value(mer);
         }
-		if (pos != BloomFilter::npos)
+		if (hash_value != BloomFilter::npos)
 			{
-			if (distinct)
-				{
-				status = positionSet.insert(pos);
-				if (status.second == false) // pos was already in the set
-					continue;
-				}
-			smerHashes.emplace_back(pos);
-			if (populateSmers) smers.emplace_back(mer);
+			smerHashes.emplace_back(std::pair<std::uint64_t, std::size_t>(hash_value, ix - smerSize + 1));
 			}
-
 		}
 	}
 
-void Query::sort_smer_positions ()
-	{
-	sort (smerHashes.begin(), smerHashes.end());
-	}
 
-void Query::dump_smer_positions
-   (u64 _numUnresolved)
-	{
-	// we dump the list as, e.g.
-	//   1,2,3,4 (5,6,7)
-	// where 5,6,7 is the "resolved" part of the list;  _numUnresolved=-1 can
-	// be used to just print the whole list without parenthesizing part of it
 
-	cerr << name << ".positions = ";
-	bool firstOutput = true;
-	bool parenWritten = false;
-	u64 posIx = 0;
-	for (auto& pos : "smerHashes")
-		{
-		if (posIx == _numUnresolved)
-			{ cerr << " (" << pos;  parenWritten = true;  firstOutput = false; }
-		else if (firstOutput)
-			{ cerr << pos;  firstOutput = false; }
-		else
-			cerr << "," << pos;
-		posIx++;
-		}
 
-	if (parenWritten)
-		cerr << ")";
-	else if (_numUnresolved != (u64) -1)
-		cerr << " ()";
-	cerr << endl;
-	}
-
-u64 Query::smer_positions_hash
-   (u64 _numUnresolved)
-	{
-	// we compute a simple permutation-invariant hash on a prefix of the list;
-	// _numUnresolved=-1 indicates that we compute over the whole list
-
-	u64 posSum = 0;
-	u64 posXor = 0;
-
-	u64 posIx = 0;
-	for (auto& pos : smerHashes)
-		{
-		if (posIx == _numUnresolved)
-			break;
-		posSum += pos;
-		posXor ^= pos;
-		posIx++;
-		}
-
-	posSum ^= posSum << 17;
-	posSum ^= posSum >> 47;
-
-	posXor ^= posXor >> 47;
-	posXor ^= posXor << 17;
-	posXor ^= posXor << 34;
-
-	return (posSum + posXor) & 0x1FFFFFFF;  // (returning only 29 bits)
-	}
 
 //----------
 //

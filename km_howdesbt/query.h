@@ -49,32 +49,27 @@ public:
     Query(const querydata& qd, double threshold, std::shared_ptr<km::Repartition> rep, std::shared_ptr<km::HashWindow> hash_win, uint32_t minimsize);
     virtual ~Query();
 
-	virtual void smerize (BloomFilter* bf, bool distinct=false, bool populateSmers=false);
-	virtual void sort_smer_positions ();
-	virtual void dump_smer_positions (std::uint64_t numUnresolved=-1);
-	virtual std::uint64_t smer_positions_hash (std::uint64_t numUnresolved=-1);
+	virtual void smerize (BloomFilter* bf);
 
 public:
 	std::uint32_t batchIx;	// index of this query within a batch
 	std::string name;
 	std::string seq;		// nucleotide sequence
 	double threshold;		// search threshold
-	std::vector<std::uint64_t> smerHashes; // the smers (converted to hash
+	std::vector<std::pair<std::uint64_t,std::size_t>> smerHashes; // the <smers, position> 
+										// .. (with smer converted to hash
 										// .. values) corresponding to this
 										// .. query; the first numUnresolved
 										// .. entries are the yet-to-be-resolved
 										// .. smers; the resolved smers are
 										// .. moved to the tail
-	std::vector<std::string> smers;		// the smers; this is only populated
-										// .. in special instances (e.g. for
-										// .. cmd_query_bf), and in those
-										// .. cases care should be taken to
-										// .. assure that the smerHashes[ix]
-										// .. corresponds to smers[ix] for each
-										// .. ix
-	std::vector <uint64_t> presentHashes ; // contains  hash values 
+	std::vector <size_t> pos_present_smers ; // contains  positions 
 										// .. of positive smers at a 
 										// .. given node of the tree
+										// $$$ think up a destructor
+	std::vector<std::unordered_set <size_t>> pos_present_smers_stack ; // for each leave 
+										// .. that matches this query,
+										// .. store positive positions of kmer set
 										// $$$ think up a destructor
 	std::uint64_t neededToPass;			// number of smers required, to judge
 										// .. the query as a "pass"
@@ -95,10 +90,6 @@ public:
 										// .. search reached the leaf without
 										// .. having been pruned
 	std::uint64_t numHashes;            // total size of smerHashes
-	std::vector<std::unordered_set <uint64_t>> presentHashesStack ; // for each leave 
-										// .. that matches this query,
-										// .. store positive positions of kmer set
-										// $$$ think up a destructor
 	
     std::vector<std::uint64_t> numUnresolvedStack;
     std::vector<std::uint64_t> numPassedStack;

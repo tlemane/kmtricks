@@ -1188,7 +1188,9 @@ void BloomTree::perform_batch_query
 			// Attribution: the technique of swapping resolved positions to the
 			// end of the list was inspired by reference [1]
 
-			u64 hashvalue = q->smerHashes[posIx];
+			u64 hashvalue = q->smerHashes[posIx].first;
+			size_t hash_position = q->smerHashes[posIx].second;
+
 			bool posIsResolved = true;
 			int resolution = lookup(hashvalue);
 
@@ -1199,9 +1201,7 @@ void BloomTree::perform_batch_query
 				}
 			else if (resolution == BloomFilter::present)
 				{
-					// PIERRE
-				q->presentHashes.push_back(hashvalue);
-				cerr<<" PIERRE PUSHED BACK "<<hashvalue<<endl;
+				q->pos_present_smers.push_back(hash_position);
 				q->numPassed++;
 				// if we're NOT computing complete smer counts, we can check
 				// whether we've observed enough hits to pass this node early
@@ -1221,8 +1221,9 @@ void BloomTree::perform_batch_query
 			if ((posIsResolved) and (not isLeaf))
 				{
 				positionsToTest--;
-				q->smerHashes[posIx] = q->smerHashes[positionsToTest];
-				q->smerHashes[positionsToTest] = hashvalue;
+				std::pair<std::uint64_t,std::size_t> tmp_hash_pos = q->smerHashes[posIx];
+				q->smerHashes[posIx] = std::move(q->smerHashes[positionsToTest]);
+				q->smerHashes[positionsToTest] = std::move(tmp_hash_pos);
 				}
 
 			// otherwise, move on to the next hashvalue 
@@ -1355,12 +1356,12 @@ void BloomTree::perform_batch_query
 		q->numUnresolved = q->numUnresolvedStack.back();
 		q->numUnresolvedStack.pop_back();
 
-		// assert (q->presentHashes.size() == q->numPassed);
+		assert (q->pos_present_smers.size() == q->numPassed);
 		q->numPassed = q->numPassedStack.back();
 		q->numPassedStack.pop_back();
 
-		// remove previously added present hashes - PIERRE
-		q->presentHashes.resize(q->numPassed);
+		// remove previously added present hash positions
+		q->pos_present_smers.resize(q->numPassed);
 
 
 		q->numFailed = q->numFailedStack.back();
@@ -1384,15 +1385,13 @@ void BloomTree::query_matches_leaves
 		{
 		q->matches.emplace_back (name);
 		q->matchesNumPassed.emplace_back (q->numPassed);
-		// cerr << " PIERRE name "<<name<<" q name "<<q->name<<" q->numPassed " << q->numPassed << endl;
 		// PIERRE 16 DEC 2021. 
-		// Store resolved positive hash values here.
-		// In q->presentHashesStack (vector<unordered_set<uint_64>>)
-		assert(q->numPassed == q->presentHashes.size()); // todo remove when tested
-		std::unordered_set <std::uint64_t> local_presentHashes (q->presentHashes.begin(), q->presentHashes.end());
-		q->presentHashesStack.emplace_back(std::move(local_presentHashes));
+		// Store position of positive smers
+		// In q->pos_present_smers_stack (vector<unordered_set<size_t>>)
+		assert(q->numPassed == q->pos_present_smers.size()); // todo remove when tested
+		std::unordered_set <size_t> local_presentHashes (q->pos_present_smers.begin(), q->pos_present_smers.end());
+		q->pos_present_smers_stack.emplace_back(std::move(local_presentHashes));
 		
-		// Note: local_presentHashes.size() may be smaller than q->numPassed as hash values may be repeated
 		}
 	}
 
