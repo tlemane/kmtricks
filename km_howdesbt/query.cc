@@ -70,8 +70,7 @@ Query::~Query()
 
 void Query::smerize
    (BloomFilter*	bf,
-	bool			distinct,
-	bool			populateSmers)
+	bool			distinct)
 	{
 	bf->preload(); // $$$ pierre: why preload the bf for each query ?
 	u32 smerSize = bf->smerSize;
@@ -81,7 +80,6 @@ void Query::smerize
 		     + bf->identity() + " uses more than one hash function");
 
 	smerHashes.clear();
-	smers.clear();
 
 	// if the sequence is too short, there are no smers
 
@@ -120,7 +118,6 @@ void Query::smerize
 					continue;
 				}
 			smerHashes.emplace_back(pos);
-			if (populateSmers) smers.emplace_back(mer);
 			}
 
 		}
