@@ -271,7 +271,7 @@ void QueryCommand::parse
 	repartitor = std::make_shared<km::Repartition>(repartFileName, "");
 	hash_win = std::make_shared<km::HashWindow>(winFileName);
 
-	completeSmerCounts = sortBySmerCounts;
+	completeSmerCounts = sortBySmerCounts or z > 0;
 
 	// assign threshold to any unassigned queries
 
@@ -368,15 +368,36 @@ int QueryCommand::execute()
 	// report results
 
 	if (sortBySmerCounts)
-		sort_matches_by_smer_counts(); 
-	// findere approach
-	if (matchesFilename.empty())
-			print_matches_with_kmer_counts_and_spans (cout, smerSize, z);
-	else
-		{
-		std::ofstream out(matchesFilename);
+	{
+		if (z > 0)
+			cerr << "Warning, sort by smer count not implemented yet with the findere approach" << endl;
+		else
+			sort_matches_by_smer_counts(); 
+	}
+
+
+	std::streambuf * buf;
+	std::ofstream of;
+
+	if(!matchesFilename.empty()) {
+    	of.open(matchesFilename);
+    	buf = of.rdbuf();
+	} 
+	else {
+    	buf = std::cout.rdbuf();
+	}
+	std::ostream out(buf);
+
+
+	if (completeSmerCounts)
+	{
 		print_matches_with_kmer_counts_and_spans (out, smerSize, z);
-		}
+	}
+	else{
+		print_matches(out);
+	}
+
+			
 	
 		
 
@@ -480,9 +501,6 @@ void QueryCommand::sort_matches_by_smer_counts (void)
 void QueryCommand::print_matches
    (std::ostream& out) const
 	{
-		// $$$ delete this function afeter removing completeSmerCounts option (always true with findere)
-		cerr<<" print_matches deprecated "<<endl;
-		exit(EXIT_FAILURE);
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
@@ -506,9 +524,14 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
 											const std::unordered_set<std::size_t>& local_pos_present_smers, 
 											const unsigned int& smerSize, 
 											const unsigned int& z) const {
+	unsigned long long size = sequence.size();
     const unsigned int kmerSize = smerSize + z; 
-    unsigned long long size = sequence.size();
     std::vector<bool> response(size - kmerSize + 1, false);
+	if (z == 0){
+		for (unsigned long long j = 0; j < size - smerSize + 1; j++)
+			response[j] = local_pos_present_smers.count(j) > 0;
+		return response;
+	}
     unsigned long long stretchLength = 0;  // number of consecutive positives kmers
     unsigned long long j = 0;              // index of the query vector
     bool extending_stretch = true;
@@ -605,19 +628,17 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 				get_nb_positions_covered(positive_kmers, smerSize + z);
 			
 
-			out << name
-			    << " smers" << numPassed << "/" << q->numHashes;
-			if (q->numHashes == 0)
-				out << " 0"; // instead of dividing by zero
-			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
-
-			out << " --Nb kmers " << std::count(positive_kmers.begin(), positive_kmers.end(), true) << " ";
-			out << " --Span kmers " << nb_positions_covered;
-			out << " --vector " ;
-			for (auto i: positive_kmers)
-    			cout << i << ' ';
+			out << "[" << name << "] ";
+			for (auto is_present: positive_kmers){
+				if (is_present) out << "+";
+				else out << "-";
+			}
+			for (int i = 0; i < smerSize + z - 1; i++) out << "."; // last kmer 
+			out << " ";
+			out << std::setprecision (2) << std::fixed << 100*std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size()) << "% ";
+			out << std::setprecision (2) << std::fixed << 100*(nb_positions_covered)/float(positive_kmers.size() + smerSize + z -1 ) << "%";
 			out << endl;
+			
 			matchIx++;
 			}
 		}
@@ -645,6 +666,7 @@ void QueryCommand::print_matches_with_smer_counts
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[matchIx];
+			std::unordered_set<size_t> const local_pos_present_smers = q->pos_present_smers_stack[matchIx];
 
 			
 
