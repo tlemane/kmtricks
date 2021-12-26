@@ -121,7 +121,7 @@ void ClusterCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		
+
 
 		// --list=<filename>
 
@@ -151,7 +151,7 @@ void ClusterCommand::parse
 		 || (is_prefix_of (arg, "--node="))
 		 || (is_prefix_of (arg, "--nodes=")))
 			{
-			nodeTemplate = argVal; 
+			nodeTemplate = argVal;
 
 			std::size_t fieldIx = nodeTemplate.find ("{number}");
 			if (fieldIx == string::npos)
@@ -405,14 +405,7 @@ int ClusterCommand::execute()
 
 	string commandLine = "howdesbt build \"" + treeFilename + "\"";
 
-	if (inhibitBuild)
-		{
-		cerr << treeFilename << " has been created"
-		     << ", but the internal nodes have not been built." << endl;
-		cerr << "You can use this command to build them:" << endl;
-		cerr << commandLine << endl;
-		}
-	else
+	if (!inhibitBuild)
 		deferredCommands.emplace_back(commandLine);
 
 	return EXIT_SUCCESS;
@@ -522,7 +515,7 @@ void ClusterCommand::find_leaf_vectors()
 //		of which have distance zero to each other) would cluster like a ladder.
 //		In a more general case it may keep the overall tree height shorter, but
 //		such cases are probably rare.
-// 
+//
 //----------
 
 struct MergeCandidate
@@ -753,7 +746,7 @@ void ClusterCommand::cluster_greedily()
 //		DeterminedFilter.  But the implementation here shares no code with
 //		that, instead making use of the simpler formula
 //		  bDet = bCap union complement of bCup
-// 
+//
 //----------
 
 void ClusterCommand::compute_det_ratio
@@ -916,7 +909,7 @@ void ClusterCommand::compute_det_ratio
 //
 // Note that the active det ratio at each is expected to have been computed by
 // compute_det_ratio().
-// 
+//
 //----------
 
 void ClusterCommand::determine_culling_threshold
@@ -1000,13 +993,13 @@ void ClusterCommand::determine_culling_threshold
 // Note that the active det ratio at each is expected to have been computed by
 // compute_det_ratio(), and cullingThreshold has either been set manually or
 // computed by determine_culling_threshold().
-// 
+//
 //----------
 //
 // Implementation notes:
 //	(1)	Fruitless nodes are left in the tree, but are marked as fruitless so
 //		that later operations (such as print_topology) can skip them.
-// 
+//
 //----------
 
 void ClusterCommand::cull_nodes

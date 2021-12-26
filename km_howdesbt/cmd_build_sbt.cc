@@ -103,7 +103,7 @@ void BuildSBTCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		
+
 
 		// --outtree=<filename>
 
@@ -250,8 +250,6 @@ void BuildSBTCommand::parse
 			outTreeFilename = outTreeFilename.substr(0,dotIx) + "." + bfKindStr + ".sbt";
 		else
 			outTreeFilename = outTreeFilename + "." + bfKindStr + ".sbt";
-
-		cout << "topology will be written to \"" << outTreeFilename << "\"" << endl;
 		}
 
 	return;
