@@ -882,9 +882,9 @@ km_options_t query_cli(std::shared_ptr<bc::Parser<1>> cli, query_options_t optio
     ->checker(bc::check::f::range(0, 1000))
     ->setter(options->z);
 
-  query_cmd->add_param("--sort", "sort matched leaves by the number of query k-mers present")
+  query_cmd->add_param("--no-detail", "do not print the position of shared kmers in output.")
     ->as_flag()
-    ->setter(options->sort);
+    ->setter(options->nodetail);
 
   query_cmd->add_param("--consistency-check", "check bloom filter properties across the tree")
     ->as_flag()

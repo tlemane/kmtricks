@@ -70,10 +70,7 @@ void QueryCommand::usage
 	s << "                       this only applies to query files for which <F> is not" << endl;
 	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
 	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
-	s << "  --sort               sort matched leaves by the number of query kmers present," << endl;
-	s << "                       and report the number of kmers present" << endl;
-	s << "                       (by default we just report the matched leaves without" << endl;
-	s << "                       regard to which matches are better)" << endl;
+	s << "  --no-detail          Do not print the position of shared kmers in output." << endl;
 	s << "	--z=<F>				 If z is bigger than 0, apply the findere strategy." << endl;
 	s << " 						 In such case, a k-mer is considered as present" <<endl;
 	s << " 						 if all its s-mers are presents," << endl;
@@ -99,7 +96,7 @@ void QueryCommand::parse
 	// defaults
 
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
-	sortBySmerCounts        = false;
+	nodetail        		= false;
 	checkConsistency        = false;
 	z						= 0;
 
@@ -198,10 +195,10 @@ void QueryCommand::parse
 			continue;
 			}
 
-		// --sort
+		// --no-detail
 
-		if (arg == "--sort")
-			{ sortBySmerCounts = true;  continue; }
+		if (arg == "--no-detail")
+			{ nodetail = true;  continue; }
 
 
 		// --consistencycheck, (unadvertised) --noconsistency
@@ -271,7 +268,7 @@ void QueryCommand::parse
 	repartitor = std::make_shared<km::Repartition>(repartFileName, "");
 	hash_win = std::make_shared<km::HashWindow>(winFileName);
 
-	completeSmerCounts = sortBySmerCounts or z > 0;
+	completeSmerCounts = true; // $$$ remove this ?
 
 	// assign threshold to any unassigned queries
 
@@ -365,15 +362,7 @@ int QueryCommand::execute()
 		}			
 		
 
-	// report results
-
-	if (sortBySmerCounts)
-	{
-		if (z > 0)
-			cerr << "Warning, sort by smer count not implemented yet with the findere approach" << endl;
-		else
-			sort_matches_by_smer_counts(); 
-	}
+	
 
 
 	std::streambuf * buf;
@@ -389,14 +378,10 @@ int QueryCommand::execute()
 	std::ostream out(buf);
 
 
-	if (completeSmerCounts)
-	{
-		print_matches_with_kmer_counts_and_spans (out, smerSize, z);
-	}
-	else{
-		print_matches(out);
-	}
-
+	
+	
+	print_matches_with_kmer_counts_and_spans (out, smerSize);
+	
 			
 	
 		
@@ -450,66 +435,6 @@ void QueryCommand::read_queries()
 
 	}
 
-//----------
-//
-// sort_matches_by_smer_counts--
-//	Sort query matches by decreasing smer hit counts.
-//
-//----------
-
-void QueryCommand::sort_matches_by_smer_counts (void)
-	{
-	// todo pierre: reorder also q->pos_present_smers_stack in case z>0
-	// todo pierre: currently only 
-	// todo pierre: - names (q->matches)
-	// todo pierre: - numPassed (q->matchesNumPassed)
-	// todo pierre: are reordered wrt to smer counts
-	for (auto& q : queries)
-		{
-		vector<pair<u64,string>> matches;
-		int matchIx = 0;
-		for (auto& name : q->matches)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			// (numPassed is negated sort will give decreasing order)
-			matches.emplace_back(-(numPassed+1),name);
-			matchIx++;
-			}
-
-		sort(matches.begin(),matches.end());
-
-		matchIx = 0;
-		for (const auto& matchPair : matches)
-			{
-			u64    negNumPassed = matchPair.first;
-			string name         = matchPair.second;
-
-			q->matches         [matchIx] = name;
-			q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
-			matchIx++;
-			}
-		}
-		
-	}
-
-//----------
-//
-// print_matches--
-//
-//----------
-
-void QueryCommand::print_matches
-   (std::ostream& out) const
-	{
-	cerr << "Deprecated matches with no info" << endl;
-	std::exit(EXIT_FAILURE);
-	for (auto& q : queries)
-		{
-		out << "*" << q->name << " " << q->matches.size() << endl;
-		for (auto& name : q->matches)
-			out << name << endl;
-		}
-	}
 
 
 
@@ -524,8 +449,7 @@ void QueryCommand::print_matches
  */
 std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence, 
 											const std::unordered_set<std::size_t>& local_pos_present_smers, 
-											const unsigned int& smerSize, 
-											const unsigned int& z) const {
+											const unsigned int& smerSize) const {
 	unsigned long long size = sequence.size();
     const unsigned int kmerSize = smerSize + z; 
     std::vector<bool> response(size - kmerSize + 1, false);
@@ -597,13 +521,12 @@ unsigned long long get_nb_positions_covered(std::vector<bool> bv, const unsigned
 
 //----------
 //
-// print_matches_with_smer_counts--
+// print_matches_with_kmer_counts_and_spans--
 //
 //----------
 void QueryCommand::print_matches_with_kmer_counts_and_spans
    (	std::ostream& out,
-		const unsigned int& smerSize, 
-		const unsigned int& z
+		const unsigned int& smerSize
    ) const
 	{
 	std::ios::fmtflags saveOutFlags(out.flags());
@@ -628,20 +551,22 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 			std::unordered_set<size_t> const local_pos_present_smers = q->pos_present_smers_stack[matchIx];
 			std::vector<bool> positive_kmers = get_positive_kmers(	seq, 
 																	local_pos_present_smers, 
-																	smerSize, 
-																	z );
+																	smerSize );
 
 			unsigned long long nb_positions_covered = 
 				get_nb_positions_covered(positive_kmers, smerSize + z);
 			
-
-			
 			std::string pmres = "";
-			for (auto is_present: positive_kmers){
+			if (not nodetail)
+			{
+			for (auto is_present: positive_kmers)
+				{
 				if (is_present) pmres.append("+");
 				else pmres.append("-");
-			}
+				}
 			for (int i = 0; i < smerSize + z - 1; i++) pmres.append("."); // last kmer 
+			pmres.append(" "); // add a space to simplify the printing when nodetail is required
+			}
 
 			float positive_kmer_ratio = std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size());
 			float positive_covered_pos_ratio = nb_positions_covered/float(positive_kmers.size() + smerSize + z -1 );
@@ -657,52 +582,13 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 		sort(res_matches.begin(), res_matches.end(), std::greater <>());
 		for (auto match: res_matches)
 			{
-			out << "[" << std::get<1>(match) << "] " << std::get<3>(match) << " ";
+			out << "[" << std::get<1>(match) << "] " << std::get<3>(match);
 			out << std::setprecision (2) << std::fixed << std::get<2>(match) << " ";
 			out << std::setprecision (2) << std::fixed << std::get<0>(match) << endl;
 			}
 		}
 
 
-
-	out.flags(saveOutFlags);
-	}
-
-
-//----------
-//
-// print_matches_with_smer_counts--
-//
-//----------
-void QueryCommand::print_matches_with_smer_counts
-   (std::ostream& out) const
-	{
-	std::ios::fmtflags saveOutFlags(out.flags());
-
-	for (auto& q : queries)
-		{
-			
-		out << "*" << q->name << " " << q->matches.size() << endl;
-
-		int matchIx = 0;
-		for (auto& name : q->matches)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			std::unordered_set<size_t> const local_pos_present_smers = q->pos_present_smers_stack[matchIx];
-
-			
-
-			out << name
-			    << " " << numPassed << "/" << q->numHashes;
-			if (q->numHashes == 0)
-				out << " 0"; // instead of dividing by zero
-			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numHashes));
-
-			out << endl;
-			matchIx++;
-			}
-		}
 
 	out.flags(saveOutFlags);
 	}

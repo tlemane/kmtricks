@@ -690,7 +690,7 @@ struct main_query
     ss << "--z=" << opt->z << " ";
     ss << "--threshold=" << opt->threshold << " ";
     if (opt->check) ss << "--consistencycheck ";
-    if (opt->sort) ss << "--sort ";
+    if (opt->nodetail) ss << "--no-detail ";
     if (opt->output != "stdout") ss << "--out=" << opt->output;
 
     std::string howde_query_str = ss.str();

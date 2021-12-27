@@ -25,17 +25,12 @@ public:
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 	virtual void read_queries (void);
-	virtual void sort_matches_by_smer_counts (void);
-	virtual void print_matches(std::ostream& out) const;
-	virtual void print_matches_with_smer_counts(std::ostream& out) const;
 	std::vector<bool> get_positive_kmers(const std::string& sequence, 
 											const std::unordered_set<std::size_t>& local_presentHashes, 
-											const unsigned int& smerSize, 
-											const unsigned int& z) const;
+											const unsigned int& smerSize) const;
 	virtual void print_matches_with_kmer_counts_and_spans
    (	std::ostream& out,
-		const unsigned int& smerSize, 
-		const unsigned int& z
+		const unsigned int& smerSize
    ) const;
 	
 
@@ -46,7 +41,7 @@ public:
 	std::vector<float> queryThresholds;
 	std::string matchesFilename;
 	float generalQueryThreshold;
-	bool sortBySmerCounts;
+	bool nodetail;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
 	bool completeSmerCounts;

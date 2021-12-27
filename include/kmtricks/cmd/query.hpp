@@ -33,7 +33,7 @@ struct query_options : km_options
   std::string query;
   std::string output;
   double threshold;
-  bool sort;
+  bool nodetail;
   bool check;
   int z;
   std::string display()
@@ -43,7 +43,7 @@ struct query_options : km_options
     RECORD(ss, query);
     RECORD(ss, output);
     RECORD(ss, threshold);
-    RECORD(ss, sort);
+    RECORD(ss, nodetail);
     RECORD(ss, check);
     RECORD(ss, z);
     std::string ret = ss.str(); ret.pop_back(); ret.pop_back();
