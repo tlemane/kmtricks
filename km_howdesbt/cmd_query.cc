@@ -501,6 +501,8 @@ void QueryCommand::sort_matches_by_smer_counts (void)
 void QueryCommand::print_matches
    (std::ostream& out) const
 	{
+	cerr << "Deprecated matches with no info" << endl;
+	std::exit(EXIT_FAILURE);
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
@@ -513,7 +515,7 @@ void QueryCommand::print_matches
 
 
 /**
- * @brief From hash values associated to smers to a vector of Positive kmers
+ * @brief From hash values associated to smers to a vector of Positive kmers. Code adapted from findere https://github.com/lrobidou/findere/, by Lucas Robidou
  * @param sequence: input sequence.
  * @param local_presentHashes: s-mer hash values positive for this sequence
  * @param smerSize size of indexed s-mers
@@ -604,16 +606,21 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 		const unsigned int& z
    ) const
 	{
-	// as z>0: recompute hash of s-mers, and apply findere process to output positive kmers 
 	std::ios::fmtflags saveOutFlags(out.flags());
 
-
+	
 
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
 		std::string   seq = q->seq;
-
+		// For each query, we store its answers in a vector of tuples:
+		// .. <float, string, float, string>, being: 
+		// .. 0 <ratio position covered by a shared kmer (key of sorting), 
+		// .. 1 name of the target reference, 
+		// .. 2 ratio nb shared kmers, 
+		// .. 3 +-. string indicating the position of the shared kmers in the copy>
+		std::vector<std::tuple<float, string, float, string>> res_matches;
 		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
@@ -628,20 +635,35 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 				get_nb_positions_covered(positive_kmers, smerSize + z);
 			
 
-			out << "[" << name << "] ";
-			for (auto is_present: positive_kmers){
-				if (is_present) out << "+";
-				else out << "-";
-			}
-			for (int i = 0; i < smerSize + z - 1; i++) out << "."; // last kmer 
-			out << " ";
-			out << std::setprecision (2) << std::fixed << 100*std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size()) << "% ";
-			out << std::setprecision (2) << std::fixed << 100*(nb_positions_covered)/float(positive_kmers.size() + smerSize + z -1 ) << "%";
-			out << endl;
 			
+			std::string pmres = "";
+			for (auto is_present: positive_kmers){
+				if (is_present) pmres.append("+");
+				else pmres.append("-");
+			}
+			for (int i = 0; i < smerSize + z - 1; i++) pmres.append("."); // last kmer 
+
+			float positive_kmer_ratio = std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size());
+			float positive_covered_pos_ratio = nb_positions_covered/float(positive_kmers.size() + smerSize + z -1 );
+			
+			// kmer number <= smer number. Hence we recheck that the kmer threshold does not get below the 
+			// required threshold.
+			if (positive_kmer_ratio >= q->threshold)
+				res_matches.push_back(std::make_tuple(positive_covered_pos_ratio, name, positive_kmer_ratio, pmres));
+
 			matchIx++;
 			}
+		// sort and print results:
+		sort(res_matches.begin(), res_matches.end(), std::greater <>());
+		for (auto match: res_matches)
+			{
+			out << "[" << std::get<1>(match) << "] " << std::get<3>(match) << " ";
+			out << std::setprecision (2) << std::fixed << std::get<2>(match) << " ";
+			out << std::setprecision (2) << std::fixed << std::get<0>(match) << endl;
+			}
 		}
+
+
 
 	out.flags(saveOutFlags);
 	}

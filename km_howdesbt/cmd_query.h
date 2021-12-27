@@ -43,9 +43,9 @@ public:
     std::string repartFileName;
     std::string winFileName;
 	std::vector<std::string> queryFilenames;
-	std::vector<double> queryThresholds;
+	std::vector<float> queryThresholds;
 	std::string matchesFilename;
-	double generalQueryThreshold;
+	float generalQueryThreshold;
 	bool sortBySmerCounts;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
