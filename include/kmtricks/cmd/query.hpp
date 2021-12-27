@@ -33,6 +33,7 @@ struct query_options : km_options
   std::string query;
   std::string output;
   double threshold;
+  double threshold_shared_positions;
   bool nodetail;
   bool check;
   int z;
@@ -43,6 +44,7 @@ struct query_options : km_options
     RECORD(ss, query);
     RECORD(ss, output);
     RECORD(ss, threshold);
+    RECORD(ss, threshold_shared_positions);
     RECORD(ss, nodetail);
     RECORD(ss, check);
     RECORD(ss, z);

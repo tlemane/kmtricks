@@ -70,6 +70,16 @@ void QueryCommand::usage
 	s << "                       this only applies to query files for which <F> is not" << endl;
 	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
 	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
+	s << "  --threshold-shared-positions=<F> Prints a query result if its ratio" << endl;
+    s << "                       of positions covered by at least a shared kmer is" << endl;
+    s << "                       higher or equal to this threshold. This happens" << endl;
+    s << "                       after the threshold applied on the" << endl;
+    s << "                       number of shared kmers. This option enables to" << endl;
+    s << "                       save query results where, say, 60 of kmers are" << endl;
+    s << "                       shared but 95% of positions are covered by a " << endl;
+    s << "                       shared kmer. In this case with this value set to 90, " << endl;
+    s << "                       this result is printed." << endl;
+	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
 	s << "  --no-detail          Do not print the position of shared kmers in output." << endl;
 	s << "	--z=<F>				 If z is bigger than 0, apply the findere strategy." << endl;
 	s << " 						 In such case, a k-mer is considered as present" <<endl;
@@ -95,10 +105,11 @@ void QueryCommand::parse
 
 	// defaults
 
-	generalQueryThreshold   = -1.0;		// (unassigned threshold)
-	nodetail        		= false;
-	checkConsistency        = false;
-	z						= 0;
+	generalQueryThreshold   	= -1.0;		// (unassigned threshold)
+	nodetail        			= false;
+	threshold_shared_positions 	= defaultQueryThreshold;
+	checkConsistency        	= false;
+	z							= 0;
 
 
 	// skip command name
@@ -195,10 +206,21 @@ void QueryCommand::parse
 			continue;
 			}
 
+		// --threshold-shared-positions=<F>
+
+		if ((is_prefix_of (arg, "--threshold-shared-positions="))
+		 ||	(is_prefix_of (arg, "--threshold_shared_positions=")))
+			{
+				threshold_shared_positions = string_to_probability(argVal);
+				continue;
+			}
+
 		// --no-detail
 
 		if (arg == "--no-detail")
 			{ nodetail = true;  continue; }
+
+
 
 
 		// --consistencycheck, (unadvertised) --noconsistency
@@ -490,33 +512,32 @@ std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence,
 }
 
 
-
 /**
- * @brief Computes the number of shared position between the query and the index given the response of findere.
- * @param bv The result of the query.
+ * @brief Computes a boolean vector of positions covered by at least a shared kmer.
+ * @param shared_kmers The result of the query.
  * @param kmerSize the value of k.
- * @return The number of shared position between the query and the index.
+ * @return a boolean vector of positions covered by at least a shared kmer.
  */
-unsigned long long get_nb_positions_covered(std::vector<bool> bv, const unsigned int kmerSize) {
-    unsigned long long nb_positions_covered = 0;  // NB pos covered by at least one shared K-mer
+std::vector<bool> get_positions_covered(std::vector<bool> shared_kmers, const unsigned int kmerSize) {
+	// assumes that shared_kmers.size() > 0
+	std::vector<bool> response(shared_kmers.size() + kmerSize - 1, false);
     long long last_covered_position = -1;
     long long pos = 0;
-    for (auto shared : bv) {
+    for (auto shared : shared_kmers) {
         if (shared) {
             if (last_covered_position < pos) {
-                nb_positions_covered += kmerSize;
+				for (int i = pos; i < pos + kmerSize; i++)
+					response[i] = true;
             } else {
-                nb_positions_covered += pos + kmerSize - last_covered_position - 1;
+				for (int i = last_covered_position + 1; i < pos + kmerSize; i++)
+					response[i] = true;
             }
-
             last_covered_position = pos + kmerSize - 1;
         }
         pos++;
     }
-    return nb_positions_covered;
+    return response;
 }
-
-
 
 
 //----------
@@ -532,10 +553,18 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 	std::ios::fmtflags saveOutFlags(out.flags());
 
 	
+	out << "# FORMAT:" << endl;
+	out << "# * [query name]" <<endl;
+	out << "# For each target, 3 or 4 fields:" <<endl;
+	out << "#   [taget name]" <<endl;
+	out << "#   (unless --no-detail option) string in {+-} showing positions covered (+) by at least a shared kmer, else (-)" <<endl;
+	out << "#   Ratio of kmers of the query shared with the target"  <<endl;
+	out << "#   Ratio of positions of the query covered by at least a kmer shared with the target"  <<endl;
+
 
 	for (auto& q : queries)
 		{
-		out << "*" << q->name << " " << q->matches.size() << endl;
+		out << "* [" << q->name << "] "<< endl;
 		std::string   seq = q->seq;
 		// For each query, we store its answers in a vector of tuples:
 		// .. <float, string, float, string>, being: 
@@ -548,32 +577,44 @@ void QueryCommand::print_matches_with_kmer_counts_and_spans
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[matchIx];
-			std::unordered_set<size_t> const local_pos_present_smers = q->pos_present_smers_stack[matchIx];
 			std::vector<bool> positive_kmers = get_positive_kmers(	seq, 
-																	local_pos_present_smers, 
+																	q->pos_present_smers_stack[matchIx], 
 																	smerSize );
 
-			unsigned long long nb_positions_covered = 
-				get_nb_positions_covered(positive_kmers, smerSize + z);
+			std::vector<bool> positions_covered = get_positions_covered(positive_kmers, smerSize + z);
+			unsigned long long nb_positions_covered = std::count(positions_covered.begin(), positions_covered.end(), true);
 			
 			std::string pmres = "";
+			bool pm_shows_ratio_kmers = false; // $$$ remove when chosen.
 			if (not nodetail)
 			{
-			for (auto is_present: positive_kmers)
+				if (pm_shows_ratio_kmers) // prints position starting a shared kmer
 				{
-				if (is_present) pmres.append("+");
-				else pmres.append("-");
+				for (auto is_present: positive_kmers)
+					{
+					if (is_present) pmres.append("+");
+					else pmres.append("-");
+					}
+				for (int i = 0; i < smerSize + z - 1; i++) pmres.append("."); // last kmer 
 				}
-			for (int i = 0; i < smerSize + z - 1; i++) pmres.append("."); // last kmer 
-			pmres.append(" "); // add a space to simplify the printing when nodetail is required
-			}
+				else // prints position covered by at least a shared kmer
+				{
+				for (auto is_present: positions_covered)
+					{
+					if (is_present) pmres.append("+");
+					else pmres.append("-");
+					}
+				}
+				pmres.append(" "); // add a space to simplify the printing when nodetail is required
+			}		
 
 			float positive_kmer_ratio = std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size());
 			float positive_covered_pos_ratio = nb_positions_covered/float(positive_kmers.size() + smerSize + z -1 );
 			
+
 			// kmer number <= smer number. Hence we recheck that the kmer threshold does not get below the 
 			// required threshold.
-			if (positive_kmer_ratio >= q->threshold)
+			if (positive_kmer_ratio >= q->threshold or positive_covered_pos_ratio >= threshold_shared_positions)
 				res_matches.push_back(std::make_tuple(positive_covered_pos_ratio, name, positive_kmer_ratio, pmres));
 
 			matchIx++;

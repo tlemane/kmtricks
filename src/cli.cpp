@@ -874,6 +874,22 @@ km_options_t query_cli(std::shared_ptr<bc::Parser<1>> cli, query_options_t optio
     ->def("0.7")
     ->checker(bc::check::f::range(0.0, 1.0))
     ->setter(options->threshold);
+
+  query_cmd->add_param("--threshold-shared-positions",
+                       "Prints a query result if its ratio \n" \
+         "                                    of positions covered by at least a shared kmer is \n" \
+         "                                    higher or equal to this threshold. This happens \n" \
+         "                                    after the threshold applied on the \n" \
+         "                                    number of shared kmers. This option enables to \n" \
+         "                                    save query results where, say, 60 of kmers are \n" \
+         "                                    shared but 95% of positions are covered by a \n" \
+         "                                    shared kmer. In this case with this value set to 90, \n" \
+         "                                    this result is printed.")
+    ->meta("FLOAT")
+    ->def("0.7")
+    ->checker(bc::check::f::range(0.0, 1.0))
+    ->setter(options->threshold_shared_positions);
+
   
   query_cmd->add_param("--z",
                        "value. If bigger than 0, need z+1 indexed words (called s-mers) to obtain a k-mer (k=s+z)")

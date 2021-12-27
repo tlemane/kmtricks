@@ -41,6 +41,7 @@ public:
 	std::vector<float> queryThresholds;
 	std::string matchesFilename;
 	float generalQueryThreshold;
+	float threshold_shared_positions;
 	bool nodetail;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false

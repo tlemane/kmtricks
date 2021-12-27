@@ -689,6 +689,7 @@ struct main_query
     ss << "--win=" << KmDir::get().m_hash_win << " ";
     ss << "--z=" << opt->z << " ";
     ss << "--threshold=" << opt->threshold << " ";
+    ss << "--threshold-shared-positions=" << opt->threshold_shared_positions << " ";
     if (opt->check) ss << "--consistencycheck ";
     if (opt->nodetail) ss << "--no-detail ";
     if (opt->output != "stdout") ss << "--out=" << opt->output;
