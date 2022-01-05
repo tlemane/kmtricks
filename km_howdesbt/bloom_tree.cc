@@ -1388,7 +1388,6 @@ void BloomTree::query_matches_leaves
 		// PIERRE 16 DEC 2021. 
 		// Store position of positive smers
 		// In q->pos_present_smers_stack (vector<unordered_set<size_t>>)
-		assert(q->numPassed == q->pos_present_smers.size()); // todo remove when tested
 		std::unordered_set <size_t> local_presentHashes (q->pos_present_smers.begin(), q->pos_present_smers.end());
 		q->pos_present_smers_stack.emplace_back(std::move(local_presentHashes));
 		
@@ -1409,37 +1408,6 @@ int BloomTree::lookup
 	}
 
 
-void BloomTree::enable_query_stats
-   (const u32 batchSize)
-	{
-	if (queryStats != nullptr)
-		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
-		      + " to collect query stats"
-		      + ", but it had already previously allocated a stats array");
-
-	queryStats = new querystats[batchSize];
-	if (queryStats == nullptr)
-		fatal ("error: failed to allocate " + std::to_string(batchSize)
-		     + "-entry stats array for BloomTree(" + bfFilename + ")");
-	queryStatsLen = batchSize;
-
-	for (u32 ix=0 ; ix<queryStatsLen ; ix++)
-		clear_query_stats(queryStats[ix]);
-	}
-
-
-void BloomTree::clear_query_stats
-   (querystats& stats)
-	{
-	stats.examined      = false;
-	stats.passed        = false;
-	stats.failed        = false;
-	stats.numPassed     = 0;
-	stats.numFailed     = 0;
-	stats.numUnresolved = 0;
-	stats.locallyPassed = 0;
-	stats.locallyFailed = 0;
-	}
 
 
 

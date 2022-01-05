@@ -77,9 +77,6 @@ private:
 
 public:
 	virtual int lookup (const std::uint64_t pos) const;
-	virtual void enable_query_stats(const std::uint32_t batchSize);
-	virtual void clear_query_stats(querystats& stats);
-
 public:
 	bool isDummy;						// a dummy has no filter; the root might
 										// .. be a dummy, to allow for forests
