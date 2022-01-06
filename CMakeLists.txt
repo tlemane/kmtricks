@@ -147,6 +147,7 @@ if (WITH_HOWDE)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(kffsk)
 
 if (COMPILE_TESTS)
   message(STATUS "COMPILE_TESTS=ON - Add target test.")
