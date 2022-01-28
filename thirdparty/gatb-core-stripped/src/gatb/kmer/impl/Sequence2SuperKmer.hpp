@@ -80,15 +80,15 @@ public:
 	template<typename KType>
 	struct KmerFunctor
 	{
-		
+
 		Sequence2SuperKmer * caller;
 		SuperKmer& superKmer;
 		int maxs;
 		KmerFunctor (Sequence2SuperKmer * Seq2SupCaller,SuperKmer& superKmer,int maxs) :
 		caller(Seq2SupCaller),superKmer(superKmer), maxs(maxs) {}
-		
+
 		void operator() (const KType& kmer, size_t idx)  {
-			
+
 		 if (kmer.isValid() == false)
 		 {
 			// printf("non valid kmer %s \n", kmer.value().toString(31).c_str());
@@ -96,44 +96,44 @@ public:
 			 // on invalid kmer : output previous superk utput prev
 			 caller->processSuperkmer (superKmer);
 			 superKmer.reset();
-			 
+
 			 superKmer.minimizer = DEFAULT_MINIMIZER;  //marking will have to restart 'from new'
-			 
+
 			 caller->_bankStatsLocal.kmersNbInvalid ++;
-			 
+
 			 return;
 		 }
-			
+
 			caller->_bankStatsLocal.kmersNbValid ++;
-			
+
 			/** We get the value of the current minimizer. */
 			u_int64_t h = kmer.minimizer().value().getVal();
-			
+
 			if(DEFAULT_MINIMIZER == h)
 			{
 				printf("__ non valid kmer %s \n", kmer.value().toString(31).c_str());
 
 			}
-			
+
 			/** We have to set minimizer value if not defined. */
 			if (superKmer.isValid() == false)  {  superKmer.minimizer = h;  }
-			
+
 			/** If the current super kmer is finished (or max size reached), we dump it. */
 			if (h != superKmer.minimizer || superKmer.size() >= (size_t)maxs)
 			{
 				caller->processSuperkmer (superKmer);
 				superKmer.reset();
 			}
-			
+
 			/** We update the superkmer properties (minimizer value and kmers range). */
 			superKmer.minimizer    = h;
 			superKmer.addKmer(kmer);
-			
+
 		}
 	};
-	
-	
-	
+
+
+
     void operator() (bank::Sequence& sequence)
     {
         /** We update statistics about the bank. */
@@ -142,15 +142,15 @@ public:
         /** We first check whether we got kmers from the sequence or not. */
 		int32_t nbKmers = sequence.getData().size() - _model.getKmerSize() + 1;
 		if (nbKmers <= 0)  { return ; }
-		
-		int maxs = std::min((int)((Type::getSize() - 8 )/2),255) ;  // 8 is because  8 bit used for size of superkmers, not mini size and 255 : max superk size on 8 bits
 
+		//int maxs = std::min((int)((Type::getSize() - 8 )/2),255) ;  // 8 is because  8 bit used for size of superkmers, not mini size and 255 : max superk size on 8 bits
+        int maxs = _kmersize - _miniSize + 1;
         /** We create a superkmer object. */
         SuperKmer superKmer (_kmersize, _miniSize);
 
 		//iteration et traitement au fil de l'eau, without large kmer buffer (only small buffer for superkmer now )
 		_model.iterate(sequence.getData(), KmerFunctor<KmerType>(this,superKmer,maxs));
-		
+
         //output last superK
         processSuperkmer (superKmer);
 

@@ -11,7 +11,7 @@
 using uint = unsigned int;
 
 using ptr_t = std::unique_ptr<std::uint8_t[]>;
-using bucket_t = std::tuple<ptr_t, ptr_t, uint, uint>;
+using bucket_t = std::tuple<ptr_t, ptr_t, std::uint8_t, std::uint8_t>;
 
 int main(int argc, char* argv[])
 {
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 
   Stringifyer st(infile.encoding);
 
-  std::unordered_map<std::string, std::vector<bucket_t>> data; //(std::pow(4, msize));
+  std::map<std::string, std::vector<bucket_t>> data; //(std::pow(4, msize));
 
   std::size_t counter {0};
   for (auto& file : filenames)
@@ -61,13 +61,20 @@ int main(int argc, char* argv[])
         uint max_nucl = k - m + max - 1;
 
 
+        std::unique_ptr<std::uint8_t[]> seq(new std::uint8_t[max_nucl / 4 + 1]);
         for (uint i=0; i<sm.nb_blocks; i++)
         {
-          std::unique_ptr<std::uint8_t[]> seq(new std::uint8_t[max_nucl / + 1]);
           std::unique_ptr<std::uint8_t[]> data_bytes(new std::uint8_t[data_size * max]);
           std::uint64_t mini_pos;
           uint nb_kmers = sm.read_compacted_sequence_without_mini(seq.get(), data_bytes.get(), mini_pos);
-          data[st.translate(sm.minimizer, m)].push_back(std::make_tuple(std::move(seq), std::move(data_bytes), mini_pos, nb_kmers));
+
+          std::size_t s = (k - m + nb_kmers - 1) / 4 + 1;
+
+          std::unique_ptr<std::uint8_t[]> seq2(new std::uint8_t[s]);
+
+          std::copy(seq.get(), seq.get() + s, seq2.get());
+
+          data[st.translate(sm.minimizer, m)].push_back(std::make_tuple(std::move(seq2), std::move(data_bytes), mini_pos, nb_kmers));
         }
 
       }
@@ -98,7 +105,7 @@ int main(int argc, char* argv[])
 
     for (auto& [i, j, k, l] : v)
     {
-      sm.write_compacted_sequence_without_mini(i.get(), kmer_size-msize+l, k, j.get());
+      sm.write_compacted_sequence_without_mini(i.get(), kmer_size - msize + l - 1, k, j.get());
     }
 
     sm.close();
