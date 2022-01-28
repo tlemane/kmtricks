@@ -28,14 +28,14 @@ kmtricks/bin/kmtricks pipeline --file fof.txt \
                                --count-abundance-min 1 \
                                --mode kmer:count:bin \
                                --kmer-size 32 \
-                               --nb-partitions \
+                               --nb-partitions 200 \
                                --verbose info \
                                --kff-sk-output \
                                --until count \
                                --threads 20
 
-kff-tools merge -i ./kffsk/counts/partition_*/sample1.kff -o sample1_count.kff
-kff-tools merge -i ./kffsk/counts/partition_*/sample2.kff -o sample2_count.kff
+kmtricks/bin/kffsk ./kffsk/counts/partition_*/sample1*.kff
+kmtricks/bin/kffsk ./kffsk/counts/partition_*/sample2*.kff
 ```
 
 ## KFF paper
@@ -66,9 +66,9 @@ kmtricks pipeline --file gallus.fof \
                   --mode kmer:count:bin \
                   --kmer-size 32 \
                   --until count \
-                  --kff-sk-output \
-                  --hist
-kff-tools merge -i ./gallus_dir/counts/partition_*/*.kff -o gallus_counts.kff
+                  --kff-sk-output
+
+kffsk ./gallus_dir/counts/partition_*/*.kff
 ```
 
 **Accessions**
@@ -106,12 +106,12 @@ D1 : ERR024163_1.fastq.gz ; ERR024163_2.fastq.gz ; ERR024164_1.fastq.gz ; ERR024
 ```bash
 kmtricks pipeline --file human.fof \
                   --run-dir human_dir \
-                  --nb-partitions 200 \
+                  --nb-partitions 300 \
                   --count-abundance-min 1 \
                   --mode kmer:count:bin \
                   --kmer-size 32 \
                   --until count \
-                  --kff-sk-output \
-                  --hist
-kff-tools merge -i ./human_dir/counts/partition_*/*.kff -o human_counts.kff
+                  --kff-sk-output
+
+kffsk ./human_dir/counts/partition_*/*.kff
 ```
