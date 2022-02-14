@@ -619,6 +619,8 @@ struct main_filter
 
     std::string sid = KmDir::get().m_fof.get_id(0);
 
+    spdlog::info("Key = {}", sid);
+    spdlog::info("Compute super-k-mers (process {} partition(s))...", partitions.size());
     SuperKTask<MAX_K> superk_task(sid, true, partitions);
     superk_task.exec();
 
@@ -631,6 +633,7 @@ struct main_filter
     std::size_t amin = std::get<2>(*(KmDir::get().m_fof.begin()));
     amin = (amin == 0) ? opt->c_ab_min : amin;
 
+    spdlog::info("Count partitions...");
     for (auto&& i : partitions)
     {
       KmDir::get().init_one_part(i);
@@ -657,20 +660,13 @@ struct main_filter
         KmDir::get().get_count_part_path(fmt::format("{}_absent", sid), p, opt->cpr_out, KM_FILE::KMER));
     }
 
-    for (std::size_t i=0; i<out_matrices.size(); i++)
-    {
-      spdlog::info(in_matrices[i]);
-      spdlog::info(in_kmers[i]);
-      spdlog::info(out_matrices[i]);
-      spdlog::info(out_kmers[i]);
-    }
-
+    spdlog::info("Filtering...");
     MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads);
     mf.exec();
 
-    for (auto&& p : partitions)
+    for (std::size_t i = 0; i < partitions.size(); ++i)
     {
-      fs::rename(out_kmers[p], KmDir::get().get_count_part_path(sid, p, opt->cpr_out, KM_FILE::KMER));
+      fs::rename(out_kmers[i], KmDir::get().get_count_part_path(sid, partitions[i], opt->cpr_out, KM_FILE::KMER));
     }
   }
 };

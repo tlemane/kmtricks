@@ -140,7 +140,6 @@ class FilterTask : public ITask
 
       while (kr.read<MAX_K, MAX_C>(kmer, count))
       {
-        spdlog::info("K -> {}", kmer.to_string());
         if (kmer < kmer2)
         {
           kw.write<MAX_K, MAX_C>(kmer, count);
@@ -148,10 +147,7 @@ class FilterTask : public ITask
         }
         else if (kmer > kmer2)
         {
-          while (mr.read<MAX_K>(kmer2, bits) && kmer > kmer2)
-          {
-            spdlog::info("M -> {}", kmer2.to_string());
-          }
+          while (mr.read<MAX_K>(kmer2, bits) && kmer > kmer2);
 
           if (kmer < kmer2)
           {
