@@ -39,6 +39,7 @@ enum class COMMAND
   FORMAT,
   DUMP,
   AGGREGATE,
+  FILTER,
   INDEX,
   QUERY,
   INFOS,
@@ -63,6 +64,8 @@ inline COMMAND str_to_cmd(const std::string& s)
     return COMMAND::DUMP;
   else if (s == "aggregate")
     return COMMAND::AGGREGATE;
+  else if (s == "filter")
+    return COMMAND::FILTER;
   else if (s == "index")
     return COMMAND::INDEX;
   else if (s == "query")
@@ -91,6 +94,8 @@ inline std::string cmd_to_str(COMMAND cmd)
     return "dump";
   else if (cmd == COMMAND::AGGREGATE)
     return "aggregate";
+  else if (cmd == COMMAND::FILTER)
+    return "filter";
   else if (cmd == COMMAND::INDEX)
     return "index";
   else if (cmd == COMMAND::QUERY)

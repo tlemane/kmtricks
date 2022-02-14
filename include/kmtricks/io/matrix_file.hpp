@@ -133,6 +133,18 @@ public:
   }
 
   template<size_t MAX_K, size_t MAX_C>
+  bool read(Kmer<MAX_K>& kmer, std::vector<typename selectC<MAX_C>::type>& counts, std::size_t n)
+  {
+    this->m_second_layer->read(reinterpret_cast<char*>(kmer.get_data64_unsafe()),
+                                this->m_header.kmer_slots*8);
+    this->m_second_layer->read(reinterpret_cast<char*>(counts.data()),
+                                n*(requiredC<MAX_C>::value/8));
+    if (!this->m_second_layer->gcount())
+      return false;
+    return true;
+  }
+
+  template<size_t MAX_K, size_t MAX_C>
   void write_as_text(std::ostream& stream)
   {
     Kmer<MAX_K> kmer; kmer.set_k(this->m_header.kmer_size);

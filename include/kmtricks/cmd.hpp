@@ -28,6 +28,7 @@
 #include <kmtricks/cmd/dump.hpp>
 #include <kmtricks/cmd/infos.hpp>
 #include <kmtricks/cmd/aggregate.hpp>
+#include <kmtricks/cmd/filter.hpp>
 #include <kmtricks/cmd/index.hpp>
 #include <kmtricks/cmd/query.hpp>
 
@@ -40,6 +41,7 @@
 #include <kmtricks/task_scheduler.hpp>
 #include <kmtricks/progress.hpp>
 #include <kmtricks/signals.hpp>
+#include <kmtricks/matrix.hpp>
 
 #ifdef WITH_PLUGIN
 #include <kmtricks/plugin_manager.hpp>
@@ -559,6 +561,116 @@ struct main_agg
         opt->output == "stdout" ? phmfa.write_as_text(std::cout) : phmfa.write_as_text(opt->output);
       else
         phmfa.write_as_bin(opt->output, opt->lz4);
+    }
+  }
+};
+
+template<size_t MAX_K>
+struct main_filter
+{
+  void operator()(km_options_t options)
+  {
+    spdlog::info("Run with {} implementation", Kmer<MAX_K>::name());
+    filter_options_t opt = std::static_pointer_cast<struct filter_options>(options);
+
+    KmDir::get().init(opt->dir, "", false);
+    std::string in_config = fmt::format("{}_gatb", KmDir::get().m_config_storage);
+    std::string in_repart = fmt::format("{}_gatb", KmDir::get().m_repart_storage);
+
+    Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
+    LOCAL(config_storage);
+    Configuration config = Configuration();
+    config.load(config_storage->getGroup("gatb"));
+
+    std::vector<std::string> in_matrices;
+    std::vector<uint32_t> partitions;
+
+    MODE mode = MODE::COUNT;
+
+    for (std::uint32_t p = 0; p < config._nb_partitions; p++)
+    {
+      std::string mp = KmDir::get().get_matrix_path(p, MODE::PA, FORMAT::BIN, COUNT_FORMAT::KMER, opt->cpr_in);
+      std::string mc = KmDir::get().get_matrix_path(p, MODE::COUNT, FORMAT::BIN, COUNT_FORMAT::KMER, opt->cpr_in);
+
+      if (fs::exists(mp))
+      {
+        mode = MODE::PA;
+        in_matrices.push_back(mp);
+        partitions.push_back(p);
+      }
+      else if (fs::exists(mc))
+      {
+        mode = MODE::COUNT;
+        in_matrices.push_back(mc);
+        partitions.push_back(p);
+      }
+    }
+
+    if (in_matrices.empty())
+      throw IOError("No files found for these parameters");
+
+    KmDir::get().init(opt->output, opt->key, true);
+
+    if (KmDir::get().m_fof.size() > 1)
+      throw InputError("Filtering with many samples is not yet implemented. Fof must contain only one sample.");
+
+    fs::copy(in_config, fmt::format("{}_gatb", KmDir::get().m_config_storage));
+    fs::copy(in_repart, fmt::format("{}_gatb", KmDir::get().m_repart_storage));
+
+    std::string sid = KmDir::get().m_fof.get_id(0);
+
+    SuperKTask<MAX_K> superk_task(sid, true, partitions);
+    superk_task.exec();
+
+    sk_storage_t superk_storage = std::make_shared<SuperKStorageReader>(
+      KmDir::get().get_superk_path(sid));
+    parti_info_t pinfo = std::make_shared<PartiInfo<5>>(KmDir::get().get_superk_path(sid));
+
+    TaskPool pool(opt->nb_threads);
+
+    std::size_t amin = std::get<2>(*(KmDir::get().m_fof.begin()));
+    amin = (amin == 0) ? opt->c_ab_min : amin;
+
+    for (auto&& i : partitions)
+    {
+      KmDir::get().init_one_part(i);
+      std::string p = KmDir::get().get_count_part_path(sid, i, true, KM_FILE::KMER);
+      uint32_t id = KmDir::get().m_fof.get_i(sid);
+
+      pool.add_task(std::make_shared<CountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
+        p, config, superk_storage, pinfo, i, id, config._kmerSize, amin, true, nullptr, false
+      ));
+    }
+    pool.join_all();
+
+    std::vector<std::string> out_matrices;
+    std::vector<std::string> in_kmers;
+    std::vector<std::string> out_kmers;
+
+    for (auto&& p : partitions)
+    {
+      out_matrices.push_back(
+        KmDir::get().get_matrix_path(p, mode, FORMAT::BIN, COUNT_FORMAT::KMER, opt->cpr_out));
+      in_kmers.push_back(
+        KmDir::get().get_count_part_path(sid, p, true, KM_FILE::KMER));
+      out_kmers.push_back(
+        KmDir::get().get_count_part_path(fmt::format("{}_absent", sid), p, opt->cpr_out, KM_FILE::KMER));
+    }
+
+    for (std::size_t i=0; i<out_matrices.size(); i++)
+    {
+      spdlog::info(in_matrices[i]);
+      spdlog::info(in_kmers[i]);
+      spdlog::info(out_matrices[i]);
+      spdlog::info(out_kmers[i]);
+    }
+
+    MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads);
+    mf.exec();
+
+    for (auto&& p : partitions)
+    {
+      fs::rename(out_kmers[p], KmDir::get().get_count_part_path(sid, p, opt->cpr_out, KM_FILE::KMER));
     }
   }
 };

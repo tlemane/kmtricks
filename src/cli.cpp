@@ -36,6 +36,7 @@ kmtricksCli::kmtricksCli(
   count_opt = std::make_shared<struct count_options>(count_options{});
   merge_opt = std::make_shared<struct merge_options>(merge_options{});
   format_opt = std::make_shared<struct format_options>(format_options{});
+  filter_opt = std::make_shared<struct filter_options>(filter_options{});
   dump_opt = std::make_shared<struct dump_options>(dump_options{});
   agg_opt = std::make_shared<struct agg_options>(agg_options{});
   index_opt = std::make_shared<struct index_options>(index_options{});
@@ -47,6 +48,7 @@ kmtricksCli::kmtricksCli(
   count_cli(cli, count_opt);
   merge_cli(cli, merge_opt);
   format_cli(cli, format_opt);
+  filter_cli(cli, filter_opt);
 #endif
   dump_cli(cli, dump_opt);
   agg_cli(cli, agg_opt);
@@ -66,7 +68,7 @@ std::tuple<COMMAND, km_options_t> kmtricksCli::parse(int argc, char* argv[])
   }
   else if (argc > 1 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v"))
   {
-    std::cerr << fmt::format("kmtricks {}", PROJECT_VER) << std::endl;
+    std::cerr << fmt::format("kmtricks {}", PROJECT_VER) << std::endl;
     exit(EXIT_FAILURE);
   }
 
@@ -96,6 +98,8 @@ std::tuple<COMMAND, km_options_t> kmtricksCli::parse(int argc, char* argv[])
     return std::make_tuple(COMMAND::DUMP, dump_opt);
   else if (cli->is("aggregate"))
     return std::make_tuple(COMMAND::AGGREGATE, agg_opt);
+  else if (cli->is("filter"))
+    return std::make_tuple(COMMAND::FILTER, filter_opt);
   else if (cli->is("index"))
     return std::make_tuple(COMMAND::INDEX, index_opt);
   else if (cli->is("query"))
@@ -748,6 +752,43 @@ km_options_t agg_cli(std::shared_ptr<bc::Parser<1>> cli, agg_options_t options)
     ->setter(options->output);
 
   add_common(agg_cmd, options);
+  return options;
+}
+
+km_options_t filter_cli(std::shared_ptr<bc::Parser<1>> cli, filter_options_t options)
+{
+  bc::cmd_t filter_cmd = cli->add_command("filter", "Filter matrix.");
+
+  filter_cmd->add_param("--in-matrix", "kmtricks runtime directory which contains the matrix.")
+    ->meta("DIR")
+    ->checker(bc::check::is_dir)
+    ->setter(options->dir);
+
+  filter_cmd->add_param("--key", "filtering key (a kmtricks fof with only one sample).")
+    ->meta("FILE")
+    ->checker(bc::check::is_file)
+    ->setter(options->key);
+
+  filter_cmd->add_param("--hard-min", "min abundance to keep a k-mer in --key.")
+    ->meta("INT")
+    ->def("2")
+    ->checker(bc::check::is_number)
+    ->setter(options->c_ab_min);
+
+  filter_cmd->add_param("--cpr-in", "compressed inputs")
+    ->as_flag()
+    ->setter(options->cpr_in);
+
+  filter_cmd->add_param("--cpr-out", "compressed outputs (ignored with --format text)")
+    ->as_flag()
+    ->setter(options->cpr_out);
+
+  filter_cmd->add_param("--output", "output directory")
+    ->meta("DIR")
+    ->checker(dir_already_exists)
+    ->setter(options->output);
+
+  add_common(filter_cmd, options);
   return options;
 }
 

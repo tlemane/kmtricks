@@ -37,6 +37,7 @@
 #include <kmtricks/cli/dump.hpp>
 #include <kmtricks/cli/infos.hpp>
 #include <kmtricks/cli/aggregate.hpp>
+#include <kmtricks/cli/filter.hpp>
 #include <kmtricks/cli/index.hpp>
 #include <kmtricks/cli/query.hpp>
 
@@ -66,6 +67,7 @@ private:
   format_options_t format_opt {nullptr};
   dump_options_t dump_opt {nullptr};
   agg_options_t agg_opt {nullptr};
+  filter_options_t filter_opt {nullptr};
   index_options_t index_opt {nullptr};
   query_options_t query_opt {nullptr};
 };

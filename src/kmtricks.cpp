@@ -96,6 +96,10 @@ int main(int argc, char* argv[])
     {
       const_loop_executor<0, KMER_N>::exec<main_agg>(kmer_size, options);
     }
+    else if (cmd == COMMAND::FILTER)
+    {
+      const_loop_executor<0, KMER_N>::exec<main_filter>(kmer_size, options);
+    }
 #ifdef WITH_HOWDE
     else if (cmd == COMMAND::INDEX)
     {

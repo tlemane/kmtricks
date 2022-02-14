@@ -248,6 +248,11 @@ public:
     }
   }
 
+  void init_one_part(uint32_t part)
+  {
+    fs::create_directory(fmt::format("{}/partition_{}", m_counts_storage, part));
+  }
+
 private:
   KmDir() {}
 

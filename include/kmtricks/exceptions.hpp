@@ -46,6 +46,7 @@ class km_exception : public std::exception
 
 km_EXCEPTION(IOError);
 km_EXCEPTION(IDError);
+km_EXCEPTION(InputError);
 km_EXCEPTION(FileNotFoundError);
 km_EXCEPTION(PipelineError);
 km_EXCEPTION(ConfigError);

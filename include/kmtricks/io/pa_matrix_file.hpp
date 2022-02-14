@@ -143,7 +143,7 @@ public:
       {
         for (uint8_t s=0; s<8; s++)
         {
-          stream << " " << ((b >> s) ? '1' : '0');
+          stream << " " << (((b >> s) & 1) ? '1' : '0');
           if (++i == this->m_header.bits)
             break;
         }
@@ -264,7 +264,7 @@ public:
       {
         for (uint8_t s=0; s<8; s++)
         {
-          stream << " " << ((b >> s) ? '1' : '0');
+          stream << " " << (((b >> s) & 1) ? '1' : '0');
           if (++i == this->m_header.bits)
             break;
         }
@@ -382,7 +382,7 @@ public:
       {
         for (uint8_t s=0; s<8; s++)
         {
-          out << " " << ((b >> s) ? '1' : '0');
+          out << " " << ( ((b >> s) & 1) ? '1' : '0');
           if (++i == bits)
             break;
         }
