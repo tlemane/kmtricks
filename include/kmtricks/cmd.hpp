@@ -649,6 +649,7 @@ struct main_filter
     std::vector<std::string> out_matrices;
     std::vector<std::string> in_kmers;
     std::vector<std::string> out_kmers;
+    std::vector<std::string> vecs;
 
     for (auto&& p : partitions)
     {
@@ -658,10 +659,12 @@ struct main_filter
         KmDir::get().get_count_part_path(sid, p, true, KM_FILE::KMER));
       out_kmers.push_back(
         KmDir::get().get_count_part_path(fmt::format("{}_absent", sid), p, opt->cpr_out, KM_FILE::KMER));
+      vecs.push_back(
+        fmt::format("{}/{}.vec", KmDir::get().m_matrix_storage, p));
     }
 
     spdlog::info("Filtering...");
-    MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads);
+    MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, vecs, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads);
     mf.exec();
 
     for (std::size_t i = 0; i < partitions.size(); ++i)

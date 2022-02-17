@@ -24,12 +24,14 @@ class FilterTask : public ITask
                const std::string& kmers,
                const std::string& output,
                const std::string& koutput,
+               const std::string& vec,
                bool cpr, bool count)
       : ITask(0),
         m_matrix(matrix),
         m_kmers(kmers),
         m_output(output),
         m_koutput(koutput),
+        m_vec(vec),
         m_cpr(cpr),
         m_count(count)
     {
@@ -53,6 +55,8 @@ class FilterTask : public ITask
 
     void f_count_matrix()
     {
+      std::ofstream vout(m_vec, std::ios::out);
+
       KmerReader<8192> kr(m_kmers);
       Kmer<MAX_K> kmer; kmer.set_k(kr.infos().kmer_size);
       count_type count;
@@ -81,38 +85,57 @@ class FilterTask : public ITask
 
       mr.read<MAX_K, MAX_C>(kmer2, counts, n);
 
+      bool f = true;
+
       while (kr.read<MAX_K, MAX_C>(kmer, count))
       {
         if (kmer < kmer2)
         {
           kw.write<MAX_K, MAX_C>(kmer, count);
-          continue;
         }
         else if (kmer > kmer2)
         {
-          while (mr.read<MAX_K, MAX_C>(kmer2, counts, n) && kmer > kmer2);
+          if (f)
+          {
+            vout << "0\n";
+            f = false;
+          }
+          while (mr.read<MAX_K, MAX_C>(kmer2, counts, n) && kmer > kmer2)
+          {
+            vout << "0\n";
+          }
 
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
-            continue;
           }
           else
           {
             counts.back() = count;
             mw.write<MAX_K, MAX_C>(kmer2, counts);
+            vout << std::to_string(count) << '\n';
           }
         }
         else
         {
           counts.back() = count;
           mw.write<MAX_K, MAX_C>(kmer2, counts);
+          vout << std::to_string(count) << '\n';
         }
+
+        f = false;
+      }
+
+      while (mr.read<MAX_K, MAX_C>(kmer2, counts, n))
+      {
+        vout << "0\n";
       }
     }
 
     void f_pa_matrix()
     {
+      std::ofstream vout(m_vec, std::ios::out);
+
       KmerReader<8192> kr(m_kmers);
       Kmer<MAX_K> kmer; kmer.set_k(kr.infos().kmer_size);
       count_type count;
@@ -138,31 +161,47 @@ class FilterTask : public ITask
 
       mr.read<MAX_K>(kmer2, bits);
 
+      bool f = true;
+
       while (kr.read<MAX_K, MAX_C>(kmer, count))
       {
         if (kmer < kmer2)
         {
           kw.write<MAX_K, MAX_C>(kmer, count);
-          continue;
         }
         else if (kmer > kmer2)
         {
-          while (mr.read<MAX_K>(kmer2, bits) && kmer > kmer2);
+          if (f)
+          {
+            vout << "0\n";
+            f = false;
+          }
+          while (mr.read<MAX_K>(kmer2, bits) && kmer > kmer2)
+          {
+            vout << "0\n";
+          }
 
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
-            continue;
           }
           else
           {
             mw.write<MAX_K>(kmer2, bits);
+            vout << "1\n";
           }
         }
         else
         {
           mw.write<MAX_K>(kmer2, bits);
+          vout << "1\n";
         }
+        f = false;
+      }
+
+      while (mr.read<MAX_K>(kmer2, bits))
+      {
+        vout << "0\n";
       }
     }
 
@@ -171,6 +210,7 @@ class FilterTask : public ITask
     const std::string& m_kmers;
     const std::string& m_output;
     const std::string& m_koutput;
+    const std::string& m_vec;
     bool m_count;
     bool m_cpr;
 };
@@ -185,6 +225,7 @@ class MatrixFilter
                  const paths_t& kmers,
                  const paths_t& outputs,
                  const paths_t& koutputs,
+                 const paths_t& vecs,
                  bool cpr,
                  bool count,
                  std::size_t threads)
@@ -192,6 +233,7 @@ class MatrixFilter
         m_kpaths(kmers),
         m_opaths(outputs),
         m_kopaths(koutputs),
+        m_vopaths(vecs),
         m_cpr(cpr),
         m_count(count),
         m_threads(threads)
@@ -202,7 +244,7 @@ class MatrixFilter
       TaskPool pool(m_threads);
       for (std::size_t i = 0; i < m_mpaths.size(); i++)
       {
-        task_t task = std::make_shared<FilterTask<MAX_K, MAX_C>>(m_mpaths[i], m_kpaths[i], m_opaths[i], m_kopaths[i], m_cpr, m_count);
+        task_t task = std::make_shared<FilterTask<MAX_K, MAX_C>>(m_mpaths[i], m_kpaths[i], m_opaths[i], m_kopaths[i], m_vopaths[i], m_cpr, m_count);
 
         pool.add_task(task);
       }
@@ -215,6 +257,7 @@ class MatrixFilter
     const paths_t& m_kpaths;
     const paths_t& m_opaths;
     const paths_t& m_kopaths;
+    const paths_t& m_vopaths;
 
     bool m_cpr;
     bool m_count;
