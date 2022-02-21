@@ -108,6 +108,7 @@ class FilterTask : public ITask
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
+            vout << "0\n";
           }
           else
           {
@@ -184,6 +185,7 @@ class FilterTask : public ITask
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
+            vout << "0\n";
           }
           else
           {
