@@ -92,6 +92,7 @@ class FilterTask : public ITask
         if (kmer < kmer2)
         {
           kw.write<MAX_K, MAX_C>(kmer, count);
+          continue;
         }
         else if (kmer > kmer2)
         {
@@ -108,9 +109,10 @@ class FilterTask : public ITask
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
-            vout << "0\n";
+            f = true;
+            continue;
           }
-          else
+          else if (kmer == kmer2)
           {
             counts.back() = count;
             mw.write<MAX_K, MAX_C>(kmer2, counts);
@@ -126,6 +128,9 @@ class FilterTask : public ITask
 
         f = false;
       }
+
+      if (f)
+        vout << "0\n";
 
       while (mr.read<MAX_K, MAX_C>(kmer2, counts, n))
       {
