@@ -169,41 +169,51 @@ class FilterTask : public ITask
         if (kmer < kmer2)
         {
           kw.write<MAX_K, MAX_C>(kmer, count);
+          continue;
         }
         else if (kmer > kmer2)
         {
           if (f)
           {
             vout << "0\n";
+            //vout << kmer2.to_string() << " 0\n";
             f = false;
           }
           while (mr.read<MAX_K>(kmer2, bits) && kmer > kmer2)
           {
             vout << "0\n";
+            //vout << kmer2.to_string() << " 0\n";
           }
 
           if (kmer < kmer2)
           {
             kw.write<MAX_K, MAX_C>(kmer, count);
-            vout << "0\n";
+            f = true;
+            continue;
           }
-          else
+          else if (kmer == kmer2)
           {
             mw.write<MAX_K>(kmer2, bits);
             vout << "1\n";
+            //vout << kmer2.to_string() << " 1\n";
           }
         }
-        else
+        else if (kmer == kmer2)
         {
           mw.write<MAX_K>(kmer2, bits);
           vout << "1\n";
+          //vout << kmer2.to_string() << " 1\n";
         }
         f = false;
       }
 
+      if (f)
+        vout << "0\n";
+        //vout << kmer2.to_string() << " 0\n";
       while (mr.read<MAX_K>(kmer2, bits))
       {
         vout << "0\n";
+        //vout << kmer2.to_string() << " 0\n";
       }
     }
 
