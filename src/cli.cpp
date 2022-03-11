@@ -169,6 +169,9 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     format = s[1];
     out = s[2];
 
+    if (out != "text" && out != "bin")
+      goto fail;
+
     if (format != "count" && format != "pa" && format != "bf" && format != "bft")
       goto fail;
 

@@ -127,7 +127,7 @@ public:
     if (FORMAT::TEXT == format)
       ext += ".txt";
 
-    if (compressed && (mode != MODE::BFT))
+    if (compressed && (mode != MODE::BFT) && format != FORMAT::TEXT)
       ext += ".lz4";
 
     return fmt::format(m_matrix_template, m_matrix_storage, part_id, ext);
