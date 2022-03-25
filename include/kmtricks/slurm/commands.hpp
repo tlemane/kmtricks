@@ -51,7 +51,7 @@ namespace km {
     const std::string submit_script_m = "{}/submit_merge.slurm";
     const std::string submit_script_f = "{}/submit_format.slurm";
 
-    const std::string slurm_array = "$SBATCH --array=0-{}%{}\n";
+    const std::string slurm_array = "#SBATCH --array=0-{}%{}\n";
 
     const std::string shebang = "#!/bin/bash";
 
@@ -86,7 +86,7 @@ namespace km {
 
     std::string id_from_fof(const std::string& fof_path)
     {
-      return fmt::format("$(awk -v sample={} 'NR==sample+1' {} | cut -d':' -f1)", fof_path, "${SLURM_ARRAY_TASK_ID}");
+      return fmt::format("$(awk -v sample={} 'NR==sample+1' {} | cut -d':' -f1)", "${SLURM_ARRAY_TASK_ID}", fof_path);
     }
 
     void repart(const std::string& path,
