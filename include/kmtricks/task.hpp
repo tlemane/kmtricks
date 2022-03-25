@@ -817,6 +817,15 @@ public:
   void preprocess() {}
   void postprocess()
   {
+    if (this->m_clear)
+    {
+      for (size_t p=0; p<m_nb_parts; p++)
+      {
+        std::string s = KmDir::get().get_matrix_path(m_nb_parts, MODE::BFT, FORMAT::BIN, COUNT_FORMAT::HASH, false);
+        Eraser::get().erase(s);
+      }
+    }
+
     this->m_finish = true;
     this->exec_callback();
   }

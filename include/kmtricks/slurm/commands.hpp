@@ -275,9 +275,9 @@ namespace km {
       out << std::endl;
 
       std::ofstream out2(fmt::format(submit_script_f, opt->slurm_dir), std::ios::out);
-      out << shebang << "\n\n";
+      out2 << shebang << "\n\n";
       out2 << "#SBATCH --job-name=kmf_submit\n";
-      out2 << fmt::format(submit_cmd_d_f, fmt::format("{}/MERGE_ID", opt->slurm_dir), fmt::format(f_script, opt->slurm_dir));
+      out2 << fmt::format(submit_cmd_d_f, fmt::format("{}/MERGE_PID", opt->slurm_dir), fmt::format(f_script, opt->slurm_dir));
 
       cmds.push_back(fmt::format(submit_cmd_d, "KMF", "KMM_ID", fmt::format(submit_script_f, opt->slurm_dir)));
     }
