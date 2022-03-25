@@ -37,7 +37,7 @@ namespace km {
       "{}=$(sbatch --dependency=afterok:${{{}##* }} {})";
 
     const std::string submit_cmd_d_m =
-      "echo $(sbatch --array=$(ls {} | wc -l)%{} {})";
+      "echo $(sbatch --array=$(ls {} | echo \"$(wc -l)-1\" | bc)%{} {})";
 
     const std::string submit_cmd_d_f =
       "sbatch --dependency=afterok:$(cat {}) {}";
