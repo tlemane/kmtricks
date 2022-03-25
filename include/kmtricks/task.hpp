@@ -821,7 +821,7 @@ public:
     {
       for (size_t p=0; p<m_nb_parts; p++)
       {
-        std::string s = KmDir::get().get_matrix_path(m_nb_parts, MODE::BFT, FORMAT::BIN, COUNT_FORMAT::HASH, false);
+        std::string s = KmDir::get().get_matrix_path(p, MODE::BFT, FORMAT::BIN, COUNT_FORMAT::HASH, false);
         Eraser::get().erase(s);
       }
     }
