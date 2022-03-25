@@ -40,7 +40,7 @@ namespace km {
       "echo $(sbatch --array=$(ls {} | echo \"$(wc -l)-1\" | bc)%{} {})";
 
     const std::string submit_cmd_d_f =
-      "sbatch --dependency=afterok:$(cat {}) {}";
+      "sbatch --dependency=afterok:$(cat {} | cut -d' ' -f4) {}";
 
     const std::string r_script = "{}/kmtricks_repart.slurm";
     const std::string sk_script = "{}/kmtricks_sk.slurm";
