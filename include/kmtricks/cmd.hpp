@@ -41,6 +41,8 @@
 #include <kmtricks/progress.hpp>
 #include <kmtricks/signals.hpp>
 
+#include <kmtricks/slurm/slurm.hpp>
+
 #ifdef WITH_PLUGIN
 #include <kmtricks/plugin_manager.hpp>
 #include <kmtricks/plugin.hpp>
@@ -63,16 +65,24 @@ struct main_all
     all_options_t opt = std::static_pointer_cast<struct all_options>(options);
     spdlog::debug(opt->display());
     opt->sanity_check();
-    KmDir::get().init(opt->dir, opt->fof, true);
-    opt->dump(KmDir::get().m_options);
+
+    if (opt->slurm)
+    {
+      slurm::slurm(opt);
+    }
+    else
+    {
+      KmDir::get().init(opt->dir, opt->fof, true);
+      opt->dump(KmDir::get().m_options);
 
 #ifdef WITH_PLUGIN
-    if (opt->use_plugin)
-      PluginManager<IMergePlugin>::get().init(opt->plugin, opt->plugin_config, MAX_K);
+      if (opt->use_plugin)
+        PluginManager<IMergePlugin>::get().init(opt->plugin, opt->plugin_config, MAX_K);
 #endif
 
-    TaskScheduler<MAX_K, DMAX_C> scheduler(opt);
-    scheduler.execute();
+      TaskScheduler<MAX_K, DMAX_C> scheduler(opt);
+      scheduler.execute();
+    }
   }
 };
 

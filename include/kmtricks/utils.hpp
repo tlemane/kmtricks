@@ -256,6 +256,11 @@ public:
       m_pool.push_back(std::thread(&Eraser::worker, this));
   }
 
+  ~Eraser()
+  {
+    join();
+  }
+
   static Eraser& get()
   {
     static Eraser singleton;

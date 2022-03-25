@@ -351,6 +351,47 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->setter(options->plugin_config);
 #endif
 
+  all_cmd->add_group("slurm options", "Generate scripts to distribute kmtricks computations on slurm.");
+
+  all_cmd->add_param("--slurm", "enable slurm mode.")
+    ->as_flag()
+    ->setter(options->slurm);
+
+  all_cmd->add_param("--slurm-dir", "scripts output directory.")
+    ->meta("DIR")
+    ->def("")
+    ->setter(options->slurm_dir);
+
+  all_cmd->add_param("--slurm-array", "max concurrent tasks.")
+    ->meta("INT")
+    ->def("15")
+    ->checker(bc::check::is_number)
+    ->setter(options->slurm_max_array);
+
+  all_cmd->add_param("--slurm-mem", "mem per cpu.")
+    ->meta("INT[K|M|G]")
+    ->def("1G")
+    ->setter(options->slurm_mem);
+
+  auto slurm_opt_setter = [options](const std::string& v) {
+    auto vs = bc::utils::split(v, ',');
+
+    for (auto& o : vs)
+    {
+      auto os = bc::utils::split(o, '=');
+      options->slurm_options.push_back(std::make_pair(os[0], os[1]));
+    }
+  };
+
+  all_cmd->add_param("--slurm-options", "slurm options, comma separated.")
+    ->meta("STR")
+    ->def("")
+    ->setter_c(slurm_opt_setter);
+
+  all_cmd->add_param("--submit", "submit scripts.")
+    ->as_flag()
+    ->setter(options->slurm_submit);
+
   add_common(all_cmd, options);
 
   return options;

@@ -69,6 +69,13 @@ struct all_options : km_options
   COUNT_FORMAT count_format;
   COMMAND until;
 
+  bool slurm {false};
+  std::string slurm_dir {};
+  std::size_t slurm_max_array {10};
+  std::string slurm_mem {"1G"};
+  std::vector<std::pair<std::string, std::string>> slurm_options {};
+  bool slurm_submit {false};
+
 #ifdef WITH_PLUGIN
   std::string plugin;
   std::string plugin_config;
