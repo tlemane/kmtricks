@@ -134,7 +134,7 @@ namespace km {
                                          fmt::format("{}/%x_%A_%a.err", opt->slurm_dir),
                                          fmt::format("{}/%x_%A_%a.out", opt->slurm_dir));
 
-      out << fmt::format(slurm_array, Fof(opt->fof).size(), opt->slurm_max_array);
+      out << fmt::format(slurm_array, Fof(opt->fof).size() - 1, opt->slurm_max_array);
       add_slurm_options(out, opt->slurm_options);
       out << fmt::format(superk_cmd, kmtricks_bin,
                                      opt->dir,
@@ -161,7 +161,7 @@ namespace km {
                                          fmt::format("{}/%x_%A_%a.err", opt->slurm_dir),
                                          fmt::format("{}/%x_%A_%a.out", opt->slurm_dir));
 
-      out << fmt::format(slurm_array, Fof(opt->fof).size(), opt->slurm_max_array);
+      out << fmt::format(slurm_array, Fof(opt->fof).size() - 1, opt->slurm_max_array);
       add_slurm_options(out, opt->slurm_options);
 
       out << fmt::format(superk_cmd, kmtricks_bin,
