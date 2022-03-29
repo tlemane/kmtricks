@@ -890,12 +890,12 @@ km_options_t query_cli(std::shared_ptr<bc::Parser<1>> cli, query_options_t optio
     ->checker(bc::check::f::range(0.0, 1.0))
     ->setter(options->threshold_shared_positions);
 
-  
+
   query_cmd->add_param("--z",
                        "value. If bigger than 0, need z+1 indexed words (called s-mers) to obtain a k-mer (k=s+z)")
     ->meta("INT")
     ->def("0")
-    ->checker(bc::check::f::range(0, 1000))
+    ->checker(bc::check::f::range(0, KL[KMER_N-1]-1))
     ->setter(options->z);
 
   query_cmd->add_param("--no-detail", "do not print the position of shared kmers in output.")
