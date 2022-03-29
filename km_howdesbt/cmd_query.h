@@ -9,6 +9,9 @@
 #include "query.h"
 #include "commands.h"
 
+
+#include <kmtricks/loop_executor.hpp>
+
 class QueryCommand: public Command
 	{
 public:
@@ -19,35 +22,35 @@ public:
 	virtual ~QueryCommand();
 	virtual void short_description (std::ostream& s);
 	virtual void usage (std::ostream& s, const std::string& message="");
-	virtual void debug_help (std::ostream& s);
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 	virtual void read_queries (void);
-	virtual void sort_matches_by_kmer_counts (void);
-	virtual void print_matches(std::ostream& out) const;
-	virtual void print_matches_with_kmer_counts(std::ostream& out) const;
-	virtual void print_kmer_hit_counts(std::ostream& out) const;
+	std::vector<bool> get_positive_kmers(const std::string& sequence, 
+											const std::unordered_set<std::size_t>& local_presentHashes, 
+											const unsigned int& smerSize) const;
+	virtual void print_matches_with_kmer_counts_and_spans
+   (	std::ostream& out,
+		const unsigned int& smerSize
+   ) const;
+	
 
 	std::string treeFilename;
     std::string repartFileName;
     std::string winFileName;
 	std::vector<std::string> queryFilenames;
-	std::vector<double> queryThresholds;
+	std::vector<float> queryThresholds;
 	std::string matchesFilename;
-	double generalQueryThreshold;
-	bool adjustKmerCounts;
-	bool sortByKmerCounts;
-	bool onlyLeaves;
-	bool distinctKmers;
+	float generalQueryThreshold;
+	float threshold_shared_positions;
+	bool nodetail;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
-	bool justReportKmerCounts;
-	bool countAllKmerHits;
-	bool reportNodesExamined;
-	bool collectNodeStats;
-	bool reportTime;
-	bool backwardCompatibleStyle;
-	bool completeKmerCounts;
+	bool completeSmerCounts;
+	int z; 							// findere strategy
+
+	// needed for findere approach: from smers to hash values when printing results
+    std::shared_ptr<km::Repartition> repartitor; 
+    std::shared_ptr<km::HashWindow> hash_win; 
 
 	std::vector<Query*> queries;
 	};

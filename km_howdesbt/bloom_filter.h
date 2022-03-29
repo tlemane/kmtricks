@@ -23,7 +23,7 @@ public:
 
 public:
 	BloomFilter(const std::string& filename);
-	BloomFilter(const std::string& filename, uint32_t kmerSize,
+	BloomFilter(const std::string& filename, uint32_t smerSize,
 	            std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	            std::uint64_t numBits, std::uint64_t hashModulus=0);
 	BloomFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -64,8 +64,8 @@ public:
 	virtual void squeeze_by (BitVector* srcBv, int whichDstBv=0);
 	virtual void squeeze_by (const sdslbitvector* srcBits, int whichDstBv=0);
 
-	virtual std::uint64_t mer_to_position(const std::string& mer) const;
-	virtual std::uint64_t mer_to_position(const std::uint64_t* merData) const;
+	virtual std::uint64_t mer_to_hash_value(const std::string& mer) const;
+	virtual std::uint64_t mer_to_hash_value(const std::uint64_t* merData) const;
 	virtual void add (const std::string& mer);
 	virtual void add (const std::uint64_t* merData);
 	virtual bool contains (const std::string& mer) const;
@@ -76,18 +76,18 @@ public:
 	virtual std::uint64_t num_bits()     const { return numBits; }
 
 	virtual bool is_position_adjustor () { return false; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &kmerPositions,
+	virtual void adjust_positions_in_list  (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &kmerPositions,
+	virtual void restore_positions_in_list (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved) {}
 
 public:
 	bool ready;						// ready is false until we know the bloom
-									// filter's attributes (e.g. kmerSize, hash
+									// filter's attributes (e.g. smerSize, hash
 									// functions, etc.)
 	FileManager* manager;
 	std::string filename;
-	std::uint32_t kmerSize;
+	std::uint32_t smerSize;
 
 	HashCanonical* hasher1, *hasher2;
 	std::uint32_t numHashes;		// how many hash values are generated for
@@ -101,7 +101,7 @@ public:
 
 	bool          setSizeKnown;		// true  => the setSize field is valid
 									// false => the value of setSize is unknown
-	std::uint64_t setSize;			// number of distinct kmers that were
+	std::uint64_t setSize;			// number of distinct smers that were
 									// .. inserted during construction
 
 	int numBitVectors;				// how many bit vectors are in use
@@ -109,23 +109,6 @@ public:
 									// .. numBitVectors is 1
 	BitVector* bvs[maxBitVectors];
 
-public:
-	bool reportLoad = false;
-	bool reportSave = false;
-	static bool reportSimplify;
-	static bool reportLoadTime;
-	static bool reportSaveTime;
-	static bool reportTotalLoadTime;
-	static bool reportTotalSaveTime;
-	static double totalLoadTime;
-	static double totalSaveTime;
-	static bool trackMemory;
-	static bool reportCreation;
-	static bool reportManager;
-	static bool reportFileBytes;
-	static bool countFileBytes;
-	static std::uint64_t totalFileReads;
-	static std::uint64_t totalFileBytesRead;
 
 public:
 	static std::string strip_filter_suffix
@@ -138,7 +121,7 @@ public:
 	    (const std::string& filename);
 	static BloomFilter* bloom_filter
 	    (const std::uint32_t bfKind,
-	     const std::string& filename, uint32_t kmerSize,
+	     const std::string& filename, uint32_t smerSize,
 	     std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	     std::uint64_t numBits, std::uint64_t hashModulus=0);
 	static BloomFilter* bloom_filter
@@ -150,10 +133,7 @@ public:
 
 public:
 	bool dbgBV               = false;	// some of these are only meaningful
-	bool dbgAdd              = false;	// .. if bloom_filter_supportDebug is
 	bool dbgContains         = false;	// .. #defined in bloom_filter.cc
-	bool dbgAdjustPosList    = false;
-	bool dbgRankSelectLookup = false;
 
 public:
 	static const std::uint64_t npos = -1;
@@ -172,7 +152,7 @@ class AllSomeFilter: public BloomFilter
 
 public:
 	AllSomeFilter(const std::string& filename);
-	AllSomeFilter(const std::string& filename, uint32_t kmerSize,
+	AllSomeFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	AllSomeFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -198,7 +178,7 @@ class DeterminedFilter: public BloomFilter
 
 public:
 	DeterminedFilter(const std::string& filename);
-	DeterminedFilter(const std::string& filename, uint32_t kmerSize,
+	DeterminedFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -227,7 +207,7 @@ public:
 
 public:
 	DeterminedBriefFilter(const std::string& filename);
-	DeterminedBriefFilter(const std::string& filename, uint32_t kmerSize,
+	DeterminedBriefFilter(const std::string& filename, uint32_t smerSize,
 	              std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
 	              std::uint64_t numBits, std::uint64_t hashModulus=0);
 	DeterminedBriefFilter(const BloomFilter* templateBf, const std::string& newFilename="");
@@ -239,9 +219,9 @@ public:
 	virtual int lookup (const std::uint64_t pos) const;
 
 	virtual bool is_position_adjustor  () { return true; }
-	virtual void adjust_positions_in_list  (std::vector<std::uint64_t> &kmerPositions,
+	virtual void adjust_positions_in_list  (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved);
-	virtual void restore_positions_in_list (std::vector<std::uint64_t> &kmerPositions,
+	virtual void restore_positions_in_list (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	                                        std::uint64_t numUnresolved);
 	};
 

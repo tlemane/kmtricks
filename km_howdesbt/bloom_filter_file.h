@@ -104,7 +104,7 @@ struct bffileheader
     std::uint32_t	bfKind;		// [10] (one of bfkind_xxx) identifier for the
     							//      .. type of bloom filter
 	std::uint32_t	padding1;	// [14] (expected to be 0)
-	std::uint32_t	kmerSize;	// [18]
+	std::uint32_t	smerSize;	// [18]
 	std::uint32_t	numHashes;	// [1C]
 	std::uint64_t	hashSeed1;	// [20]
 	std::uint64_t	hashSeed2;	// [28]
@@ -122,7 +122,7 @@ struct bffileheader
 								//      1 => the setSize field is valid
 								//      0 => the value of setSize is unknown
 	std::uint64_t	setSize;	// [48] (was padding3 and padding4 in v1)
-								//      number of distinct kmers that were
+								//      number of distinct smers that were
 								//      .. inserted during construction
     bfvectorinfo	info[1];	// [50] (array with numVectors entries)
     // after info[], characters for the bfvectorinfo.name fields 
@@ -146,7 +146,7 @@ const std::uint64_t bffileheaderVersion1 = 1;
 //    std::uint32_t	bfKind;		// [10] (one of bfkind_xxx) identifier for the
 //    							//      .. type of bloom filter
 //	std::uint32_t	padding1;	// [14] (expected to be 0)
-//	std::uint32_t	kmerSize;	// [18]
+//	std::uint32_t	smerSize;	// [18]
 //	std::uint32_t	numHashes;	// [1C]
 //	std::uint64_t	hashSeed1;	// [20]
 //	std::uint64_t	hashSeed2;	// [28]

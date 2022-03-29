@@ -66,7 +66,7 @@ protected:
     header->headerSize = header_size;
     header->version = bffileheaderVersion;
     header->bfKind = bfkind_simple;
-    header->kmerSize = m_kmer_size;
+    header->smerSize = m_kmer_size;
     header->numHashes = 1;
     header->hashSeed1 = 0;
     header->hashSeed2 = 0;
@@ -100,7 +100,7 @@ protected:
     header->headerSize = header_size;
     header->version = bffileheaderVersion;
     header->bfKind = bfkind_simple;
-    header->kmerSize = m_kmer_size;
+    header->smerSize = m_kmer_size;
     header->numHashes = 1;
     header->hashSeed1 = 0;
     header->hashSeed2 = 0;

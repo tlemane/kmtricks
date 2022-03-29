@@ -61,23 +61,6 @@ void BuildSBTCommand::usage
 	s << "  --roar               create the nodes as roar-compressed bit vector(s)" << endl;
 	}
 
-void BuildSBTCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "--debug= options" << endl;
-	s << "  trackmemory" << endl;
-	s << "  reportrankselect" << endl;
-	s << "  bfsimplify" << endl;
-	s << "  btunload" << endl;
-	s << "  bfcreation" << endl;
-	s << "  bfmanager" << endl;
-	s << "  bvcreation" << endl;
-	s << "  topology" << endl;
-	s << "  load" << endl;
-	s << "  traversal" << endl;
-	s << "  nochildupdate" << endl;
-	}
-
 void BuildSBTCommand::parse
    (int		_argc,
 	char**	_argv)
@@ -89,7 +72,6 @@ void BuildSBTCommand::parse
 
 	bfKind     = bfkind_simple;
 	compressor = bvcomp_uncompressed;
-	BloomTree::inhibitBvSimplify = false;
 
 	// skip command name
 
@@ -121,10 +103,7 @@ void BuildSBTCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		if ((arg == "--help=debug")
-		 || (arg == "--help:debug")
-		 || (arg == "?debug"))
-			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
+
 
 		// --outtree=<filename>
 
@@ -223,10 +202,7 @@ void BuildSBTCommand::parse
 			continue;
 			}
 
-		// (unadvertised) --nobvsimplify
 
-		if (arg == "--nobvsimplify")
-			{ BloomTree::inhibitBvSimplify = true;  continue; }
 
 		// (unadvertised) debug options
 
@@ -274,8 +250,6 @@ void BuildSBTCommand::parse
 			outTreeFilename = outTreeFilename.substr(0,dotIx) + "." + bfKindStr + ".sbt";
 		else
 			outTreeFilename = outTreeFilename + "." + bfKindStr + ".sbt";
-
-		cout << "topology will be written to \"" << outTreeFilename << "\"" << endl;
 		}
 
 	return;
@@ -283,25 +257,7 @@ void BuildSBTCommand::parse
 
 int BuildSBTCommand::execute()
 	{
-	if (contains(debug,"trackmemory"))
-		{
-		FileManager::trackMemory = true;
-		BloomTree::trackMemory   = true;
-		BloomFilter::trackMemory = true;
-		BitVector::trackMemory   = true;
-		}
-	if (contains(debug,"reportrankselect"))
-		BitVector::reportRankSelect = true;
-	if (contains(debug,"bfsimplify"))
-		BloomFilter::reportSimplify = true;
-	if (contains(debug,"btunload"))
-		BloomTree::reportUnload = true;
-	if (contains(debug,"bfcreation"))
-		BloomFilter::reportCreation = true;
-	if (contains(debug,"bfmanager"))
-		BloomFilter::reportManager = true;
-	if (contains(debug,"bvcreation"))
-		BitVector::reportCreation = true;
+
 
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 
@@ -310,18 +266,11 @@ int BuildSBTCommand::execute()
 
 	vector<BloomTree*> order;
 	root->post_order(order);
-	if (contains(debug,"load"))
-		{
-		for (const auto& node : order)
-			node->reportLoad = true;
-		}
+
 
 	bool hasOnlyChildren = false;
 	for (const auto& node : order)
 		{
-		node->reportSave   = true;
-		node->dbgTraversal = (contains(debug,"traversal"));
-		node->dbgInhibitChildUpdate = (contains(debug,"nochildupdate"));
 
 		if (node->num_children() == 1)
 			{

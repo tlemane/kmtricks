@@ -12,7 +12,7 @@
 // additional hash values from two basis functions, using fill_hash_values().
 //
 // The hash function reports zero to indicate an invalid result (e.g. when the
-// kmer includes an invalid character). On the rare occasion when the hash
+// smer includes an invalid character). On the rare occasion when the hash
 // function value mathematically should be zero, the value one is reported
 // instead.
 //
@@ -30,9 +30,9 @@
 // Mathematically, we have
 //   h = a(xor {for i=0..k-1} of f(z[s[k-1-i]],i))
 // where
-//   s is the kmer
-//   k is the length of the kmer
-//   s[i] is the nucleotide in position i of the kmer
+//   s is the smer
+//   k is the length of the smer
+//   s[i] is the nucleotide in position i of the smer
 //   z[c] is the kernel value for nucleotide c (one of kernelA, kernelC, ...)
 //   f(u,i) is the application of forward() to value u, i times (i may be zero)
 //   a(u) is the application of avalanche() to value u
@@ -59,12 +59,12 @@
 // be distinct and all contribute both 0s and 1s to the xor result.
 //
 // The canonical version computes the non-canonical core hash of both the
-// forward and reverse-complement kmer, and returns their sum (prior to the
+// forward and reverse-complement smer, and returns their sum (prior to the
 // avalanche step). Note that many canonical hash implementations use
 // min(forward,reverse), but that biases the result toward lower values. (That
 // bias, though, would probably be obscured here by the avalanche step). Also
 // note that at least one canonical hash implementation uses
-// xor(forward,reverse), but that causes collisions for all palindromic kmers.
+// xor(forward,reverse), but that causes collisions for all palindromic smers.
 // (And that fact can't be corrected by the avalanche step).
 //
 // When the hash function is seeded with 63-bit seed s, the kernel values are

@@ -70,51 +70,32 @@ void QueryCommand::usage
 	s << "                       this only applies to query files for which <F> is not" << endl;
 	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
 	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
-	s << "  --sort               sort matched leaves by the number of query kmers present," << endl;
-	s << "                       and report the number of kmers present" << endl;
-	s << "                       (by default we just report the matched leaves without" << endl;
-	s << "                       regard to which matches are better)" << endl;
+	s << "  --threshold-shared-positions=<F> Prints a query result if its ratio" << endl;
+    s << "                       of positions covered by at least a shared kmer is" << endl;
+    s << "                       higher or equal to this threshold. This happens" << endl;
+    s << "                       after the threshold applied on the" << endl;
+    s << "                       number of shared kmers. This option enables to" << endl;
+    s << "                       save query results where, say, 60 of kmers are" << endl;
+    s << "                       shared but 95% of positions are covered by a " << endl;
+    s << "                       shared kmer. In this case with this value set to 90, " << endl;
+    s << "                       this result is printed." << endl;
+	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
+	s << "  --no-detail          Do not print the position of shared kmers in output." << endl;
+	s << "	--z=<F>				 If z is bigger than 0, apply the findere strategy." << endl;
+	s << " 						 In such case, a k-mer is considered as present" <<endl;
+	s << " 						 if all its s-mers are presents," << endl;
+	s << " 						 with k = s+z, and s being the size of the words indexed in"<< endl;
+	s << " 						 bloom filters. Hence, with z=0 (defaut value), no fidere " <<endl;
+	s << " 						 approach is applied, and words indexed in the blomm filters" <<endl;
+	s << " 						 are queried" << endl; 
 	s << "  --consistencycheck   before searching, check that bloom filter properties are" << endl;
 	s << "                       consistent across the tree" << endl;
 	s << "                       (not needed with --usemanager)" << endl;
 	s << "  --time               report wall time and node i/o time" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
-// (no longer advertised -- order_query_results.sh isn't part of the distribution)
-//	s << "  --backwardcompatible (requires --adjust or --sort) output is backward" << endl;
-//	s << "                       compatible with order_query_results.sh" << endl;
-	}
 
-void QueryCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "--debug= options" << endl;
-	s << "  trackmemory" << endl;
-	s << "  reportfilebytes" << endl;
-	s << "  countfilebytes" << endl;
-	s << "  reportopenclose" << endl;
-	s << "  reportrankselect" << endl;
-	s << "  btunload" << endl;
-	s << "  bvcreation" << endl;
-	s << "  topology" << endl;
-	s << "  fmcontentload" << endl;
-	s << "  namemapping" << endl;
-	s << "  load" << endl;
-	s << "  reportloadtime" << endl;
-	s << "  reporttotalloadtime" << endl;
-	s << "  names" << endl;
-	s << "  input" << endl;
-	s << "  sort" << endl;
-	s << "  kmerize" << endl;
-	s << "  kmerizeall" << endl;
-	s << "  traversal" << endl;
-	s << "  lookups" << endl;
-	s << "  positions" << endl;
-	s << "  positionsbyhash" << endl;
-	s << "  adjustposlist" << endl;
-	s << "  rankselectlookup" << endl;
 	}
-
 void QueryCommand::parse
    (int		_argc,
 	char**	_argv)
@@ -124,18 +105,12 @@ void QueryCommand::parse
 
 	// defaults
 
-	generalQueryThreshold   = -1.0;		// (unassigned threshold)
-	adjustKmerCounts        = false;
-	sortByKmerCounts        = false;
-	onlyLeaves              = false;
-	distinctKmers           = false;
-	checkConsistency        = false;
-	justReportKmerCounts    = false;
-	countAllKmerHits        = false;
-	reportNodesExamined     = false;
-	collectNodeStats        = false;
-	reportTime              = false;
-	backwardCompatibleStyle = false;
+	generalQueryThreshold   	= -1.0;		// (unassigned threshold)
+	nodetail        			= false;
+	threshold_shared_positions 	= defaultQueryThreshold;
+	checkConsistency        	= false;
+	z							= 0;
+
 
 	// skip command name
 
@@ -154,10 +129,9 @@ void QueryCommand::parse
 
 		string::size_type argValIx = arg.find('=');
 		if (argValIx == string::npos) argVal = "";
-		                         else argVal = arg.substr(argValIx+1);
+		else argVal = arg.substr(argValIx+1);
 
 		// --help, etc.
-
 		if ((arg == "--help")
 		 || (arg == "-help")
 		 || (arg == "--h")
@@ -167,10 +141,6 @@ void QueryCommand::parse
 		 || (arg == "--?"))
 			{ usage (cerr);  std::exit (EXIT_SUCCESS); }
 
-		if ((arg == "--help=debug")
-		 || (arg == "--help:debug")
-		 || (arg == "?debug"))
-			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
 
 		// --tree=<filename>, etc.
 
@@ -203,14 +173,21 @@ void QueryCommand::parse
 
         if (is_prefix_of(arg, "--repart="))
         {
-          repartFileName = argVal;
-          continue;
+			repartFileName = argVal;
+			continue;
         }
 
         if (is_prefix_of(arg, "--win="))
         {
-          winFileName = argVal;
-          continue;
+			winFileName = argVal;
+			continue;
+        }
+
+		// --z=<F>
+		if (is_prefix_of(arg, "--z="))
+        {
+			z = std::stod (argVal);
+			continue;
         }
 
 		// --threshold=<F>
@@ -229,32 +206,22 @@ void QueryCommand::parse
 			continue;
 			}
 
-		// --adjust
+		// --threshold-shared-positions=<F>
 
-		if (arg == "--adjust")
-			{ adjustKmerCounts = true;  continue; }
+		if ((is_prefix_of (arg, "--threshold-shared-positions="))
+		 ||	(is_prefix_of (arg, "--threshold_shared_positions=")))
+			{
+				threshold_shared_positions = string_to_probability(argVal);
+				continue;
+			}
 
-		// --sort
+		// --no-detail
 
-		if (arg == "--sort")
-			{ sortByKmerCounts = true;  continue; }
+		if (arg == "--no-detail")
+			{ nodetail = true;  continue; }
 
-		// --leafonly, etc.
 
-		if ((arg == "--leafonly")
-		 || (arg == "--leaf-only")
-		 || (arg == "--leavesonly")
-		 || (arg == "--leaves-only")
-		 || (arg == "--onlyleaves")
-		 || (arg == "--only-leaves"))
-			{ onlyLeaves = true;  continue; }
 
-		// --distinctkmers
-
-		if ((arg == "--distinctkmers")
-		 || (arg == "--distinct-kmers")
-		 || (arg == "--distinct"))
-			{ distinctKmers = true;  continue; }
 
 		// --consistencycheck, (unadvertised) --noconsistency
 
@@ -265,47 +232,10 @@ void QueryCommand::parse
 		 || (arg == "--noconsistencycheck"))
 			{ checkConsistency = false;  continue; }
 
-		// --justcountkmers
 
-		if (arg == "--justcountkmers")
-			{
-			justReportKmerCounts = true;
-			countAllKmerHits     = false;
-			continue;
-			}
 
-		// --countallkmerhits
-
-		if (arg == "--countallkmerhits")
-			{
-			justReportKmerCounts = false;
-			countAllKmerHits     = true;
-			continue;
-			}
-
-		// --stat:nodesexamined
-
-		if ((arg == "--stat:nodesexamined")
-		 || (arg == "--stats:nodesexamined")
-		 || (arg == "--nodesexamined"))
-			{ reportNodesExamined = true;  continue; }
-
-		// --backwardcompatible (unadvertised)
-
-		if (arg == "--backwardcompatible")
-			{ backwardCompatibleStyle = true;  continue; }
-
-		// --time
-
-		if ((arg == "--time")
-		 || (arg == "--walltime"))
-			{ reportTime = true;  continue; }
-
-		// --collectnodestats (unadvertised)
-
-		if (arg == "--collectnodestats")
-			{ collectNodeStats = true;  continue; }
-
+		
+	
 		// --out=<filename>, etc.
 
 		if ((is_prefix_of (arg, "--out="))
@@ -355,27 +285,12 @@ void QueryCommand::parse
 	if (treeFilename.empty())
 		chastise ("you have to provide a tree topology file");
 
-	if (countAllKmerHits)
-		onlyLeaves = true;
 
-	if (collectNodeStats)
-		{
-		if (justReportKmerCounts)
-			chastise ("--collectnodestats cannot be used with --justcountkmers");
-		if (countAllKmerHits)
-			chastise ("--collectnodestats cannot be used with --countallkmerhits");
-		}
 
-	if ((justReportKmerCounts) and (adjustKmerCounts))
-		chastise ("--adjust cannot be used with --justcountkmers");
+	repartitor = std::make_shared<km::Repartition>(repartFileName, "");
+	hash_win = std::make_shared<km::HashWindow>(winFileName);
 
-	if ((justReportKmerCounts) and (sortByKmerCounts))
-		chastise ("--sort cannot be used with --justcountkmers");
-
-	if ((backwardCompatibleStyle) and (not adjustKmerCounts) and (not sortByKmerCounts))
-		chastise ("--backwardcompatible cannot be used without one of --adjust or --sort");
-
-	completeKmerCounts = (adjustKmerCounts) or (sortByKmerCounts);
+	completeSmerCounts = true; // $$$ remove this ?
 
 	// assign threshold to any unassigned queries
 
@@ -400,101 +315,26 @@ QueryCommand::~QueryCommand()
 
 int QueryCommand::execute()
 	{
-	wall_time_ty startTime;
-	if (reportTime) startTime = get_wall_time();
 
-	if (contains(debug,"trackmemory"))
-		{
-		FileManager::trackMemory = true;
-		BloomTree::trackMemory   = true;
-		BloomFilter::trackMemory = true;
-		BitVector::trackMemory   = true;
-		}
-	if (contains(debug,"reportfilebytes"))
-		{
-		BloomFilter::reportFileBytes = true;
-		BitVector::reportFileBytes   = true;
-		}
-	if (contains(debug,"countfilebytes"))
-		{
-		BloomFilter::countFileBytes = true;
-		BitVector::countFileBytes   = true;
-		}
-	if (contains(debug,"reportopenclose"))
-		FileManager::reportOpenClose = true;
-	if (contains(debug,"reportrankselect"))
-		BitVector::reportRankSelect = true;
-	if (contains(debug,"btunload"))
-		BloomTree::reportUnload = true;
-	if (contains(debug,"bvcreation"))
-		BitVector::reportCreation = true;
 
 	// read the tree
 
-	BloomTree* root = BloomTree::read_topology(treeFilename,onlyLeaves);
+	BloomTree* root = BloomTree::read_topology(treeFilename);
+
 	useFileManager = root->nodesShareFiles;
 
 	vector<BloomTree*> order;
 
-	if (contains(debug,"topology"))
-		{
-		if (useFileManager)
-			root->print_topology(cerr,/*level*/0,/*format*/topofmt_containers);
-		else
-			root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
-		}
 
-	if (contains(debug,"reportloadtime"))
-		{
-		BloomFilter::reportLoadTime = true;
-		BitVector::reportLoadTime   = true;
-		}
 
-	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
-		{
-		BloomFilter::reportTotalLoadTime = true;
-		BitVector::reportTotalLoadTime   = true;
-		}
 
-	if (contains(debug,"load"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->reportLoad = true;
-		}
-
-	// leaf-only search doesn't work with certain types of filters
-	//
-	// nota bene: we like to reject the command if onlyLeaves is true and the
-	// filters are not of type bfkind_simple; but we don't know the filter
-	// types until we preload them, and we can't preload them until we find a
-	// non-empty file (note that with a file manager we could hypothetically
-	// have every filter in one big file); so we delay rejection until we get
-	// into the actual query method (e.g. batch_query or batch_count_kmer_hits)
 
 	// set up the file manager
 
 	FileManager* manager = nullptr;
 	if (useFileManager)
 		{
-		if (contains(debug,"fmcontentload"))
-			FileManager::dbgContentLoad = true;
-
 		manager = new FileManager(root,/*validateConsistency*/false);
-		if (contains(debug,"load"))
-			manager->reportLoad = true;
-		if (contains(debug,"namemapping"))
-			{
-			for (auto iter : manager->filenameToNames)
-				{
-				string          filename  = iter.first;
-				vector<string>* nodeNames = iter.second;
-				cerr << filename << " contains:" << endl;
-				for (const auto& nodeName : *nodeNames)
-					cerr << "  " << nodeName << endl;
-				}
-			}
 		}
 
 	// if we're not using a file manager, we may still want to do a consistency
@@ -517,176 +357,56 @@ int QueryCommand::execute()
 				node->bf->is_consistent_with (modelBf, /*beFatal*/ true);
 			}
 		}
+	
 
 	// read the queries
 
 	read_queries ();
 
-	if (contains(debug,"input"))
+
+	// perform the query
+
+	root->batch_query(queries,completeSmerCounts);
+
+
+	// get the smer size
+	// TODO dirty, how to easily get the s value?
+	unsigned int smerSize = 0;
+	BloomFilter* modelBf = nullptr;
+
+	if (order.size() == 0)
+		root->post_order(order);
+	for (const auto& node : order)
 		{
-		for (auto& q : queries)
-			{
-			cerr << ">" << q->name << endl;
-			cerr << q->seq << endl;
-			}
-		}
+		node->preload();
+		smerSize = node->bf->smerSize;
+		break;
+		}			
+		
 
-	// if we're to collect per-node query stats, tell each node that it is to
-	// collect stats
+	
 
-	if (collectNodeStats)
-		{
-		if (order.size() == 0)
-			root->post_order(order);
 
-		u32 batchSize = queries.size();
-		for (const auto& node : order)
-			node->enable_query_stats(batchSize);
-		}
+	std::streambuf * buf;
+	std::ofstream of;
 
-	// propagate debug information into the queries and/or tree nodes
+	if(!matchesFilename.empty()) {
+    	of.open(matchesFilename);
+    	buf = of.rdbuf();
+	} 
+	else {
+    	buf = std::cout.rdbuf();
+	}
+	std::ostream out(buf);
 
-	if (contains(debug,"kmerize"))
-		{
-		for (auto& q : queries)
-			q->dbgKmerize = true;
-		}
-	if (contains(debug,"kmerizeall"))
-		{
-		for (auto& q : queries)
-			q->dbgKmerizeAll = true;
-		}
 
-	if ((contains(debug,"traversal"))
-	 || (contains(debug,"lookups")))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			{
-			node->dbgTraversal = (contains(debug,"traversal"));
-			node->dbgLookups   = (contains(debug,"lookups"));
-			}
-		}
-
-	if (contains(debug,"sort"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgSortKmerPositions = true;
-		}
-
-	if (contains(debug,"positions"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgKmerPositions = true;
-		}
-
-	if (contains(debug,"positionsbyhash"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgKmerPositionsByHash = true;
-		}
-
-	if (contains(debug,"adjustposlist"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgAdjustPosList = true;
-		}
-
-	if (contains(debug,"rankselectlookup"))
-		{
-		if (order.size() == 0)
-			root->post_order(order);
-		for (const auto& node : order)
-			node->dbgRankSelectLookup = true;
-		}
-
-	// perform the query (or just report kmer counts)
-
-	if (justReportKmerCounts)
-		{
-		BloomFilter* bf = root->real_filter();
-		for (auto& q : queries)
-			{
-			q->kmerize(bf,distinctKmers);
-			cout << q->name << " " << q->kmerPositions.size() << endl;
-			}
-		}
-	else if (countAllKmerHits)
-		{
-		// perform the query (sort of)
-
-		root->batch_count_kmer_hits(queries,onlyLeaves,distinctKmers);
-
-		// report results
-
-		if (sortByKmerCounts)
-			sort_matches_by_kmer_counts();
-
-		if (matchesFilename.empty())
-			print_kmer_hit_counts (cout);
-		else
-			{
-			std::ofstream out(matchesFilename);
-			print_kmer_hit_counts (out);
-			}
-		}
-	else
-		{
-		// perform the query
-
-		root->batch_query(queries,onlyLeaves,distinctKmers,completeKmerCounts,adjustKmerCounts);
-
-		// report results
-
-		if (sortByKmerCounts)
-			sort_matches_by_kmer_counts();
-
-		if (matchesFilename.empty())
-			{
-			if (completeKmerCounts)
-				print_matches_with_kmer_counts (cout);
-			else
-				print_matches (cout);
-			}
-		else
-			{
-			std::ofstream out(matchesFilename);
-			if (completeKmerCounts)
-				print_matches_with_kmer_counts (out);
-			else
-				print_matches (out);
-			}
-
-		// report per-node query stats
-
-		if (collectNodeStats)
-			{
-			vector<BloomTree*> preOrder;
-			root->pre_order(preOrder);
-
-			bool needSpacer = false;
-			for (auto& q : queries)
-				{
-				if (needSpacer) cerr << endl;
-
-				needSpacer = false;
-				for (const auto& node : preOrder)
-					{
-					bool reportedSomething = node->report_query_stats(cerr,q);
-					if (reportedSomething) needSpacer = true;
-					}
-				}
-			}
-		}
+	
+	
+	print_matches_with_kmer_counts_and_spans (out, smerSize);
+	
+			
+	
+		
 
 //$$$ where do we delete the tree?  looks like a memory leak
 
@@ -696,51 +416,9 @@ int QueryCommand::execute()
 	if (manager != nullptr)
 		delete manager;
 
-	if (contains(debug,"countfilebytes"))
-		{
-		u64 fileReads     = BloomFilter::totalFileReads;
-		u64 fileBytesRead = BloomFilter::totalFileBytesRead;
-		if (BloomFilter::totalFileReads == 0)
-			cerr << "BF fileBytesRead: " << fileBytesRead << "/0" << endl;
-		else
-			cerr << "BF fileBytesRead: " << fileBytesRead << "/" << fileReads
-			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
 
-		fileReads     = BitVector::totalFileReads;
-		fileBytesRead = BitVector::totalFileBytesRead;
-		if (fileReads == 0)
-			cerr << "BV fileBytesRead: " << fileBytesRead << "/0" << endl;
-		else
-			cerr << "BV fileBytesRead: " << fileBytesRead << "/" << fileReads
-			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
-		}
 
-	if (contains(debug,"reportrankselect"))
-		{
-		float rankAvg   = ((float) BitVector::totalRankCalls) / BitVector::totalRankNews;
-		float selectAvg = ((float) BitVector::totalSelectCalls) / BitVector::totalSelectNews;
 
-		cerr << "BV total rank() calls:   "
-		     << BitVector::totalRankCalls   << "/" << BitVector::totalRankNews
-		     << std::setprecision(1) << std::fixed << " (" << rankAvg << " avg)"
-		     << endl;
-		cerr << "BV total select() calls: "
-		     << BitVector::totalSelectCalls << "/" << BitVector::totalSelectNews
-		     << std::setprecision(1) << std::fixed << " (" << selectAvg << " avg)"
-		     << endl;
-		}
-
-	if (reportTime)
-		{
-		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "wallTime: " << elapsedTime << std::setprecision(6) << std::fixed << " secs" << endl;
-		}
-
-	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
-		{
-		double totalLoadTime = BloomFilter::totalLoadTime + BitVector::totalLoadTime;
-		cerr << "totalLoadTime: " << totalLoadTime << std::setprecision(6) << std::fixed << " secs" << endl;
-		}
 
 	return EXIT_SUCCESS;
 	}
@@ -779,189 +457,179 @@ void QueryCommand::read_queries()
 
 	}
 
-//----------
-//
-// sort_matches_by_kmer_counts--
-//	Sort query matches by decreasing kmer hit counts.
-//
-//----------
 
-void QueryCommand::sort_matches_by_kmer_counts (void)
-	{
-	if (adjustKmerCounts)
-		{
-		for (auto& q : queries)
-			{
-			vector<tuple<u64,string,u64>> matches;
-			int matchIx = 0;
-			for (auto& name : q->matches)
-				{
-				u64 numPassed    = q->matchesNumPassed[matchIx];
-				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
 
-				// (adjustedHits is negated sort will give decreasing order)
-				matches.emplace_back(std::make_tuple(-(adjustedHits+1),name,numPassed));
-				matchIx++;
-				}
 
-			sort(matches.begin(),matches.end());
 
-			matchIx = 0;
-			for (const auto& matchTriplet : matches)
-				{
-				u64    negAdjustedHits;
-				string name;
-				u64    numPassed;
-				std::tie(negAdjustedHits,name,numPassed) = matchTriplet;
-				q->matches            [matchIx] = name;
-				q->matchesNumPassed   [matchIx] = numPassed;
-				q->matchesAdjustedHits[matchIx] = (-negAdjustedHits) - 1;
-				matchIx++;
-				}
-			}
-		}
-	else
-		{
-		for (auto& q : queries)
-			{
-			vector<pair<u64,string>> matches;
-			int matchIx = 0;
-			for (auto& name : q->matches)
-				{
-				u64 numPassed = q->matchesNumPassed[matchIx];
-				// (numPassed is negated sort will give decreasing order)
-				matches.emplace_back(-(numPassed+1),name);
-				matchIx++;
-				}
-
-			sort(matches.begin(),matches.end());
-
-			matchIx = 0;
-			for (const auto& matchPair : matches)
-				{
-				u64    negNumPassed = matchPair.first;
-				string name         = matchPair.second;
-
-				q->matches         [matchIx] = name;
-				q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
-				matchIx++;
-				}
-			}
-		}
+/**
+ * @brief From hash values associated to smers to a vector of Positive kmers. Code adapted from findere https://github.com/lrobidou/findere/, by Lucas Robidou
+ * @param sequence: input sequence.
+ * @param local_presentHashes: s-mer hash values positive for this sequence
+ * @param smerSize size of indexed s-mers
+ * @param z determines k, the  size of queried k-mers (k=s+z)
+ * @return The result of findere's query on the sequence.
+ */
+std::vector<bool> QueryCommand::get_positive_kmers(const std::string& sequence, 
+											const std::unordered_set<std::size_t>& local_pos_present_smers, 
+											const unsigned int& smerSize) const {
+	unsigned long long size = sequence.size();
+    const unsigned int kmerSize = smerSize + z; 
+    std::vector<bool> response(size - kmerSize + 1, false);
+	if (z == 0){
+		for (unsigned long long j = 0; j < size - smerSize + 1; j++)
+			response[j] = local_pos_present_smers.count(j) > 0;
+		return response;
 	}
+    unsigned long long stretchLength = 0;  // number of consecutive positives kmers
+    unsigned long long j = 0;              // index of the query vector
+    bool extending_stretch = true;
 
-//----------
-//
-// print_matches--
-//
-//----------
-
-void QueryCommand::print_matches
-   (std::ostream& out) const
+    while (j < size - smerSize + 1) 
 	{
-	for (auto& q : queries)
-		{
-		out << "*" << q->name << " " << q->matches.size() << endl;
-		if (reportNodesExamined)
-			out << "# " << q->nodesExamined << " nodes examined" << endl;
-		for (auto& name : q->matches)
-			out << name << endl;
-		}
-	}
+		if (local_pos_present_smers.count(j) > 0) {
+            if (extending_stretch) {
+                stretchLength++;
+                j++;
+            } else {
+                extending_stretch = true;
+                j = j - z;
+            }
+        } else {
+            if (stretchLength >= z) {
+                for (unsigned long long t = j - stretchLength; t < j - z; t++) response[t] = true;
+            }
+            stretchLength = 0;
+            extending_stretch = false;
+            j = j + z + 1;
+        }
+    }
+    // Last values:
+    if (stretchLength >= z) {
+        for (unsigned long long t = size - smerSize + 1 - stretchLength; t < size - kmerSize + 1; t++) response[t] = true;
+    }
+
+    return response;
+}
+
+
+/**
+ * @brief Computes a boolean vector of positions covered by at least a shared kmer.
+ * @param shared_kmers The result of the query.
+ * @param kmerSize the value of k.
+ * @return a boolean vector of positions covered by at least a shared kmer.
+ */
+std::vector<bool> get_positions_covered(std::vector<bool> shared_kmers, const unsigned int kmerSize) {
+	// assumes that shared_kmers.size() > 0
+	std::vector<bool> response(shared_kmers.size() + kmerSize - 1, false);
+    long long last_covered_position = -1;
+    long long pos = 0;
+    for (auto shared : shared_kmers) {
+        if (shared) {
+            if (last_covered_position < pos) {
+				for (int i = pos; i < pos + kmerSize; i++)
+					response[i] = true;
+            } else {
+				for (int i = last_covered_position + 1; i < pos + kmerSize; i++)
+					response[i] = true;
+            }
+            last_covered_position = pos + kmerSize - 1;
+        }
+        pos++;
+    }
+    return response;
+}
+
 
 //----------
 //
-// print_matches_with_kmer_counts--
+// print_matches_with_kmer_counts_and_spans--
 //
 //----------
-
-void QueryCommand::print_matches_with_kmer_counts
-   (std::ostream& out) const
+void QueryCommand::print_matches_with_kmer_counts_and_spans
+   (	std::ostream& out,
+		const unsigned int& smerSize
+   ) const
 	{
 	std::ios::fmtflags saveOutFlags(out.flags());
 
+	
+	out << "# FORMAT:" << endl;
+	out << "# * [query name]" <<endl;
+	out << "# For each target, 3 or 4 fields:" <<endl;
+	out << "#   [taget name]" <<endl;
+	out << "#   (unless --no-detail option) string in {+-} showing positions covered (+) by at least a shared kmer, else (-)" <<endl;
+	out << "#   Ratio of kmers of the query shared with the target"  <<endl;
+	out << "#   Ratio of positions of the query covered by at least a kmer shared with the target"  <<endl;
+
+
 	for (auto& q : queries)
 		{
-		if (not backwardCompatibleStyle)
-			{
-			out << "*" << q->name << " " << q->matches.size() << endl;
-			if (reportNodesExamined)
-				out << "# " << q->nodesExamined << " nodes examined" << endl;
-			}
-
+		out << "* [" << q->name << "] "<< endl;
+		std::string   seq = q->seq;
+		// For each query, we store its answers in a vector of tuples:
+		// .. <float, string, float, string>, being: 
+		// .. 0 <ratio position covered by a shared kmer (key of sorting), 
+		// .. 1 name of the target reference, 
+		// .. 2 ratio nb shared kmers, 
+		// .. 3 +-. string indicating the position of the shared kmers in the copy>
+		std::vector<std::tuple<float, string, float, string>> res_matches;
 		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[matchIx];
+			std::vector<bool> positive_kmers = get_positive_kmers(	seq, 
+																	q->pos_present_smers_stack[matchIx], 
+																	smerSize );
 
-			if (backwardCompatibleStyle)
-				out << q->name << " ";
-
-			out << name
-			    << " " << numPassed << "/" << q->numPositions;
-			if (q->numPositions == 0)
-				out << " 0"; // instead of dividing by zero
-			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
-
-			if (adjustKmerCounts)
+			std::vector<bool> positions_covered = get_positions_covered(positive_kmers, smerSize + z);
+			unsigned long long nb_positions_covered = std::count(positions_covered.begin(), positions_covered.end(), true);
+			
+			std::string pmres = "";
+			bool pm_shows_ratio_kmers = false; // $$$ remove when chosen.
+			if (not nodetail)
+			{
+				if (pm_shows_ratio_kmers) // prints position starting a shared kmer
 				{
-				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
-				out << " " << adjustedHits << "/" << q->numPositions;
-				if (q->numPositions == 0)
-					out << " 0"; // instead of dividing by zero
-				else
-					out << " " << std::setprecision(6) << std::fixed << (adjustedHits/float(q->numPositions));
+				for (auto is_present: positive_kmers)
+					{
+					if (is_present) pmres.append("+");
+					else pmres.append("-");
+					}
+				for (int i = 0; i < smerSize + z - 1; i++) pmres.append("."); // last kmer 
 				}
+				else // prints position covered by at least a shared kmer
+				{
+				for (auto is_present: positions_covered)
+					{
+					if (is_present) pmres.append("+");
+					else pmres.append("-");
+					}
+				}
+				pmres.append(" "); // add a space to simplify the printing when nodetail is required
+			}		
 
-			out << endl;
+			float positive_kmer_ratio = std::count(positive_kmers.begin(), positive_kmers.end(), true)/float(positive_kmers.size());
+			float positive_covered_pos_ratio = nb_positions_covered/float(positive_kmers.size() + smerSize + z -1 );
+			
+
+			// kmer number <= smer number. Hence we recheck that the kmer threshold does not get below the 
+			// required threshold.
+			if (positive_kmer_ratio >= q->threshold or positive_covered_pos_ratio >= threshold_shared_positions)
+				res_matches.push_back(std::make_tuple(positive_covered_pos_ratio, name, positive_kmer_ratio, pmres));
+
 			matchIx++;
+			}
+		// sort and print results:
+		sort(res_matches.begin(), res_matches.end(), std::greater <>());
+		for (auto match: res_matches)
+			{
+			out << "[" << std::get<1>(match) << "] " << std::get<3>(match);
+			out << std::setprecision (2) << std::fixed << std::get<2>(match) << " ";
+			out << std::setprecision (2) << std::fixed << std::get<0>(match) << endl;
 			}
 		}
 
-	out.flags(saveOutFlags);
-	}
 
-//----------
-//
-// print_kmer_hit_counts--
-//
-//----------
-
-void QueryCommand::print_kmer_hit_counts
-   (std::ostream& out) const
-	{
-	std::ios::fmtflags saveOutFlags(out.flags());
-
-	for (auto& q : queries)
-		{
-		int matchCount = 0;
-		for (size_t matchIx=0 ; matchIx<q->matches.size() ; matchIx++)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			bool queryPasses = (numPassed >= q->neededToPass);
-			if (queryPasses) matchCount++;
-			}
-
-		out << "*" << q->name << " " << matchCount << endl;
-
-		int matchIx = 0;
-		for (auto& name : q->matches)
-			{
-			u64 numPassed = q->matchesNumPassed[matchIx];
-			bool queryPasses = (numPassed >= q->neededToPass);
-
-			out << q->name << " vs " << name
-				<< " " << numPassed << "/" << q->numPositions;
-			if (q->numPositions == 0)
-				out << " 0"; // instead of dividing by zero
-			else
-				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
-			if (queryPasses) out << " hit";
-			out << endl;
-			matchIx++;
-			}
-		}
 
 	out.flags(saveOutFlags);
 	}

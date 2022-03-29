@@ -29,13 +29,12 @@ Query::Query
    (const querydata& qd,
 	double _threshold)
 	  :	threshold(_threshold),
-		numPositions(0),
+		numHashes(0),
 		neededToPass(0),
 		neededToFail(0),
 		numUnresolved(0),
 		numPassed(0),
-		numFailed(0),
-		nodesExamined(0)
+		numFailed(0)
 	{
 	batchIx = qd.batchIx;
 	name    = qd.name;
@@ -49,13 +48,12 @@ Query::Query
     std::shared_ptr<km::HashWindow> hashwin,
     uint32_t minimsize)
 	  :	threshold(_threshold),
-		numPositions(0),
+		numHashes(0),
 		neededToPass(0),
 		neededToFail(0),
 		numUnresolved(0),
 		numPassed(0),
 		numFailed(0),
-		nodesExamined(0),
         m_repartitor(rep),
         m_hash_win(hashwin),
         m_minim_size(minimsize)
@@ -69,41 +67,27 @@ Query::~Query()
 	{
 	}
 
-template<size_t KSIZE>
-struct KmerHash
-{
-  void operator()(const std::string& mer, std::shared_ptr<km::HashWindow> hw, std::shared_ptr<km::Repartition> repart, uint32_t  minim, uint64_t& pos)
-  {
-    km::Kmer<KSIZE> kmer(mer); km::Kmer<KSIZE> cano = kmer.canonical();
-    uint32_t part = repart->get_partition(cano.minimizer(minim).value());
-    pos = km::KmerHashers<1>::WinHasher<KSIZE>(part, hw->get_window_size_bits())(cano);
-  }
-};
 
-void Query::kmerize
-   (BloomFilter*	bf,
-	bool			distinct,
-	bool			populateKmers)
+void Query::smerize
+   (BloomFilter*	bf)
 	{
-	bf->preload();
-	u32 kmerSize = bf->kmerSize;
+	bf->preload(); // $$$ pierre: why preload the bf for each query ?
+	u32 smerSize = bf->smerSize;
 
 	if (bf->numHashes > 1)
 		fatal ("internal error: "
 		     + bf->identity() + " uses more than one hash function");
 
-	kmerPositions.clear();
-	kmers.clear();
+	smerHashes.clear();
 
-	// if the sequence is too short, there are no kmers
+	// if the sequence is too short, there are no smers
 
-	if (seq.length() < kmerSize)
+	if (seq.length() < smerSize)
 		return;
 
-	// scan the sequence's kmers, convert to hash positions, and collect the
-	// distinct positions; optionally collect the corresponding kmers
+	// scan the sequence's smers, convert to hash positions, and collect the
+	// distinct positions; optionally collect the corresponding smers
 
-    set<u64> positionSet;
 	pair<set<u64>::iterator,bool> status;
 
 	size_t goodNtRunLen = 0;
@@ -111,103 +95,28 @@ void Query::kmerize
 	for (size_t ix=0; ix<seq.length() ; ix++)
 		{
 		if (not nt_is_acgt(seq[ix])) { goodNtRunLen = 0;  continue; }
-		if (++goodNtRunLen < kmerSize) continue;
+		if (++goodNtRunLen < smerSize) continue;
 
-		string mer = seq.substr(ix+1-kmerSize,kmerSize);
-        u64 pos = 0;
+		string mer = seq.substr(ix+1-smerSize,smerSize);
+        u64 hash_value = 0;
         if (m_repartitor)
         {
-          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(kmerSize, mer, m_hash_win, m_repartitor, m_minim_size, pos);
+          km::const_loop_executor<0, KMER_N>::exec<KmerHash>(smerSize, mer, m_hash_win, m_repartitor, m_minim_size, hash_value);
         }
         else
         {
-		  pos = bf->mer_to_position(mer);
+		  hash_value = bf->mer_to_hash_value(mer);
         }
-		if (pos != BloomFilter::npos)
+		if (hash_value != BloomFilter::npos)
 			{
-			if (distinct)
-				{
-				status = positionSet.insert(pos);
-				if (status.second == false) // pos was already in the set
-					continue;
-				}
-			kmerPositions.emplace_back(pos);
-			if (populateKmers) kmers.emplace_back(mer);
-			}
-
-		if (dbgKmerize || dbgKmerizeAll)
-			{
-			if (pos != BloomFilter::npos)
-				cerr << mer << " -> " << pos << endl;
-			else if (dbgKmerizeAll)
-				cerr << mer << " -> (no)" << endl;
+			smerHashes.emplace_back(std::pair<std::uint64_t, std::size_t>(hash_value, ix - smerSize + 1));
 			}
 		}
 	}
 
-void Query::sort_kmer_positions ()
-	{
-	sort (kmerPositions.begin(), kmerPositions.end());
-	}
 
-void Query::dump_kmer_positions
-   (u64 _numUnresolved)
-	{
-	// we dump the list as, e.g.
-	//   1,2,3,4 (5,6,7)
-	// where 5,6,7 is the "resolved" part of the list;  _numUnresolved=-1 can
-	// be used to just print the whole list without parenthesizing part of it
 
-	cerr << name << ".positions = ";
-	bool firstOutput = true;
-	bool parenWritten = false;
-	u64 posIx = 0;
-	for (auto& pos : kmerPositions)
-		{
-		if (posIx == _numUnresolved)
-			{ cerr << " (" << pos;  parenWritten = true;  firstOutput = false; }
-		else if (firstOutput)
-			{ cerr << pos;  firstOutput = false; }
-		else
-			cerr << "," << pos;
-		posIx++;
-		}
 
-	if (parenWritten)
-		cerr << ")";
-	else if (_numUnresolved != (u64) -1)
-		cerr << " ()";
-	cerr << endl;
-	}
-
-u64 Query::kmer_positions_hash
-   (u64 _numUnresolved)
-	{
-	// we compute a simple permutation-invariant hash on a prefix of the list;
-	// _numUnresolved=-1 indicates that we compute over the whole list
-
-	u64 posSum = 0;
-	u64 posXor = 0;
-
-	u64 posIx = 0;
-	for (auto& pos : kmerPositions)
-		{
-		if (posIx == _numUnresolved)
-			break;
-		posSum += pos;
-		posXor ^= pos;
-		posIx++;
-		}
-
-	posSum ^= posSum << 17;
-	posSum ^= posSum >> 47;
-
-	posXor ^= posXor >> 47;
-	posXor ^= posXor << 17;
-	posXor ^= posXor << 34;
-
-	return (posSum + posXor) & 0x1FFFFFFF;  // (returning only 29 bits)
-	}
 
 //----------
 //
@@ -310,7 +219,7 @@ void Query::read_query_file
 				else
 					{
 					qd.batchIx = queries.size();
-					queries.emplace_back(new Query(qd,threshold, repartitor, hwin, hwin->minim_size()));
+					queries.emplace_back(new Query(qd, threshold, repartitor, hwin, hwin->minim_size()));
 					}
 				}
 
@@ -326,7 +235,7 @@ void Query::read_query_file
 
 		else if (haveFastaHeaders)
 			{
-			qd.seq += line;
+			qd.seq += line; // $$$ pierre: why to store the sequence ?
 			}
 
 		// otherwise we're in line-by-line mode, add this line to the list

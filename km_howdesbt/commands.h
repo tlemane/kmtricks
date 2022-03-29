@@ -24,7 +24,6 @@ public:
 		{ usage (std::cerr, message);  std::exit (EXIT_FAILURE); }
 	virtual void short_description (std::ostream& s) {}
 	virtual void usage (std::ostream& s, const std::string& message = "") {}
-	virtual void debug_help (std::ostream& s) {}
 	virtual void parse (int _argc, char** _argv) {}
 	virtual bool in_debug(std::string keyword) { return contains(debug,keyword); }
 	virtual int execute (void) { return 0; }

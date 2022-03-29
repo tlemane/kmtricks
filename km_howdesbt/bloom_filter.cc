@@ -40,113 +40,12 @@ using std::endl;
 //
 //----------
 
-//#define bloom_filter_supportDebug	// if this is #defined, extra code is added
-									// .. to allow debugging prints to be
-									// .. turned on and off;
-
-#ifndef bloom_filter_supportDebug
-#define dbgAdd_dump_pos_with_mer        ;
-#define dbgAdd_dump_h_pos_with_mer      ;
-#define dbgAdd_dump_pos                 ;
-#define dbgAdd_dump_h_pos               ;
-#define dbgContains_dump_pos_with_mer   ;
-#define dbgContains_dump_h_pos_with_mer ;
-#define dbgContains_dump_pos            ;
-#define dbgContains_dump_h_pos          ;
-#define dbgLookup_determined_brief1     ;
-#define dbgLookup_determined_brief2     ;
-#define dbgAdjust_pos_list1             ;
-#define dbgAdjust_pos_list2             ;
-#define dbgRestore_pos_list1            ;
-#define dbgRestore_pos_list2            ;
-#endif // not bloom_filter_supportDebug
-
-#ifdef bloom_filter_supportDebug
-
-#define dbgAdd_dump_pos_with_mer                                             \
-	if (dbgAdd) cerr << mer << " write " << pos << endl;
-
-#define dbgAdd_dump_h_pos_with_mer                                           \
-	if (dbgAdd) cerr << mer << " write" << h << " " << pos << endl;
-
-#define dbgAdd_dump_pos                                                      \
-	if (dbgAdd) cerr << "write " << pos << endl;
-
-#define dbgAdd_dump_h_pos                                                    \
-	if (dbgAdd) cerr << "write" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos_with_mer                                        \
-	if (dbgContains) cerr << mer << " read " << pos << endl;
-
-#define dbgContains_dump_h_pos_with_mer                                      \
-	if (dbgContains) cerr << mer << " read" << h << " " << pos << endl;
-
-#define dbgContains_dump_pos                                                 \
-	if (dbgContains) cerr << "read " << pos << endl;
-
-#define dbgContains_dump_h_pos                                               \
-	if (dbgContains) cerr << "read" << h << " " << pos << endl;
-
-#define dbgLookup_determined_brief1                                          \
-	{                                                                        \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "    DeterminedBriefFilter::lookup(" << pos << ")" << endl;  \
-	if (dbgRankSelectLookup)                                                 \
-		{                                                                    \
-		if ((*bvDet)[pos] == 0)                                              \
-			cerr << "      bvDet[" << pos << "] == 0 --> unresolved" << endl;\
-		else                                                                 \
-			cerr << "      bvDet[" << pos << "] == 1" << endl;               \
-		}                                                                    \
-	}
-
-#define dbgLookup_determined_brief2                                          \
-	if (dbgRankSelectLookup)                                                 \
-		cerr << "      bvHow[" << howPos << "] == " << (*bvHow)[howPos]      \
-		     << " --> " << (((*bvHow)[howPos]==1)?"present":"absent")        \
-		     << endl;
-
-#define dbgAdjust_pos_list1                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  adjust_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgAdjust_pos_list2                                                  \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << (pos-rank) << endl;
-
-#define dbgRestore_pos_list1                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "  restore_positions_in_list(" << numUnresolved << ")" << endl;
-
-#define dbgRestore_pos_list2                                                 \
-	if (dbgAdjustPosList)                                                    \
-		cerr << "    " << pos << " --> " << kmerPositions[posIx] << endl;
-
-#endif // bloom_filter_supportDebug
-
 //----------
 //
 // initialize class variables
 //
 //----------
 
-bool   BloomFilter::reportSimplify      = false;
-
-bool   BloomFilter::reportLoadTime      = false;
-bool   BloomFilter::reportSaveTime      = false;
-bool   BloomFilter::reportTotalLoadTime = false;
-bool   BloomFilter::reportTotalSaveTime = false;
-double BloomFilter::totalLoadTime       = 0.0;
-double BloomFilter::totalSaveTime       = 0.0;
-
-bool   BloomFilter::trackMemory         = false;
-bool   BloomFilter::reportCreation      = false;
-bool   BloomFilter::reportManager       = false;
-
-bool   BloomFilter::reportFileBytes     = false;
-bool   BloomFilter::countFileBytes      = false;
-u64    BloomFilter::totalFileReads      = 0;
-u64    BloomFilter::totalFileBytesRead  = 0;
 
 //----------
 //
@@ -159,7 +58,7 @@ BloomFilter::BloomFilter
 	  :	ready(false),
 		manager(nullptr),
 		filename(_filename),
-		kmerSize(0),
+		smerSize(0),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(0),
@@ -176,13 +75,11 @@ BloomFilter::BloomFilter
 	//            may increase numBitVectors
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
 	}
 
 BloomFilter::BloomFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
@@ -191,7 +88,7 @@ BloomFilter::BloomFilter
 	  :	ready(true),
 		manager(nullptr),
 		filename(_filename),
-		kmerSize(_kmerSize),
+		smerSize(_smerSize),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(_numHashes),
@@ -209,8 +106,6 @@ BloomFilter::BloomFilter
 	if (_hashModulus == 0) hashModulus = _numBits;
 	                  else hashModulus = _hashModulus;
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -218,7 +113,7 @@ BloomFilter::BloomFilter
 	const string& newFilename)
 	  :	ready(true),
 		manager(nullptr),
-		kmerSize(templateBf->kmerSize),
+		smerSize(templateBf->smerSize),
 		hasher1(nullptr),
 		hasher2(nullptr),
 		numHashes(templateBf->numHashes),
@@ -238,14 +133,10 @@ BloomFilter::BloomFilter
 
 	setup_hashers();
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
 	}
 
 BloomFilter::~BloomFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
 	if (hasher1 != nullptr) delete hasher1;
 	if (hasher2 != nullptr) delete hasher2;
@@ -263,11 +154,10 @@ string BloomFilter::identity() const
 
 void BloomFilter::setup_hashers()
 	{
-	// $$$ add trackMemory to hash constructor/destructor
 	if ((numHashes > 0) && (hasher1 == nullptr))
-		hasher1 = new HashCanonical(kmerSize,hashSeed1);
+		hasher1 = new HashCanonical(smerSize,hashSeed1);
 	if ((numHashes > 1) && (hasher2 == nullptr))
-		hasher2 = new HashCanonical(kmerSize,hashSeed2);
+		hasher2 = new HashCanonical(smerSize,hashSeed2);
 	}
 
 bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
@@ -287,8 +177,6 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 	if ((manager != nullptr) and (not bypassManager))
 		{
 		// $$$ this should probably honor stopOnMultipleContent
-		if (reportManager)
-			cerr << "asking manager to preload " << identity() << " " << this << endl;
 		manager->preload_content(filename);
 		// manager will set ready = true
 		}
@@ -296,21 +184,12 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 		{
 		wall_time_ty startTime;
 
-		if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
 		                                           /* positionAtStart*/ true);
 		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
 
-		if (reportLoadTime || reportTotalLoadTime)
-			{
-			double elapsedTime = elapsed_wall_time(startTime);
-			if (reportLoadTime)
-				cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
-			if (reportTotalLoadTime)
-				totalLoadTime += elapsedTime;  // $$$ danger of precision error?
-			}
 
 		vector<pair<string,BloomFilter*>> content
 		    = BloomFilter::identify_content(*in,filename);
@@ -361,8 +240,6 @@ void BloomFilter::load
 
 	if ((manager != nullptr) and (not bypassManager))
 		{
-		if (reportManager)
-			cerr << "asking manager to load " << identity() << " " << this << endl;
 		manager->load_content(filename,whichNodeName);
 		}
 	else
@@ -373,7 +250,6 @@ void BloomFilter::load
 		for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
 			{
 			BitVector* bv = bvs[bvIx];
-			bv->reportLoad = reportLoad;
 			bv->load();
 			}
 		}
@@ -416,15 +292,11 @@ void BloomFilter::save()
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + filename + "\"");
 
-	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
 	// the component offsets and sizes until after we've written them
 
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
 
 	memset (header, 0, headerSize);
 	header->magic      = bffileheaderMagicUn;
@@ -444,7 +316,7 @@ void BloomFilter::save()
 	header->version      = bffileheaderVersion;
 	header->bfKind       = kind();
 	header->padding1     = 0;
-	header->kmerSize     = kmerSize;
+	header->smerSize     = smerSize;
 	header->numHashes    = numHashes;
 	header->hashSeed1    = hashSeed1;
 	header->hashSeed2    = hashSeed2;
@@ -485,8 +357,6 @@ void BloomFilter::save()
 
 	// clean up
 
-	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	if (header != nullptr) delete[] header;
 
@@ -499,7 +369,7 @@ void BloomFilter::save()
 void BloomFilter::copy_properties
    (const BloomFilter*	templateBf)
 	{
-	kmerSize    = templateBf->kmerSize;
+	smerSize    = templateBf->smerSize;
 	numHashes   = templateBf->numHashes;
 	hashSeed1   = templateBf->hashSeed1;
 	hashSeed2   = templateBf->hashSeed2;
@@ -567,14 +437,14 @@ bool BloomFilter::is_consistent_with
    (const BloomFilter*	bf,
 	bool				beFatal) const
 	{
-	if (bf->kmerSize != kmerSize)
+	if (bf->smerSize != smerSize)
 		{
 		if (not beFatal) return false;
-		fatal ("error: inconsistent kmer size " + std::to_string(bf->kmerSize)
+		fatal ("error: inconsistent smer size " + std::to_string(bf->smerSize)
 			 + " in \"" + bf->filename + "\""
-			 + " (expected " + std::to_string(kmerSize)
+			 + " (expected " + std::to_string(smerSize)
 			 + " like in \"" + filename + "\")"
-			 + "\n(all bloom filters are required to have the same kmer size)");
+			 + "\n(all bloom filters are required to have the same smer size)");
 		}
 
 	if (bf->numHashes != numHashes)
@@ -757,8 +627,6 @@ BitVector* BloomFilter::simplify_bit_vector
 
 	if (bv->is_all_zeros())
 		{
-		if (reportSimplify)
-			cerr << "Simplifying " << filename << "." << whichBv << " to all-zeros" << endl;
 		bvs[whichBv] = new ZerosBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
@@ -766,8 +634,6 @@ BitVector* BloomFilter::simplify_bit_vector
 
 	if (bv->is_all_ones())
 		{
-		if (reportSimplify)
-			cerr << "Simplifying " << filename << "." << whichBv << " to all-ones" << endl;
 		bvs[whichBv] = new OnesBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
@@ -919,9 +785,6 @@ void BloomFilter::squeeze_by
 			int fillValue = (compressor == bvcomp_zeros)? 0 : 1;
 			u64 resultNumBits = bitwise_count(srcBv->bits->data(),numBits);
 			sdslbitvector* resultBits = new sdslbitvector(resultNumBits,fillValue);
-			if (trackMemory)
-				cerr << "@+" << resultBits << " creating sdslbitvector for BitVector "
-				     << bvs[whichDstBv]->identity() << endl;
 
 			bvs[whichDstBv]->replace_bits(resultBits);
 			break;
@@ -939,49 +802,48 @@ void BloomFilter::squeeze_by
 	bvs[whichDstBv]->squeeze_by(srcBits);
 	}
 
-// mer_to_position--
-//	Report the position of a kmer in the filter; we return BloomFilter::npos if
-//	the kmer's position is not within the filter (this is *not* the same as the
-//	kmer being present in the set represent by the filter); the kmer can be a
+// mer_to_hash_value--
+//	Report the position of a smer in the filter; we return BloomFilter::npos if
+//	the smer's position is not within the filter (this is *not* the same as the
+//	smer being present in the set represent by the filter); the smer can be a
 //	string or 2-bit encoded data
 
-u64 BloomFilter::mer_to_position
+u64 BloomFilter::mer_to_hash_value
    (const string& mer) const
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-	u64 pos = hasher1->hash(mer) % hashModulus;
-	if (pos < numBits) return pos;
+	u64 hashvalue = hasher1->hash(mer) % hashModulus;
+	if (hashvalue < numBits) return hashvalue;
 	              else return npos;  // position is *not* in the filter
 	}
 
-u64 BloomFilter::mer_to_position
+u64 BloomFilter::mer_to_hash_value
    (const u64* merData) const
 	{
 	// nota bene: we don't enforce numHashes == 1
 
-	u64 pos = hasher1->hash(merData) % hashModulus;
-	if (pos < numBits) return pos;
+	u64 hashvalue = hasher1->hash(merData) % hashModulus;
+	if (hashvalue < numBits) return hashvalue;
 	              else return npos;  // position is *not* in the filter
 	}
 
 // add--
-//	Add a kmer to the filter; the kmer can be a string or 2-bit encoded data
+//	Add a smer to the filter; the smer can be a string or 2-bit encoded data
 
 void BloomFilter::add
    (const string& mer)
 	{
-	// nota bene: we don't enforce mer.length == kmerSize
+	// nota bene: we don't enforce mer.length == smerSize
 	// nota bene: we don't canonicalize the string; revchash handles that
 
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(mer);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		(*bv).write_bit(pos);
-		dbgAdd_dump_pos_with_mer;
+		(*bv).write_bit(hashvalue);
 		}
 
 	if (numHashes > 1)
@@ -990,11 +852,10 @@ void BloomFilter::add
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(mer));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
-				dbgAdd_dump_h_pos_with_mer;
+				(*bv).write_bit(hashvalue); // $$$ MULTI_VECTOR write each bit to a different vector
 				}
 			}
 		}
@@ -1006,11 +867,10 @@ void BloomFilter::add
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(merData);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		(*bv).write_bit(pos);
-		dbgAdd_dump_pos;
+		(*bv).write_bit(hashvalue);
 		}
 
 	if (numHashes > 1)
@@ -1019,34 +879,32 @@ void BloomFilter::add
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(merData));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				(*bv).write_bit(pos); // $$$ MULTI_VECTOR write each bit to a different vector
-				dbgAdd_dump_h_pos;
+				(*bv).write_bit(hashvalue); // $$$ MULTI_VECTOR write each bit to a different vector
 				}
 			}
 		}
 	}
 
 // contains--
-//	returns true if the bloom filter contains the given kmer (or false
-//	positive), false otherwise; the kmer can be a string or 2-bit encoded data
+//	returns true if the bloom filter contains the given smer (or false
+//	positive), false otherwise; the smer can be a string or 2-bit encoded data
 
 bool BloomFilter::contains
    (const string& mer) const
 	{
-	// nota bene: we don't enforce mer.length == kmerSize
+	// nota bene: we don't enforce mer.length == smerSize
 	// nota bene: we don't canonicalize the string; revchash handles that
 
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(mer);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		dbgContains_dump_pos_with_mer;
-		if ((*bv)[pos] == 0) return false;
+		if ((*bv)[hashvalue] == 0) return false;
 		}
 
 	if (numHashes > 1)
@@ -1055,11 +913,10 @@ bool BloomFilter::contains
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(mer));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				dbgContains_dump_h_pos_with_mer;
-				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
+				if ((*bv)[hashvalue] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
 		}
@@ -1073,11 +930,10 @@ bool BloomFilter::contains
 	BitVector* bv = bvs[0];
 
 	u64 h1  = hasher1->hash(merData);
-	u64 pos = h1 % hashModulus;
-	if (pos < numBits)
+	u64 hashvalue = h1 % hashModulus;
+	if (hashvalue < numBits)
 		{
-		dbgContains_dump_pos;
-		if ((*bv)[pos] == 0) return false;
+		if ((*bv)[hashvalue] == 0) return false;
 		}
 
 	if (numHashes > 1)
@@ -1086,11 +942,10 @@ bool BloomFilter::contains
 		Hash::fill_hash_values(hashValues,numHashes,h1,hasher2->hash(merData));
 		for (u32 h=1 ; h<numHashes ; h++)
 			{
-			pos = hashValues[h] % hashModulus;
-			if (pos < numBits)
+			hashvalue = hashValues[h] % hashModulus;
+			if (hashvalue < numBits)
 				{
-				dbgContains_dump_h_pos;
-				if ((*bv)[pos] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
+				if ((*bv)[hashvalue] == 0) return false; // $$$ MULTI_VECTOR read each bit from a different vector
 				}
 			}
 		}
@@ -1099,13 +954,13 @@ bool BloomFilter::contains
 	}
 
 int BloomFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bv = bvs[0];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if ((*bv)[pos] == 0) return absent;
-	                else return unresolved;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if ((*bv)[hashvalue] == 0) return absent;
+	else return unresolved;
 	}
 
 //----------
@@ -1123,13 +978,13 @@ AllSomeFilter::AllSomeFilter
 
 AllSomeFilter::AllSomeFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _kmerSize,
+	  :	BloomFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1146,8 +1001,6 @@ AllSomeFilter::AllSomeFilter
 
 AllSomeFilter::~AllSomeFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor AllSomeFilter(" << identity() << ")" << endl;
 	}
 
 // add--
@@ -1181,14 +1034,14 @@ bool AllSomeFilter::contains
 	}
 
 int AllSomeFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bvAll  = bvs[0];
 	BitVector* bvSome = bvs[1];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if      ((*bvAll) [pos] == 1) return present;
-	else if ((*bvSome)[pos] == 0) return absent;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if      ((*bvAll) [hashvalue] == 1) return present;
+	else if ((*bvSome)[hashvalue] == 0) return absent;
 	else                          return unresolved;
 	}
 
@@ -1207,13 +1060,13 @@ DeterminedFilter::DeterminedFilter
 
 DeterminedFilter::DeterminedFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	BloomFilter(_filename, _kmerSize,
+	  :	BloomFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1230,19 +1083,17 @@ DeterminedFilter::DeterminedFilter
 
 DeterminedFilter::~DeterminedFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor DeterminedFilter(" << identity() << ")" << endl;
 	}
 
 int DeterminedFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
 	BitVector* bvDet = bvs[0];
 	BitVector* bvHow = bvs[1];
 
-	// we assume, without checking, that 0 <= pos < numBits
-	if      ((*bvDet)[pos] == 0) return unresolved;
-	else if ((*bvHow)[pos] == 1) return present;
+	// we assume, without checking, that 0 <= hashvalue < numBits
+	if      ((*bvDet)[hashvalue] == 0) return unresolved;
+	else if ((*bvHow)[hashvalue] == 1) return present;
 	else                         return absent;
 	}
 
@@ -1265,13 +1116,13 @@ DeterminedBriefFilter::DeterminedBriefFilter
 
 DeterminedBriefFilter::DeterminedBriefFilter
    (const string&	_filename,
-	u32				_kmerSize,
+	u32				_smerSize,
 	u32				_numHashes,
 	u64				_hashSeed1,
 	u64				_hashSeed2,
 	u64				_numBits,
 	u64				_hashModulus)
-	  :	DeterminedFilter(_filename, _kmerSize,
+	  :	DeterminedFilter(_filename, _smerSize,
 	                _numHashes, _hashSeed1, _hashSeed2,
 	                _numBits, _hashModulus)
 	{
@@ -1288,54 +1139,49 @@ DeterminedBriefFilter::DeterminedBriefFilter
 
 DeterminedBriefFilter::~DeterminedBriefFilter()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor DeterminedBriefFilter(" << identity() << ")" << endl;
 	}
 
+
 int DeterminedBriefFilter::lookup
-   (const u64 pos) const
+   (const u64 hashvalue) const
 	{
-	// we assume, without checking, that 0 <= pos < numBits
+	// we assume, without checking, that 0 <= hashvalue < numBits
 
 	BitVector* bvDet = bvs[0];
-	dbgLookup_determined_brief1;
-	if ((*bvDet)[pos] == 0) return unresolved;
+
+	if ((*bvDet)[hashvalue] == 0) return unresolved;
 
 	BitVector* bvHow = bvs[1];
-	u64 howPos = bvDet->rank1(pos);
-	dbgLookup_determined_brief2;
+	u64 howPos = bvDet->rank1(hashvalue);
+
 	if ((*bvHow)[howPos] == 1) return present;
 	else                       return absent;
 	}
 
 void DeterminedBriefFilter::adjust_positions_in_list
-   (vector<u64> &kmerPositions,
+   (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
-	dbgAdjust_pos_list1;
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos  = kmerPositions[posIx];
-		u64 rank = bvDet->rank1(pos);
-		kmerPositions[posIx] = pos - rank;  // $$$ isn't this just rank0(pos)?
-		dbgAdjust_pos_list2;
+		uint64_t hashvalue  = smerHashes[posIx].first;
+		uint64_t rank = bvDet->rank1(hashvalue);
+		smerHashes[posIx].first = hashvalue - rank;  // $$$ isn't this just rank0(hashvalue)?
 		}
 	}
 
 void DeterminedBriefFilter::restore_positions_in_list
-   (vector<u64> &kmerPositions,
+   (std::vector<std::pair<std::uint64_t,std::size_t>> &smerHashes,
 	u64 numUnresolved)
 	{
 	BitVector* bvDet = bvs[0];
-	dbgRestore_pos_list1;
 
 	for (u64 posIx=0 ; posIx<numUnresolved ; posIx++)
 		{
-		u64 pos = kmerPositions[posIx];
-		kmerPositions[posIx] = bvDet->select0(pos);
-		dbgRestore_pos_list2;
+		u64 hashvalue = smerHashes[posIx].first;
+		smerHashes[posIx].first = bvDet->select0(hashvalue);
 		}
 	}
 
@@ -1572,7 +1418,7 @@ BloomFilter* BloomFilter::bloom_filter
 BloomFilter* BloomFilter::bloom_filter
    (const u32		bfKind,
 	const string&	filename,
-	u32				kmerSize,
+	u32				smerSize,
 	u32				numHashes,
 	u64				hashSeed1,
 	u64				hashSeed2,
@@ -1583,20 +1429,20 @@ BloomFilter* BloomFilter::bloom_filter
 		{
 		case bfkind_simple:
 		case bfkind_intersection:  // internally treated the same as bfkind_simple
-			return new BloomFilter      (filename,kmerSize,
+			return new BloomFilter      (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_allsome:
-			return new AllSomeFilter    (filename,kmerSize,
+			return new AllSomeFilter    (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined:
-			return new DeterminedFilter (filename,kmerSize,
+			return new DeterminedFilter (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		case bfkind_determined_brief:
 			return new DeterminedBriefFilter
-			                            (filename,kmerSize,
+			                            (filename,smerSize,
 			                             numHashes,hashSeed1,hashSeed2,
 			                             numBits,hashModulus);
 		default:
@@ -1675,9 +1521,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	bffileprefix prefix;
 
-	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read ((char*) &prefix, sizeof(prefix));
-	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 
 	if (!in.good())
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1688,10 +1532,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(sizeof(prefix)) + ")"
 		     + " produced " + std::to_string(currentFilePos) + " bytes");
-	if (reportFileBytes)
-		cerr << "[BloomFilter identify_content] read " << sizeof(prefix) << " bytes " << filename << endl;
-	if (countFileBytes)
-		{ totalFileReads++;  totalFileBytesRead += sizeof(prefix); }
+	
 
 	if (prefix.magic == bffileheaderMagicUn)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1727,26 +1568,15 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			 + " for file header");
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
-	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
-	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
-	if (reportLoadTime || reportTotalLoadTime) elapsedTime += elapsed_wall_time(startTime);
 	prevFilePos = currentFilePos;  currentFilePos += in.gcount();
 	if (currentFilePos != prefix.headerSize)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
-	if (reportFileBytes)
-		cerr << "[BloomFilter identify_content] read " << remainingBytes << " bytes " << filename << endl;
-	if (countFileBytes)
-		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
-	if (reportLoadTime)
-		cerr << "[BloomFilter load-header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
-	if (reportTotalLoadTime)
-		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
+
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)
@@ -1920,10 +1750,8 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 		if (whichBv == 0)
 			{
-			if (reportCreation)
-				cerr << "about to construct BloomFilter for " << filename << " content " << whichBv << endl;
 			bf = bloom_filter(header->bfKind,
-			                  filename, header->kmerSize,
+			                  filename, header->smerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
 
@@ -1942,14 +1770,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 				bf->setSize      = header->setSize;
 				}
 
-			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
 			bf->bvs[0] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 		else
 			{
-			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
 			bf->bvs[whichBv] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 
@@ -1962,8 +1786,6 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			}
 		}
 
-	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " discarding bf file header for \"" << filename << "\"" << endl;
 
 	if (header != nullptr) delete[] header;
 
@@ -1973,7 +1795,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 //----------
 //
 // false_positive_rate--
-//	Estimate the kmer false positive rate of a bloom filter.
+//	Estimate the smer false positive rate of a bloom filter.
 //
 //----------
 //

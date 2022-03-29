@@ -36,12 +36,6 @@ void VersionCommand::usage
 	s << "usage: " << commandName << endl;
 	}
 
-void VersionCommand::debug_help
-   (std::ostream& s)
-	{
-	s << "(no --debug= options)" << endl;
-	}
-
 void VersionCommand::parse
    (int		_argc,
 	char**	_argv)

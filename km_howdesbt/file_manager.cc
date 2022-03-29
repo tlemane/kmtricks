@@ -27,10 +27,7 @@ using std::endl;
 //
 //----------
 
-bool           FileManager::trackMemory     = false;
-bool           FileManager::dbgContentLoad  = false;
 
-bool           FileManager::reportOpenClose = false;
 string         FileManager::openedFilename  = "";
 std::ifstream* FileManager::openedFile      = nullptr;
 
@@ -71,9 +68,6 @@ FileManager::FileManager
 		if (filenameToNames.count(node->bfFilename) == 0)
 			{
 			filenameToNames[node->bfFilename] = new vector<string>;
-			if (trackMemory)
-				cerr << "@+" << filenameToNames[node->bfFilename]
-				     << " allocating names vector for FileManager.filenameToNames[" << node->bfFilename << "]" << endl;
 			alreadyPreloaded[node->bfFilename] = false;
 			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
@@ -92,25 +86,16 @@ FileManager::FileManager
 			}
 		}
 
-	if (trackMemory)
-		cerr << "@+" << this << " constructor FileManager" << endl;
 	}
 
 FileManager::~FileManager()
 	{
-	if (trackMemory)
-		cerr << "@-" << this << " destructor FileManager" << endl;
 
 	if (modelBf != nullptr) delete modelBf;
 	for (auto iter : filenameToNames) 
 		{
 		vector<string>* names = iter.second;
-		if (trackMemory)
-			{
-			string bfFilename = iter.first;
-			cerr << "@-" << names
-			     << " discarding names vector for FileManager.filenameToNames[" << bfFilename << "]" << endl;
-			}
+
 		delete names;
 		}
 	}
@@ -126,36 +111,16 @@ void FileManager::preload_content
 
 	if (alreadyPreloaded[filename]) return;
 
-	// $$$ add trackMemory for in
-	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime) startTime = get_wall_time();
+
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
 	                                           /* positionAtStart*/ true);
 	if (not *in)
 		fatal ("error: FileManager::preload_content()"
 			   " failed to open \"" + filename + "\"");
-	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime)
-		{
-		double elapsedTime = elapsed_wall_time(startTime);
-		if (BloomFilter::reportLoadTime)
-			cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
-		if (BloomFilter::reportTotalLoadTime)
-			BloomFilter::totalLoadTime += elapsedTime;  // $$$ danger of precision error?
-		}
-
 	vector<pair<string,BloomFilter*>> content
 		= BloomFilter::identify_content(*in,filename);
 
-	if (dbgContentLoad)
-		{
-		cerr << "FileManager::preload_content, \"" << filename << "\" contains" << endl;
-		for (const auto& templatePair : content)
-			{
-			string       bfName     = templatePair.first;
-			BloomFilter* templateBf = templatePair.second;
-			cerr << "  \"" << bfName << "\""
-			     << " templateBf=" << templateBf << endl;
-			}
-		}
+	
 
 	vector<string>* nodeNames = filenameToNames[filename];
 	if (content.size() != nodeNames->size())
@@ -174,11 +139,7 @@ void FileManager::preload_content
 			     + ", in conflict with the tree's topology");
 
 		BloomTree* node = nameToNode[bfName];
-		if (dbgContentLoad)
-			cerr << "FileManager::preload_content (\"" << bfName << "\")"
-			     << " node=" << node
-			     << " node->name=" << node->name
-			     << " node->bf=" << node->bf << endl;
+		
 
 		// if the node has already been loaded, leave it be
 
@@ -189,15 +150,11 @@ void FileManager::preload_content
 
 		if (node->bf == nullptr)
 			{
-			if (dbgContentLoad)
-				cerr << "  creating new BF for \"" << bfName << "\"" << endl;
 			node->bf = BloomFilter::bloom_filter(templateBf);
 			node->bf->manager = this;
 			}
 		else // node exists but is not ready
 			{
-			if (dbgContentLoad)
-				cerr << "  using existing (but not ready) BF for \"" << bfName << "\"" << endl;
 			node->bf->copy_properties(templateBf);
 			node->bf->setSizeKnown = templateBf->setSizeKnown;
 			node->bf->setSize      = templateBf->setSize;
@@ -216,7 +173,7 @@ void FileManager::preload_content
 
 	alreadyPreloaded[filename] = true;
 
-	// $$$ add trackMemory for in
+
 	FileManager::close_file(in);
 	}
 
@@ -244,10 +201,7 @@ void FileManager::load_content
 		{
 		if ((whichNodeName != "") and (nodeName != whichNodeName))
 			continue;
-		if (dbgContentLoad)
-			cerr << "FileManager::load_content nodeName = \"" << nodeName << "\"" << endl;
 		BloomTree* node = nameToNode[nodeName];
-		node->bf->reportLoad = reportLoad;
 		node->bf->load(/*bypassManager*/ true);
 		}
 
@@ -281,14 +235,10 @@ std::ifstream* FileManager::open_file
 
 	if (openedFile != nullptr)
 		{
-		if (reportOpenClose)
-			cerr << "[FileManager close_file] " << openedFilename << endl;
 		openedFile->close();
 		delete openedFile;
 		}
 
-	if (reportOpenClose)
-			cerr << "[FileManager open_file] " << filename << endl;
 	openedFilename = filename;
 	openedFile     = new std::ifstream(filename,mode);
 	return openedFile;
@@ -308,8 +258,6 @@ void FileManager::close_file
 
 	if (really)
 		{
-		if (reportOpenClose)
-			cerr << "[FileManager close_file] " << openedFilename << endl;
 		openedFile->close();
 		delete openedFile;
 		openedFilename = "";

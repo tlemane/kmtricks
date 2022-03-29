@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <string.h>
 #include <errno.h>
-#include <zlib.h> // Added by Pierre Peterlongo on 02/08/2012.
+#include <zlib.h> 
 
 using namespace std;
 using namespace gatb::core::tools::dp;
