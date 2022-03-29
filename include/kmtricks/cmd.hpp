@@ -663,13 +663,22 @@ struct main_filter
         fmt::format("{}/{}.vec", KmDir::get().m_matrix_storage, p));
     }
 
+    std::tuple<bool, bool, bool> out_types = std::make_tuple(opt->with_vector, opt->with_matrix, opt->with_kmer);
+
     spdlog::info("Filtering...");
-    MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, vecs, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads);
+    MatrixFilter<MAX_K, DMAX_C> mf(in_matrices, in_kmers, out_matrices, out_kmers, vecs, opt->cpr_out, mode == MODE::COUNT, opt->nb_threads, out_types);
     mf.exec();
 
     for (std::size_t i = 0; i < partitions.size(); ++i)
     {
-      fs::rename(out_kmers[i], KmDir::get().get_count_part_path(sid, partitions[i], opt->cpr_out, KM_FILE::KMER));
+      if (opt->with_kmer)
+      {
+        fs::rename(out_kmers[i], KmDir::get().get_count_part_path(sid, partitions[i], opt->cpr_out, KM_FILE::KMER));
+      }
+      else
+      {
+        fs::remove(KmDir::get().get_count_part_path(sid, partitions[i], true, KM_FILE::KMER));
+      }
     }
   }
 };

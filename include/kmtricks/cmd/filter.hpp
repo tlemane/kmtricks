@@ -16,6 +16,10 @@ struct filter_options : km_options
   bool cpr_in {false};
   bool cpr_out {false};
 
+  bool with_vector {false};
+  bool with_matrix {false};
+  bool with_kmer {false};
+
   std::string display()
   {
     std::stringstream ss;
@@ -25,6 +29,9 @@ struct filter_options : km_options
     RECORD(ss, cpr_in);
     RECORD(ss, cpr_out);
     RECORD(ss, output);
+    RECORD(ss, with_vector);
+    RECORD(ss, with_matrix);
+    RECORD(ss, with_kmer);
     return ss.str();
   }
 };

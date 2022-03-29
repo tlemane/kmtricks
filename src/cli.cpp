@@ -760,7 +760,7 @@ km_options_t agg_cli(std::shared_ptr<bc::Parser<1>> cli, agg_options_t options)
 
 km_options_t filter_cli(std::shared_ptr<bc::Parser<1>> cli, filter_options_t options)
 {
-  bc::cmd_t filter_cmd = cli->add_command("filter", "Filter matrix.");
+  bc::cmd_t filter_cmd = cli->add_command("filter", "Filter existing matrix with a new sample.");
 
   filter_cmd->add_param("--in-matrix", "kmtricks runtime directory which contains the matrix.")
     ->meta("DIR")
@@ -772,24 +772,69 @@ km_options_t filter_cli(std::shared_ptr<bc::Parser<1>> cli, filter_options_t opt
     ->checker(bc::check::is_file)
     ->setter(options->key);
 
+  filter_cmd->add_param("--output", "output directory.")
+    ->meta("DIR")
+    ->checker(dir_already_exists)
+    ->setter(options->output);
+
   filter_cmd->add_param("--hard-min", "min abundance to keep a k-mer in --key.")
     ->meta("INT")
     ->def("2")
     ->checker(bc::check::is_number)
     ->setter(options->c_ab_min);
 
-  filter_cmd->add_param("--cpr-in", "compressed inputs")
+  auto out_type_checker = [](const std::string& s, const std::string& v)
+  {
+    auto vs = bc::utils::split(v, ',');
+    for (auto& o : vs)
+    {
+      if (o.size() > 1)
+        return std::make_tuple(false, fmt::format("{} {}: '{}' not in 'kmv'", s, v, o));
+
+      char c = o[0];
+      if (!(c == 'k' || c == 'm' || c == 'v'))
+        return std::make_tuple(false, fmt::format("{} {}: '{}' not in 'kmv'", s, v, o));
+    }
+    return std::make_tuple(true, std::string{});
+  };
+
+  auto out_type_setter = [options](const std::string& v)
+  {
+    auto vs = bc::utils::split(v, ',');
+    for (auto& o : vs)
+    {
+      if (o[0] == 'k')
+        options->with_kmer = true;
+      else if (o[0] == 'v')
+        options->with_vector = true;
+      else if (o[0] == 'm')
+        options->with_matrix = true;
+    }
+  };
+
+  std::string fhelp =
+    "output types: (comma separated, ex: --out-types k,m)\n"
+    "                     k: The set of k-mers which are present in the key but absent in the input matrix.\n"
+    "                     m: A new matrix which is the intersection of the key and the input matrix.\n"
+    "                        In count mode, the matrix contains an new column corresponding to the abundances\n"
+    "                        of k-mers from the key.\n"
+    "                     v: A text vector (column) representing the abundances or presence/absence of k-mers\n"
+    "                        from the key in the input matrix.";
+
+  filter_cmd->add_param("--out-types", fhelp)
+    ->meta("STR")
+    ->def("m,v")
+    ->checker(out_type_checker)
+    ->setter_c(out_type_setter);
+
+  filter_cmd->add_param("--cpr-in", "compressed inputs.")
     ->as_flag()
     ->setter(options->cpr_in);
 
-  filter_cmd->add_param("--cpr-out", "compressed outputs (ignored with --format text)")
+  filter_cmd->add_param("--cpr-out", "compressed outputs.")
     ->as_flag()
     ->setter(options->cpr_out);
 
-  filter_cmd->add_param("--output", "output directory")
-    ->meta("DIR")
-    ->checker(dir_already_exists)
-    ->setter(options->output);
 
   add_common(filter_cmd, options);
   return options;
