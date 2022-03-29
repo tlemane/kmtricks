@@ -83,7 +83,7 @@ function kmtricks_conda_build ()
 
 function usage ()
 {
-  echo "kmtricks build script."
+  echo "kmtricks build script - v1.2.0."
   echo "Usage: "
   echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-w] [-o] [-m] [-s] [-n]
   [-e] [-p] [-q] [-h]"
