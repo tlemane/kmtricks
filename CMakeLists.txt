@@ -56,19 +56,42 @@ set(PROJECT_DESCRIPTION "kmtricks - k-mer matrices and Bloom filters constructio
 set(CONTACT "teo.lemane@inria.fr")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-if (NATIVE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-endif()
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g -DNDEBUG")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+#if (NATIVE)
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+#endif()
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g -DNDEBUG")
 
 if (DEV_MODE)
     add_compile_definitions(KM_DEV_MODE)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+
+add_library(build_type_flags INTERFACE)
+target_compile_options(build_type_flags INTERFACE
+  $<$<CONFIG:Debug>:-O0 -g>
+  $<$<CONFIG:Release>:-O3 -DNDEBUG>
+  $<$<CONFIG:Profile>:-O3 -ggdb3 -DNDEBUG -fno-inline>
+  $<$<CONFIG:Coverage>:-O0 -g --coverage>
+)
+if (NATIVE)
+  target_compile_options(build_type_flags INTERFACE "-march=native")
+endif()
+
+add_library(headers INTERFACE)
+target_include_directories(headers INTERFACE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_BINARY_DIR}/include
+  ${CMAKE_SOURCE_DIR}/km_howdesbt
+)
+
+add_library(links INTERFACE)
+target_link_libraries(links INTERFACE pthread dl)
+
+add_library(deps INTERFACE)
 
 add_subdirectory(thirdparty)
 
@@ -93,56 +116,56 @@ get_sha1(${THIRDPARTY_DIR}/cfrcat CFR_SHA1)
 
 configure_file("${PROJECT_SOURCE_DIR}/include/kmtricks/config.h.in" ${PROJECT_BINARY_DIR}/include/kmtricks/config.hpp)
 
-set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
+#set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
+#
+#set(SPD_INCLUDE ${THIRDPARTY_DIR}/spdlog/include)
+#set(FMT_INCLUDE ${THIRDPARTY_DIR}/fmt/include)
+#set(BCLI_INCLUDE ${THIRDPARTY_DIR}/bcli/include)
+#set(LZ4_INCLUDE ${THIRDPARTY_DIR}/lz4/lib)
+#set(TURBOP_INCLUDE ${THIRDPARTY_DIR}/TurboPFor-Integer-Compression)
+#set(GATB_INCLUDE ${THIRDPARTY_DIR}/gatb-core-stripped/src)
+#set(GATB_INCLUDE ${GATB_INCLUDE} ${THIRDPARTY_DIR}/gatb-core-stripped/thirdparty)
+#set(GATB_INCLUDE ${GATB_INCLUDE} ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/include)
+#set(KFF_INCLUDE ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
+#set(GTEST_INCLUDE ${THIRDPARTY_DIR}/googletest/googletest/include)
+#set(SDSL_INCLUDE ${THIRDPARTY_BUILD_DIR}/SDSL/src/SDSL-build/include)
+#set(CROAR_INCLUDE ${THIRDPARTY_DIR}/CRoaring/include)
+#set(HOWDE_INCLUDE ${PROJECT_SOURCE_DIR}/km_howdesbt)
+#set(INDICATORS_INCLUDE ${THIRDPARTY_DIR}/indicators/include)
+#set(XXHASH_INCLUDE ${THIRDPARTY_DIR}/xxHash/)
+#set(ROBIN_INCLUDE ${THIRDPARTY_DIR}/robin-hood-hashing/src/include)
+#set(CFR_INCLUDE ${THIRDPARTY_DIR}/cfrcat/include)
+#set(FMT_LIB ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build/)
+#set(KFF_LIB ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
+#set(LZ4_LIB ${THIRDPARTY_BUILD_DIR}/LZ4/src/LZ4-build)
+#set(GTEST_LIB ${THIRDPARTY_BUILD_DIR}/GTEST/src/GTEST-build/lib)
+#set(SDSL_LIB ${THIRDPARTY_BUILD_DIR}/SDSL/src/SDSL-build/lib)
+#set(CROAR_LIB ${THIRDPARTY_BUILD_DIR}/CROAR/src/CROAR-build/src)
+#set(XXHASH_LIB ${THIRDPARTY_BUILD_DIR}/XXHASH/src/XXHASH-build)
+#set(TURBOP_LIB ${THIRDPARTY_BUILD_DIR}/TURBOP)
 
-set(SPD_INCLUDE ${THIRDPARTY_DIR}/spdlog/include)
-set(FMT_INCLUDE ${THIRDPARTY_DIR}/fmt/include)
-set(BCLI_INCLUDE ${THIRDPARTY_DIR}/bcli/include)
-set(LZ4_INCLUDE ${THIRDPARTY_DIR}/lz4/lib)
-set(TURBOP_INCLUDE ${THIRDPARTY_DIR}/TurboPFor-Integer-Compression)
-set(GATB_INCLUDE ${THIRDPARTY_DIR}/gatb-core-stripped/src)
-set(GATB_INCLUDE ${GATB_INCLUDE} ${THIRDPARTY_DIR}/gatb-core-stripped/thirdparty)
-set(GATB_INCLUDE ${GATB_INCLUDE} ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/include)
-set(KFF_INCLUDE ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(GTEST_INCLUDE ${THIRDPARTY_DIR}/googletest/googletest/include)
-set(SDSL_INCLUDE ${THIRDPARTY_BUILD_DIR}/SDSL/src/SDSL-build/include)
-set(CROAR_INCLUDE ${THIRDPARTY_DIR}/CRoaring/include)
-set(HOWDE_INCLUDE ${PROJECT_SOURCE_DIR}/km_howdesbt)
-set(INDICATORS_INCLUDE ${THIRDPARTY_DIR}/indicators/include)
-set(XXHASH_INCLUDE ${THIRDPARTY_DIR}/xxHash/)
-set(ROBIN_INCLUDE ${THIRDPARTY_DIR}/robin-hood-hashing/src/include)
-set(CFR_INCLUDE ${THIRDPARTY_DIR}/cfrcat/include)
-set(FMT_LIB ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build/)
-set(KFF_LIB ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(LZ4_LIB ${THIRDPARTY_BUILD_DIR}/LZ4/src/LZ4-build)
-set(GTEST_LIB ${THIRDPARTY_BUILD_DIR}/GTEST/src/GTEST-build/lib)
-set(SDSL_LIB ${THIRDPARTY_BUILD_DIR}/SDSL/src/SDSL-build/lib)
-set(CROAR_LIB ${THIRDPARTY_BUILD_DIR}/CROAR/src/CROAR-build/src)
-set(XXHASH_LIB ${THIRDPARTY_BUILD_DIR}/XXHASH/src/XXHASH-build)
-set(TURBOP_LIB ${THIRDPARTY_BUILD_DIR}/TURBOP)
-
-if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  set(GATB_LIB_DIR ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/lib/Release)
-else()
-  set(GATB_LIB_DIR ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/lib/Debug)
-endif()
-
-set(INCLUDES ${SPD_INCLUDE} ${FMT_INCLUDE} ${BCLI_INCLUDE} ${GTEST_INCLUDE} ${KFF_INCLUDE}
-             ${ZLIB_INCLUDE_DIRS} ${LZ4_INCLUDE} ${GATB_INCLUDE} ${HOWDE_INCLUDE} ${INDICATORS_INCLUDE}
-             ${SDSL_INCLUDE} ${CROAR_INCLUDE} ${XXHASH_INCLUDE} ${ROBIN_INCLUDE} ${TURBOP_INCLUDE}
-             ${CFR_INCLUDE})
-
-set(KM_INCLUDES ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include)
-set(DEPS SPDLOG FMT LZ4 KFF GATB SDSL XXHASH GATB TURBOP)
-
-include_directories(SYSTEM ${INCLUDES})
-include_directories(${KM_INCLUDES})
-
-link_directories(${FMT_LIB} ${KMTRICKS_LIB} ${KFF_LIB} ${LZ4_LIB} ${GATB_LIB_DIR} ${SDSL_LIB}
-                 ${CROAR_LIB} ${XXHASH_LIB} ${TURBOP_LIB})
-
-add_library(LINK_LIBS INTERFACE)
-target_link_libraries(LINK_LIBS INTERFACE fmt lz4 pthread dl kff gatbcore ZLIB::ZLIB xxhash sdsl ic)
+#if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+#  set(GATB_LIB_DIR ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/lib/Release)
+#else()
+#  set(GATB_LIB_DIR ${THIRDPARTY_BUILD_DIR}/GATB/src/GATB-build/lib/Debug)
+#endif()
+#
+#set(INCLUDES ${SPD_INCLUDE} ${FMT_INCLUDE} ${BCLI_INCLUDE} ${GTEST_INCLUDE} ${KFF_INCLUDE}
+#             ${ZLIB_INCLUDE_DIRS} ${LZ4_INCLUDE} ${GATB_INCLUDE} ${HOWDE_INCLUDE} ${INDICATORS_INCLUDE}
+#             ${SDSL_INCLUDE} ${CROAR_INCLUDE} ${XXHASH_INCLUDE} ${ROBIN_INCLUDE} ${TURBOP_INCLUDE}
+#             ${CFR_INCLUDE})
+#
+#set(KM_INCLUDES ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include)
+#set(DEPS SPDLOG FMT LZ4 KFF GATB SDSL XXHASH GATB TURBOP)
+#
+#include_directories(SYSTEM ${INCLUDES})
+#include_directories(${KM_INCLUDES})
+#
+#link_directories(${FMT_LIB} ${KMTRICKS_LIB} ${KFF_LIB} ${LZ4_LIB} ${GATB_LIB_DIR} ${SDSL_LIB}
+#                 ${CROAR_LIB} ${XXHASH_LIB} ${TURBOP_LIB})
+#
+#add_library(LINK_LIBS INTERFACE)
+#target_link_libraries(LINK_LIBS INTERFACE fmt lz4 pthread dl kff gatbcore ZLIB::ZLIB xxhash sdsl ic)
 
 if (WITH_HOWDE)
   add_subdirectory(km_howdesbt)

@@ -137,6 +137,7 @@ while getopts "r:k:t:c:j:onwmspqeh" option; do
     t)
       tests=${OPTARG}
       [[ ${tests} == 0 ]] || [[ ${tests} == 1 ]] || [[ ${tests} == 2 ]] || usage
+      [[ ${tests} == 0 ]] && tests_run=0
       [[ ${tests} == 0 ]] && tests_str="OFF"
       [[ ${tests} == 1 ]] && tests_run=0
       ;;
