@@ -24,29 +24,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND CONDA_BUILD)
-  add_executable(${PROJECT_NAME}-debug kmtricks.cpp cli.cpp utils.cpp)
-  target_compile_definitions(${PROJECT_NAME}-debug PRIVATE DMAX_C=${MAX_C})
-  target_link_libraries(${PROJECT_NAME}-debug PRIVATE build_type_flags headers links deps)
-
-  if (WITH_HOWDE)
-    target_link_libraries(${PROJECT_NAME}-debug PRIVATE howdesbt roaring)
-    target_compile_definitions(${PROJECT_NAME}-debug PRIVATE WITH_HOWDE)
-  endif()
-
-  if (WITH_MODULES)
-    target_compile_definitions(${PROJECT_NAME}-debug PRIVATE WITH_KM_MODULES)
-  endif()
-
-  if (NOT APPLE)
-    target_link_options(${PROJECT_NAME}-debug PUBLIC -export-dynamic)
-    if (STATIC)
-      target_link_options(${PROJECT_NAME}-debug PUBLIC -static)
-    endif()
-  endif()
-  target_link_libraries(${PROJECT_NAME}-debug pthread)
-endif()
-
 if (WITH_SOCKS AND WITH_HOWDE)
   add_executable(${PROJECT_NAME}-socks kmtricks-socks.cpp utils.cpp socks_utils.cpp)
   target_compile_definitions(${PROJECT_NAME}-socks PRIVATE DMAX_K=${MAX_K} DMAX_C=${MAX_C})
