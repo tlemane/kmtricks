@@ -161,7 +161,18 @@ public:
   #endif
 #elif __APPLE__
         off_t len = m_hw.get_window_size_bytes();
-        sendfile(m_fds[p], out_fd, 49 + m_file_id * m_hw.get_window_size_bytes(), &len, nullptr, 0);
+        uint64_t n = len / 8192;
+        uint64_t r = len % 8192;
+
+        char buffer[8192];
+        for (uint64_t i=0; i<n; ++i)
+        {
+          read(m_fds[p], buffer, 8192);
+          write(out_fd, buffer, 8192);
+        }
+
+        read(m_fds[p], buffer, r);
+        write(out_fd, buffer, r);
 #endif
       }
     }
