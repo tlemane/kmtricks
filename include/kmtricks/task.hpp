@@ -353,9 +353,10 @@ public:
   {
     spdlog::debug("[exec] - HashCountTask - S={}, P={}", KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
 
-    MemAllocator pool(1);
-    uint64_t req_mem = get_required_memory_hash<span>(m_pinfo->getNbKmer(m_part_id));
-    pool.reserve(req_mem);
+    size_t nbk = m_pinfo->getNbKmer(m_part_id);
+
+    uint64_t req_mem = get_required_memory_hash<span>(nbk);
+
     hw_t<MAX_C, 32768> writer = std::make_shared<HashWriter<MAX_C, 32768>>(m_path,
                                                                              requiredC<MAX_C>::value/8,
                                                                              m_sample_id,
@@ -367,13 +368,20 @@ public:
                                                                                                  writer,
                                                                                                  m_hist));
 
-    HashPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
-                                                     pool, m_superk_storage.get(), m_window);
+    if (nbk > 0)
+    {
+      MemAllocator pool(1);
+      pool.reserve(req_mem);
 
-    partition_counter.execute();
+      HashPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
+                                                       pool, m_superk_storage.get(), m_window);
 
-    pool.free_all();
+      partition_counter.execute();
+      pool.free_all();
+    }
+
     delete processor;
+
     spdlog::debug("[done] - HashCountTask - S={}, P={}", KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
   }
 
