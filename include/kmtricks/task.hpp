@@ -442,8 +442,9 @@ public:
   void exec()
   {
     spdlog::debug("[exec] - HashVecCountTask - S={}, P={}",KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
-    MemAllocator pool(1);
-    pool.reserve(get_required_memory_hash<span>(m_pinfo->getNbKmer(m_part_id)));
+
+    size_t nbk = m_pinfo->getNbKmer(m_part_id);
+
     bvw_t<8192> writer = std::make_shared<BitVectorWriter<8192>>(m_path,
                                                                 m_window,
                                                                 0,
@@ -456,11 +457,18 @@ public:
                                                                  m_hist,
                                                                  m_window));
 
-    HashPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
+    if (nbk > 0)
+    {
+      MemAllocator pool(1);
+      pool.reserve(get_required_memory_hash<span>(nbk));
+
+      HashPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id, m_kmer_size,
                                             pool, m_superk_storage.get(), m_window);
 
-    partition_counter.execute();
-    pool.free_all();
+      partition_counter.execute();
+      pool.free_all();
+    }
+
     delete processor;
     spdlog::debug("[done] - HashVecCountTask - S={}, P={}",KmDir::get().m_fof.get_id(m_sample_id), m_part_id);
   }
