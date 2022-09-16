@@ -749,6 +749,10 @@ km_options_t agg_cli(std::shared_ptr<bc::Parser<1>> cli, agg_options_t options)
     ->as_flag()
     ->setter(options->lz4);
 
+  agg_cmd->add_param("--no-count", "output only k-mers (ignored with --format bin).")
+    ->as_flag()
+    ->setter(options->no_count);
+
   agg_cmd->add_param("--output", "output path.")
     ->meta("FILE")
     ->def("stdout")

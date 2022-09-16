@@ -157,6 +157,17 @@ public:
       stream << "\n";
     }
   }
+
+  template<size_t MAX_K, size_t MAX_C>
+  void write_kmers(std::ostream& stream)
+  {
+    Kmer<MAX_K> kmer; kmer.set_k(this->m_header.kmer_size);
+    std::vector<typename selectC<MAX_C>::type> counts(this->m_header.nb_counts);
+    while (read<MAX_K, MAX_C>(kmer, counts))
+    {
+      stream << kmer.to_string() << '\n';
+    }
+  }
 };
 
 class MatrixHashFileHeader : public KmHeader
@@ -387,6 +398,21 @@ public:
     write_as_text(out);
   }
 
+  void write_kmers(std::ostream& out)
+  {
+    while (next())
+    {
+      out << m_current.to_string() << '\n';
+    }
+  }
+
+  void write_kmers(const std::string& path)
+  {
+    std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+    write_kmers(out);
+  }
+
+
 private:
   bool read_next(size_t i)
   {
@@ -450,6 +476,23 @@ public:
     std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
     write_as_text(out);
   }
+
+  void write_kmers(std::ostream& out)
+  {
+    for (auto& p : m_paths)
+    {
+      MatrixReader<8192> kr(p);
+      kr.template write_kmers<MAX_K, MAX_C>(out);
+    }
+  }
+
+  void write_kmers(const std::string& path)
+  {
+    std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+    write_kmers(out);
+  }
+
+
 private:
   std::vector<std::string> m_paths;
   uint32_t m_kmer_size;
@@ -499,3 +542,4 @@ private:
 };
 
 };
+

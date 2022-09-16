@@ -465,7 +465,12 @@ struct main_agg
       {
         KmerFileMerger<MAX_K, DMAX_C> kfm(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? kfm.write_as_text(std::cout) : kfm.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? kfm.write_kmers(std::cout) : kfm.write_kmers(opt->output);
+          else
+            opt->output == "stdout" ? kfm.write_as_text(std::cout) : kfm.write_as_text(opt->output);
+        }
         else
           kfm.write_as_bin(opt->output, opt->lz4);
       }
@@ -473,7 +478,12 @@ struct main_agg
       {
         KmerFileAggregator<MAX_K, DMAX_C> kfa(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? kfa.write_as_text(std::cout) : kfa.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? kfa.write_kmers(std::cout) : kfa.write_kmers(opt->output);
+          else
+            opt->output == "stdout" ? kfa.write_as_text(std::cout) : kfa.write_as_text(opt->output);
+        }
         else
           kfa.write_as_bin(opt->output, opt->lz4);
       }
@@ -501,7 +511,12 @@ struct main_agg
       {
         MatrixFileMerger<MAX_K, DMAX_C> mfm(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? mfm.write_as_text(std::cout) : mfm.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? mfm.write_kmers(std::cout) : mfm.write_kmers(opt->output);
+          else
+            opt->output == "stdout" ? mfm.write_as_text(std::cout) : mfm.write_as_text(opt->output);
+        }
         else
           mfm.write_as_bin(opt->output, opt->lz4);
       }
@@ -509,7 +524,12 @@ struct main_agg
       {
         MatrixFileAggregator<MAX_K, DMAX_C> mfa(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? mfa.write_as_text(std::cout) : mfa.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? mfa.write_kmers(std::cout) : mfa.write_kmers(opt->output);
+          else
+            opt->output == "stdout" ? mfa.write_as_text(std::cout) : mfa.write_as_text(opt->output);
+        }
         else
           mfa.write_as_bin(opt->output, opt->lz4);
       }
@@ -537,7 +557,12 @@ struct main_agg
       {
         PAMatrixFileMerger<MAX_K> pmfm(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? pmfm.write_as_text(std::cout) : pmfm.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? pmfm.write_as_text(std::cout) : pmfm.write_as_text(opt->output);
+          else
+            opt->output == "stdout" ? pmfm.write_as_text(std::cout) : pmfm.write_as_text(opt->output);
+        }
         else
           pmfm.write_as_bin(opt->output, opt->lz4);
       }
@@ -545,7 +570,12 @@ struct main_agg
       {
         PAMatrixFileAggregator<MAX_K> pmfa(paths, config._kmerSize);
         if (opt->format == "text")
-          opt->output == "stdout" ? pmfa.write_as_text(std::cout) : pmfa.write_as_text(opt->output);
+        {
+          if (opt->no_count)
+            opt->output == "stdout" ? pmfa.write_kmers(std::cout) : pmfa.write_kmers(opt->output);
+          else
+            opt->output == "stdout" ? pmfa.write_as_text(std::cout) : pmfa.write_as_text(opt->output);
+        }
         else
           pmfa.write_as_bin(opt->output, opt->lz4);
       }

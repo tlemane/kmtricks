@@ -146,6 +146,17 @@ public:
       stream << kmer.to_string() << " " << std::to_string(count) << "\n";
     }
   }
+
+  template<size_t MAX_K, size_t MAX_C>
+  void write_kmers(std::ostream& stream)
+  {
+    Kmer<MAX_K> kmer; kmer.set_k(this->m_header.kmer_size);
+    typename selectC<MAX_C>::type count = 0;
+    while (read<MAX_K, MAX_C>(kmer, count))
+    {
+      stream << kmer.to_string() << '\n';
+    }
+  }
 };
 
 template<size_t buf_size>
@@ -256,6 +267,21 @@ public:
     write_as_text(out);
   }
 
+  void write_kmers(std::ostream& out)
+  {
+    while (next())
+    {
+      out << m_current.to_string() << '\n';
+    }
+  }
+
+  void write_kmers(const std::string& path)
+  {
+    std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+    write_kmers(out);
+  }
+
+
 private:
   bool read_next(size_t i)
   {
@@ -320,9 +346,25 @@ public:
     std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
     write_as_text(out);
   }
+
+  void write_kmers(std::ostream& out)
+  {
+    for (auto& p : m_paths)
+    {
+      KmerReader<8192> kr(p);
+      kr.template write_kmers<MAX_K, MAX_C>(out);
+    }
+  }
+
+  void write_kmers(const std::string& path)
+  {
+    std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+    write_kmers(out);
+  }
 private:
   std::vector<std::string> m_paths;
   uint32_t m_kmer_size;
 };
 
 };
+
