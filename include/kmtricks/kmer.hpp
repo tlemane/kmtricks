@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <sstream>
 #include <vector>
+#include <limits>
 
 #define DEFAULT_MINIMIZER_KM 1000000000
 
