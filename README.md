@@ -39,8 +39,25 @@ kmtricks needs disk space to run. The disk usage is variable and depends on data
 
 If you encounter a problem, please open an issue with a description of your run and the return of [kmtricks infos](https://github.com/tlemane/kmtricks/wiki/infos). If you encounter a critical error like a segmentation fault, kmtricks automatically dumps a file `kmtricks_backtrace.log` in your current directory. This file is somewhat illegible in release mode. If you can, compile kmtricks in debug mode, launch it again and join the content of this file. If you cannot directly compile kmtricks on your system, the conda package provides `kmtricks-debug` binary for this case.
 
+## Reference
+
+
+T. Lemane, P. Medvedev, R. Chikhi and P. Peterlongo, "kmtricks: Efficient and flexible construction of Bloom filters for large sequencing data collections." Bioinformatics Advances, 2022, doi:10.1093/bioadv/vbac029.
+```tex
+@article{kmtricks,
+    author = {Lemane, Téo and Medvedev, Paul and Chikhi, Rayan and Peterlongo, Pierre},
+    title = "{kmtricks: Efficient and flexible construction of Bloom filters for large sequencing data collections}",
+    journal = {Bioinformatics Advances},
+    year = {2022},
+    doi = {10.1093/bioadv/vbac029},
+    url = {https://doi.org/10.1093/bioadv/vbac029},
+}
+```
+
 ## Contacts
 
-Téo Lemane: teo[dot]lemane[at]inria[dot]fr  
-Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr  
-Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr 
+Téo Lemane: teo[dot]lemane[at]inria[dot]fr
+
+Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr
+
+Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr
