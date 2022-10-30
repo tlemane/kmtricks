@@ -670,9 +670,10 @@ public:
                 MODE mode,
                 FORMAT format,
                 HashWindow& win,
-                bool clear = false)
+                bool clear,
+                int32_t bw)
   : ITask(4, clear), m_part_id(partition_id), m_ab_vec(ab_vec), m_rec_min(recurrence_min),
-    m_save_if(save_if), m_lz4(lz4), m_mode(mode), m_format(format), m_win(win) {}
+    m_save_if(save_if), m_lz4(lz4), m_mode(mode), m_format(format), m_win(win), m_bw(bw) {}
 
   void preprocess() {}
   void postprocess()
@@ -737,6 +738,11 @@ public:
         merger.write_as_bft(out_path, m_win.get_lower(m_part_id),
                             m_win.get_upper(m_part_id), false);
     }
+    else if (m_mode == MODE::BFC)
+    {
+        merger.write_as_bfc(out_path, m_win.get_lower(m_part_id),
+                            m_win.get_upper(m_part_id), m_bw, m_lz4);
+    }
 
 #ifdef WITH_PLUGIN
     if (PluginManager<IMergePlugin>::get().use_plugin())
@@ -775,6 +781,7 @@ private:
   MODE m_mode;
   FORMAT m_format;
   HashWindow& m_win;
+  uint32_t m_bw;
 };
 
 

@@ -424,7 +424,7 @@ public:
         spdlog::debug("[push] - HashMergeTask - P={}", p);
         task = std::make_shared<HashMergeTask<MAX_C>>(
           p, m_opt->m_ab_min_vec, m_opt->r_min, m_opt->save_if, m_opt->lz4, m_opt->mode,
-          m_opt->format, m_hw, !m_opt->keep_tmp);
+          m_opt->format, m_hw, !m_opt->keep_tmp, m_opt->bwidth);
       }
       if (m_is_info) task->set_callback([this](){ this->m_dyn[2].tick(); });
       pool.add_task(task);

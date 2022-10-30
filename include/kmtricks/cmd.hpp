@@ -268,7 +268,7 @@ struct main_merge
       {
         spdlog::debug("[push] - HashMergeTask - P={}", i);
         pool.add_task(std::make_shared<HashMergeTask<DMAX_C>>(
-          i, ab_vec, opt->r_min, opt->save_if, opt->lz4, opt->mode, opt->format, hw));
+          i, ab_vec, opt->r_min, opt->save_if, opt->lz4, opt->mode, opt->format, hw, false, 0));
       }
     }
     pool.join_all();
