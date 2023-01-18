@@ -19,22 +19,22 @@ TEST(packc, byte_count_pack)
 TEST(packc, to_n_b)
 {
   // base case
-  EXPECT_EQ(km::to_n_b(0, 100), 0);
-  EXPECT_EQ(km::to_n_b(1, 100), 1);
-  EXPECT_EQ(km::to_n_b(2, 100), 2);
-  EXPECT_EQ(km::to_n_b(3, 100), 2);
-  EXPECT_EQ(km::to_n_b(4, 100), 3);
-  EXPECT_EQ(km::to_n_b(5, 100), 3);
-  EXPECT_EQ(km::to_n_b(6, 100), 3);
-  EXPECT_EQ(km::to_n_b(7, 100), 3);
-  EXPECT_EQ(km::to_n_b(8, 100), 4);
-  EXPECT_EQ(km::to_n_b(9, 100), 4);
-  EXPECT_EQ(km::to_n_b(16, 100), 5);
-  EXPECT_EQ(km::to_n_b(32, 100), 6);
+  EXPECT_EQ(km::to_n_b(0, 8), 0);
+  EXPECT_EQ(km::to_n_b(1, 8), 1);
+  EXPECT_EQ(km::to_n_b(2, 8), 2);
+  EXPECT_EQ(km::to_n_b(3, 8), 2);
+  EXPECT_EQ(km::to_n_b(4, 8), 3);
+  EXPECT_EQ(km::to_n_b(5, 8), 3);
+  EXPECT_EQ(km::to_n_b(6, 8), 3);
+  EXPECT_EQ(km::to_n_b(7, 8), 3);
+  EXPECT_EQ(km::to_n_b(8, 8), 4);
+  EXPECT_EQ(km::to_n_b(9, 8), 4);
+  EXPECT_EQ(km::to_n_b(16, 8), 5);
+  EXPECT_EQ(km::to_n_b(32, 8), 6);
   EXPECT_EQ(km::to_n_b(32, 2), 3);  // caped
-  EXPECT_EQ(km::to_n_b(32767, 100), 15);
-  EXPECT_EQ(km::to_n_b(32768, 100), 16);
-  EXPECT_EQ(km::to_n_b(32769, 100), 16);
+  EXPECT_EQ(km::to_n_b(32767, 8), 15);
+  EXPECT_EQ(km::to_n_b(32768, 8), 16);
+  EXPECT_EQ(km::to_n_b(32769, 8), 16);
   EXPECT_EQ(km::to_n_b(32767, 3), 7);  // caped
   EXPECT_EQ(km::to_n_b(32768, 3), 7);  // caped
   EXPECT_EQ(km::to_n_b(32769, 3), 7);  // caped
