@@ -158,6 +158,14 @@ class FilterTask : public ITask
               *vout << std::to_string(count) << '\n';
             }
           }
+          //
+          else
+          {
+            if (with_kmer)
+            {
+              kw->write<MAX_K, MAX_C>(kmer, count);
+            }
+          }
         }
         else
         {
