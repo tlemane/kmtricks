@@ -113,6 +113,17 @@ auto dir_already_exists = [](const std::string& p, const std::string& v) {
   return std::make_tuple(exists, bc::utils::format_error(p, v, "Directory already exists!"));
 };
 
+auto is_km_dir = [](const std::string& p, const std::string& v) -> bc::check::checker_ret_t {
+
+  std::string c1 = fmt::format("{}/{}", v, "kmtricks.fof");
+  std::string c2 = fmt::format("{}/{}", v, "run_infos.txt");
+
+  return std::make_tuple(
+    fs::exists(c1) && fs::exists(c2),
+    bc::utils::format_error(p, v, "Not a kmtricks directory!")
+  );
+};
+
 km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
 {
   bc::cmd_t all_cmd = cli->add_command("pipeline", "kmtricks pipeline (run all the steps, repart -> superk -> count -> merge -> format)");
@@ -213,6 +224,13 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
   all_cmd->add_param("--keep-tmp", "keep tmp files.")
     ->as_flag()
     ->setter(options->keep_tmp);
+
+  all_cmd->add_param("--repart-from", "use repartition from another kmtricks run.")
+         ->meta("STR")
+         ->def("")
+         ->checker(bc::check::is_dir)
+         ->checker(is_km_dir)
+         ->setter(options->from);
 
   all_cmd->add_group("merge options", "");
 

@@ -105,7 +105,7 @@ public:
   void exec_repart()
   {
     spdlog::info("Compute minimizer repartition...");
-    RepartTask<MAX_K> repart_task(m_opt->fof);
+    RepartTask<MAX_K> repart_task(m_opt->fof, m_opt->from);
     repart_task.exec(); repart_task.postprocess();
     m_opt->m_ab_min_vec.resize(KmDir::get().m_fof.size());
     m_hw = HashWindow(KmDir::get().m_hash_win);

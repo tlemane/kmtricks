@@ -63,6 +63,8 @@ struct all_options : km_options
 
   double focus {1.0};
 
+  std::string from;
+
   MODE mode;
   FORMAT format;
   OUT_FORMAT out_format;

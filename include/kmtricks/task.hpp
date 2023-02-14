@@ -20,6 +20,7 @@
 #include <string>
 #include <cmath>
 #include <functional>
+#include <filesystem>
 
 #include <gatb/gatb_core.hpp>
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
@@ -44,6 +45,7 @@
 
 namespace km {
 
+namespace fs = std::filesystem;
 using parti_info_t = std::shared_ptr<PartiInfo<5>>;
 
 template<size_t span>
@@ -91,11 +93,25 @@ private:
   uint32_t m_nb_partitions;
 };
 
+void check_repart_compatibility(Configuration& c1, Configuration& c2,
+                                const std::string& d1)
+{
+  static std::string err_temp = "Unable to use repartition from {}, {} differ.";
+
+  if (c1._kmerSize != c2._kmerSize)
+    throw PipelineError(fmt::format(err_temp, d1, "kmer sizes"));
+  if (c1._minim_size != c2._minim_size)
+    throw PipelineError(fmt::format(err_temp, d1, "minimizer sizes"));
+  if (c1._nb_partitions != c2._nb_partitions)
+    throw PipelineError(fmt::format(err_temp, d1, "numbers of partitions"));
+}
+
 template<size_t span>
 class RepartTask : public ITask
 {
 public:
-  RepartTask(const std::string& path) : ITask(1), m_path(path) {}
+  RepartTask(const std::string& path, const std::string& from = "")
+    : ITask(1), m_path(path), m_from(from) {}
 
   void preprocess() {}
   void postprocess()
@@ -112,13 +128,6 @@ public:
   {
     spdlog::debug("[exec] - RepartTask");
 
-    Fof fof(m_path);
-    IBank* bank = Bank::open(fof.get_all()); LOCAL(bank);
-    Storage* rep_store =
-      StorageFactory(STORAGE_FILE).create(KmDir::get().m_repart_storage, true, false);
-
-    LOCAL(rep_store);
-
     Storage* config_storage =
       StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
     LOCAL(config_storage);
@@ -127,15 +136,42 @@ public:
     config.load(config_storage->getGroup("gatb"));
     m_nb_parts = config._nb_partitions;
     m_minim_size = config._minim_size;
-    RepartitorAlgorithm<span> repartition(
-      bank, rep_store->getGroup("repartition"), config, 1);
-    repartition.execute();
+
+    if (m_from.empty())
+    {
+      Fof fof(m_path);
+      IBank* bank = Bank::open(fof.get_all()); LOCAL(bank);
+      Storage* rep_store =
+        StorageFactory(STORAGE_FILE).create(KmDir::get().m_repart_storage, true, false);
+
+      LOCAL(rep_store);
+
+      RepartitorAlgorithm<span> repartition(
+        bank, rep_store->getGroup("repartition"), config, 1);
+      repartition.execute();
+    }
+    else
+    {
+      Storage* fc_store = StorageFactory(STORAGE_FILE).load(
+        fmt::format("{}/{}", m_from, "config"));
+      LOCAL(fc_store);
+      Configuration fc_config;
+      fc_config.load(fc_store->getGroup("gatb"));
+
+      check_repart_compatibility(config, fc_config, m_from);
+
+      fs::copy(
+        fmt::format("{}/{}", m_from, "repartition_gatb"),
+        fmt::format("{}/{}", KmDir::get().m_root, "repartition_gatb"),
+        fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+    }
 
     spdlog::debug("[done] - RepartTask");
   }
 
 private:
   std::string m_path;
+  std::string m_from;
   int m_cores;
   uint32_t m_nb_parts {0};
   uint32_t m_minim_size {0};
