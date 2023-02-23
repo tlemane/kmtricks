@@ -291,6 +291,13 @@ class FilterTask : public ITask
               *vout << "1\n";
             }
           }
+          else
+          {
+            if (with_kmer)
+            {
+              kw->write<MAX_K, MAX_C>(kmer, count);
+            }
+          }
         }
         else if (kmer == kmer2)
         {
