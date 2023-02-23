@@ -113,6 +113,17 @@ auto dir_already_exists = [](const std::string& p, const std::string& v) {
   return std::make_tuple(exists, bc::utils::format_error(p, v, "Directory already exists!"));
 };
 
+auto is_km_dir = [](const std::string& p, const std::string& v) -> bc::check::checker_ret_t {
+
+  std::string c1 = fmt::format("{}/{}", v, "kmtricks.fof");
+  std::string c2 = fmt::format("{}/{}", v, "run_infos.txt");
+
+  return std::make_tuple(
+    fs::exists(c1) && fs::exists(c2),
+    bc::utils::format_error(p, v, "Not a kmtricks directory!")
+  );
+};
+
 km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
 {
   bc::cmd_t all_cmd = cli->add_command("pipeline", "kmtricks pipeline (run all the steps, repart -> superk -> count -> merge -> format)");
@@ -156,7 +167,8 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
                             "hash:pa:text|"
                             "hash:pa:bin|"
                             "hash:bf:bin|"
-                            "hash:bft:bin";
+                            "hash:bft:bin|"
+                            "hash:bfc:bin";
     auto s = bc::utils::split(v, ':');
     std::string mode;
     std::string format;
@@ -172,18 +184,18 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     if (out != "text" && out != "bin")
       goto fail;
 
-    if (format != "count" && format != "pa" && format != "bf" && format != "bft")
+    if (format != "count" && format != "pa" && format != "bf" && format != "bft" && format != "bfc")
       goto fail;
 
     if (mode == "kmer")
     {
-      if (format == "bf" || format == "bft")
+      if (format == "bf" || format == "bft" || format == "bfc")
         goto fail;
     }
     else if (mode != "hash")
       goto fail;
 
-    if ((format == "bf" || format == "bft") && out == "text")
+    if ((format == "bf" || format == "bft" || format == "bfc") && out == "text")
       goto fail;
 
     goto success;
@@ -213,6 +225,13 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
   all_cmd->add_param("--keep-tmp", "keep tmp files.")
     ->as_flag()
     ->setter(options->keep_tmp);
+
+  all_cmd->add_param("--repart-from", "use repartition from another kmtricks run.")
+         ->meta("STR")
+         ->def("")
+         ->checker(bc::check::is_dir)
+         ->checker(is_km_dir)
+         ->setter(options->from);
 
   all_cmd->add_group("merge options", "");
 
@@ -249,6 +268,7 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->def("0")
     ->checker(bc::check::is_number)
     ->setter(options->save_if);
+
 
   all_cmd->add_group("pipeline control", "");
 
@@ -336,6 +356,12 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->def("howdesbt")
     ->checker(bc::check::f::in("howdesbt|sdsl"))
     ->setter_c(format_setter);
+
+  all_cmd->add_param("--bitw", "entry width of cbf, with --mode hash:bfc:bin")
+    ->meta("INT")
+    ->def("2")
+    ->checker(bc::check::is_number)
+    ->setter(options->bwidth);
 
 #ifdef WITH_PLUGIN
   auto plugin_setter = [options](const std::string& v) {
@@ -748,6 +774,10 @@ km_options_t agg_cli(std::shared_ptr<bc::Parser<1>> cli, agg_options_t options)
   agg_cmd->add_param("--cpr-out", "compressed output (ignored with --format text).")
     ->as_flag()
     ->setter(options->lz4);
+
+  agg_cmd->add_param("--no-count", "output only k-mers (ignored with --format bin).")
+    ->as_flag()
+    ->setter(options->no_count);
 
   agg_cmd->add_param("--output", "output path.")
     ->meta("FILE")

@@ -25,6 +25,7 @@
 #include <kmtricks/io/kmer_file.hpp>
 #include <kmtricks/io/hash_file.hpp>
 #include <kmtricks/io/vector_matrix_file.hpp>
+#include <kmtricks/packc.hpp>
 
 #ifdef WITH_PLUGIN
 #include <kmtricks/plugin_manager.hpp>
@@ -588,6 +589,35 @@ public:
       {
         set_bit_vector(bit_vec, m_counts);
         vmw.write(bit_vec);
+        current = m_current + 1;
+      }
+    }
+    while (current <= upper)
+    {
+      vmw.write(empty_vec);
+      current++;
+    }
+  }
+
+  void write_as_bfc(const std::string& path, uint64_t lower, uint64_t upper, int w, bool compressed)
+  {
+    std::vector<uint8_t> cbit_vec(byte_count_pack(m_size, w), 0);
+    std::vector<uint8_t> empty_vec(byte_count_pack(m_size, w), 0);
+    uint64_t current = lower;
+
+    VectorMatrixWriter<8192> vmw(path, m_size * w, 0, m_partition, lower, upper-lower+1, compressed);
+
+    while (next())
+    {
+      while (m_current > current)
+      {
+        vmw.write(empty_vec);
+        current++;
+      }
+      if (m_keep)
+      {
+        pack_v(m_counts, cbit_vec, w);
+        vmw.write(cbit_vec);
         current = m_current + 1;
       }
     }

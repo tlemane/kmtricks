@@ -119,14 +119,17 @@ int main(int argc, char* argv[])
   catch (const km_exception& e)
   {
     spdlog::error("{} - {}", e.get_name(), e.get_msg());
+    exit(EXIT_FAILURE);
   }
   catch (const Exception& e)
   {
     spdlog::error("GATB ERROR: {}", e.getMessage());
+    exit(EXIT_FAILURE);
   }
   catch (const std::exception& e)
   {
     spdlog::error(e.what());
+    exit(EXIT_FAILURE);
   }
 
   return 0;

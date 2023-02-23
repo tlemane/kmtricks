@@ -35,9 +35,10 @@ struct agg_options : km_options
   std::string pa_matrix;
   std::string format;
   std::string id;
-  bool sorted;
-  bool lz4;
-  bool lz4_in;
+  bool sorted {false};
+  bool lz4 {false};
+  bool lz4_in {false};
+  bool no_count {false};
   std::string output;
 
   std::string display()
