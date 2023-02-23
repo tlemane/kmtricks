@@ -123,6 +123,8 @@ public:
       ext = "cmbf";
     else if (MODE::BFT == mode)
       ext = "rmbf";
+    else if (MODE::BFC == mode)
+      ext = "cmbf";
 
     if (FORMAT::TEXT == format)
       ext += ".txt";

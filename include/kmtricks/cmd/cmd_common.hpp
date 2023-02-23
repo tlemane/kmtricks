@@ -116,6 +116,7 @@ enum class MODE
   PA,
   BF,
   BFT,
+  BFC,
   UNKNOWN,
 };
 
@@ -133,6 +134,8 @@ inline MODE str_to_mode(const std::string& s)
     return MODE::BF;
   else if (s == "bft")
     return MODE::BFT;
+  else if (s == "bfc")
+    return MODE::BFC;
   else
     return MODE::UNKNOWN;
 }
@@ -151,6 +154,8 @@ inline std::string mode_to_str(MODE mode)
     return "bf";
   else if (mode == MODE::BFT)
     return "bft";
+  else if (mode == MODE::BFC)
+    return "bfc";
   else
     return "unknown";
 }

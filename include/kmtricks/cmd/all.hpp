@@ -56,6 +56,8 @@ struct all_options : km_options
   bool skip_merge {false};
   bool hist {false};
 
+  uint32_t bwidth {0};
+
   uint32_t max_memory {8000};
   double restrict_to;
   std::vector<uint32_t> restrict_to_list;
@@ -102,6 +104,7 @@ struct all_options : km_options
     RECORD(ss, hist);
     RECORD(ss, focus);
     RECORD(ss, restrict_to);
+    RECORD(ss, bwidth);
 #ifdef WITH_PLUGIN
     RECORD(ss, use_plugin);
     RECORD(ss, plugin);
