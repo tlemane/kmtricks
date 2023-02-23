@@ -60,8 +60,6 @@ T. Lemane, P. Medvedev, R. Chikhi and P. Peterlongo, "kmtricks: Efficient and fl
 
 ## Contacts
 
-Téo Lemane: teo[dot]lemane[at]inria[dot]fr
-
-Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr
-
+Téo Lemane: teo[dot]lemane[at]proton[dot]me\
+Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr\
 Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr
