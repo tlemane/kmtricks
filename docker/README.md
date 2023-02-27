@@ -9,11 +9,11 @@ docker build -f Dockerfile -t kmtricks-d .
 # Run
 
 ```bash
-docker run --rm -i -t -v $PWD/SHARED:/tmp kmtricks-d <kmtricks cli args>
+docker run --rm -v $PWD/SHARED:/tmp kmtricks-d <kmtricks cli args>
 ```
 
-The default entrypoint corresponds to `kmtricks`. To run `kmtricks-socks`, use:
+The default entrypoint corresponds to `kmtricks`. To run `kmtricks` with plugin support, use:
 
 ```bash
-docker run --rm -i -t -v $PWD/SHARED:/tmp --entrypoint /opt/kmtricks/bin/kmtricks-socks kmtricks-d <kmtricks cli args>
+docker run --rm -v $PWD/SHARED:/tmp --entrypoint kmtricksp kmtricks-d <kmtricks cli args>
 ```
