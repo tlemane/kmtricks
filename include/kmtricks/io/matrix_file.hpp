@@ -52,6 +52,27 @@ public:
     stream->read(reinterpret_cast<char*>(&partition), sizeof(partition));
   }
 
+  void deserialize(std::istream* stream, bool kasm)
+  {
+    if (kasm)
+    {
+      _deserialize(stream);
+      matrix_magic = MAGICS.at(KM_FILE::MATRIX);
+      uint64_t dummy;
+      stream->read(reinterpret_cast<char*>(&dummy), sizeof(dummy));
+      stream->read(reinterpret_cast<char*>(&kmer_size), sizeof(kmer_size));
+      stream->read(reinterpret_cast<char*>(&kmer_slots), sizeof(kmer_slots));
+      stream->read(reinterpret_cast<char*>(&id), sizeof(id));
+      stream->read(reinterpret_cast<char*>(&partition), sizeof(partition));
+      stream->read(reinterpret_cast<char*>(&count_slots), sizeof(count_slots));
+      nb_counts = 1;
+    }
+    else
+    {
+      deserialize(stream);
+    }
+  }
+
   void sanity_check()
   {
     _sanity_check();
@@ -111,10 +132,10 @@ class MatrixReader : public IFile<MatrixFileHeader, std::istream, buf_size>
 {
   using icstream = lz4_stream::basic_istream<buf_size>;
 public:
-  MatrixReader(const std::string& path)
+  MatrixReader(const std::string& path, bool kasm = false)
     : IFile<MatrixFileHeader, std::istream, buf_size>(path, std::ios::in | std::ios::binary)
   {
-    this->m_header.deserialize(this->m_first_layer.get());
+    this->m_header.deserialize(this->m_first_layer.get(), kasm);
     this->m_header.sanity_check();
 
     this->template set_second_layer<icstream>(this->m_header.compressed);

@@ -40,6 +40,7 @@
 #include <kmtricks/cli/filter.hpp>
 #include <kmtricks/cli/index.hpp>
 #include <kmtricks/cli/query.hpp>
+#include <kmtricks/cli/combine.hpp>
 
 namespace km
 {
@@ -70,6 +71,7 @@ private:
   filter_options_t filter_opt {nullptr};
   index_options_t index_opt {nullptr};
   query_options_t query_opt {nullptr};
+  combine_options_t combine_opt {nullptr};
 };
 
 };  // namespace km
