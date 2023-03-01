@@ -666,7 +666,7 @@ class MatrixMerger
           );
 
           while (next())
-            out->template write(m_current_kmer, m_current_data);
+            out->write(m_current_kmer, m_current_data);
         }
 
 
