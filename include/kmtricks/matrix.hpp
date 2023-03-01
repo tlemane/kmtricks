@@ -896,7 +896,7 @@ class MatrixMergeTask : public ITask
 
     }
 
-    void exec()
+    void exec() override
     {
       m_pm.write(m_output, m_cpr);
     }
