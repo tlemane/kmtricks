@@ -767,7 +767,7 @@ public:
     else if (m_mode == MODE::BF)
     {
         merger.write_as_bf(out_path, m_win.get_lower(m_part_id),
-                           m_win.get_upper(m_part_id), m_lz4);
+                           m_win.get_upper(m_part_id), false);
     }
     else if (m_mode == MODE::BFT)
     {
@@ -777,7 +777,7 @@ public:
     else if (m_mode == MODE::BFC)
     {
         merger.write_as_bfc(out_path, m_win.get_lower(m_part_id),
-                            m_win.get_upper(m_part_id), m_bw, m_lz4);
+                            m_win.get_upper(m_part_id), m_bw, false);
     }
 
 #ifdef WITH_PLUGIN
