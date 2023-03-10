@@ -33,7 +33,8 @@ inline std::uint32_t to_n_b(std::uint32_t c, std::uint32_t max_width)
   return 0;
 }
 
-inline void pack_v(const std::vector<std::uint32_t>& vc, std::vector<uint8_t>& v, int w)
+template<typename C>
+inline void pack_v(const std::vector<C>& vc, std::vector<uint8_t>& v, int w)
 {
   for (std::size_t i = 0, j = 0; i < vc.size(); ++i, j += w)
   {
