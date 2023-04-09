@@ -1,8 +1,10 @@
 # kmtricks
 
 [![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
-
-![kmtricks](https://github.com/tlemane/kmtricks/workflows/kmtricks/badge.svg)
+[![kmtricks](https://github.com/tlemane/kmtricks/workflows/kmtricks/badge.svg)](https://github.com/tlemane/kmtricks/actions/workflows/kmtricks.yml)
+[![release](https://img.shields.io/github/v/release/tlemane/kmtricks)](https://github.com/tlemane/kmtricks/releases)
+[![dockerhub](https://img.shields.io/docker/v/tlemane/kmtricks?label=tlemane/kmtricks&logo=docker)](https://hub.docker.com/r/tlemane/kmtricks/)
+[![anaconda](https://img.shields.io/conda/vn/tlemane/kmtricks?color=green&label=tlemane%2Fkmtricks&logo=anaconda)](https://anaconda.org/tlemane/kmtricks)
 
 kmtricks is a modular tool suite for counting kmers, and constructing Bloom filters or kmer matrices, for large collections of sequencing data.
 
