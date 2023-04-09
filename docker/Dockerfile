@@ -10,8 +10,8 @@ RUN apt-get install -y git cmake gcc g++ zlib1g zlib1g-dev
 
 RUN cd /opt \
     && mkdir kmtricks && cd kmtricks \
-    && wget https://github.com/tlemane/kmtricks/releases/download/v1.3.0/kmtricks-v1.3.0-sources.tar.gz \
-    && tar -zxvf kmtricks-v1.3.0-sources.tar.gz
+    && wget https://github.com/tlemane/kmtricks/releases/download/v1.4.0/kmtricks-v1.4.0-sources.tar.gz \
+    && tar -zxvf kmtricks-v1.4.0-sources.tar.gz
 
 RUN cd /opt \
     && cd kmtricks \
