@@ -31,6 +31,7 @@
 #include <kmtricks/cmd/filter.hpp>
 #include <kmtricks/cmd/index.hpp>
 #include <kmtricks/cmd/query.hpp>
+#include <kmtricks/cmd/combine.hpp>
 
 #include <kmtricks/io.hpp>
 #include <kmtricks/utils.hpp>
@@ -426,6 +427,76 @@ struct main_dump
     }
   }
 };
+
+template<size_t MAX_K>
+struct main_combine
+{
+  void operator()(km_options_t options)
+  {
+    spdlog::info("Run with {} implementation", Kmer<MAX_K>::name());
+    combine_options_t opt = std::static_pointer_cast<struct combine_options>(options);
+    spdlog::debug(opt->display());
+
+    auto parse_mode = [](const std::string& p) {
+      std::ifstream inf(fmt::format("{}/options.txt", p), std::ios::in);
+      std::string line; std::getline(inf, line);
+
+      MODE m; COUNT_FORMAT c;
+      auto v = bc::utils::split(line, ',');
+      for (auto& e : v)
+      {
+        auto vv = bc::utils::split(e, '=');
+        auto entry = bc::utils::trim(vv[0]);
+
+        if (entry == "mode")
+          m = str_to_mode(bc::utils::trim(vv[1]));
+        else if (entry == "count_format")
+          c = str_to_cformat(bc::utils::trim(vv[1]));
+      }
+
+      return std::make_tuple(m, c);
+    };
+
+    Timer timer;
+
+    auto [m, c] = parse_mode(opt->runs[0]);
+
+    for (auto& cc : opt->runs)
+      spdlog::info(cc);
+    TaskPool pool(opt->nb_threads);
+
+    if (m == MODE::COUNT && c == COUNT_FORMAT::KMER)
+    {
+      MatrixMerger<MAX_K, DMAX_C> mm(opt->runs, opt->output, opt->cpr);
+      mm.exec(pool);
+
+    }
+    else if (m == MODE::PA && c == COUNT_FORMAT::KMER)
+    {
+      MatrixMerger<MAX_K, 1> mm(opt->runs, opt->output, opt->cpr);
+      mm.exec(pool);
+    }
+    else if (m == MODE::COUNT && c == COUNT_FORMAT::HASH)
+    {
+      MatrixMerger<1, DMAX_C> mm(opt->runs, opt->output, opt->cpr);
+      mm.exec(pool);
+    }
+    else if (m == MODE::PA && c == COUNT_FORMAT::HASH)
+    {
+      MatrixMerger<1, 1> mm(opt->runs, opt->output, opt->cpr);
+      mm.exec(pool);
+    }
+    else
+    {
+      spdlog::debug("mode = {}, count = {}", mode_to_str(m), cformat_to_str(c));
+      throw InputError(
+        fmt::format("{}: matrix format not supported by 'kmtricks combine'.", opt->runs[0]));
+    }
+
+    spdlog::info("Done in {}. New matrix is located at {}.", timer.formatted(),  opt->output);
+  }
+};
+
 
 template<size_t MAX_K>
 struct main_agg

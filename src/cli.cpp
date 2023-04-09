@@ -41,6 +41,7 @@ kmtricksCli::kmtricksCli(
   agg_opt = std::make_shared<struct agg_options>(agg_options{});
   index_opt = std::make_shared<struct index_options>(index_options{});
   query_opt = std::make_shared<struct query_options>(query_options{});
+  combine_opt = std::make_shared<struct combine_options>(combine_options{});
   all_cli(cli, all_opt);
 #ifdef WITH_KM_MODULES
   repart_cli(cli, repart_opt);
@@ -52,6 +53,7 @@ kmtricksCli::kmtricksCli(
 #endif
   dump_cli(cli, dump_opt);
   agg_cli(cli, agg_opt);
+  combine_cli(cli, combine_opt);
 #ifdef WITH_HOWDE
   index_cli(cli, index_opt);
   query_cli(cli, query_opt);
@@ -104,6 +106,8 @@ std::tuple<COMMAND, km_options_t> kmtricksCli::parse(int argc, char* argv[])
     return std::make_tuple(COMMAND::INDEX, index_opt);
   else if (cli->is("query"))
     return std::make_tuple(COMMAND::QUERY, query_opt);
+  else if (cli->is("combine"))
+    return std::make_tuple(COMMAND::COMBINE, combine_opt);
   else
     return std::make_tuple(COMMAND::INFOS, std::make_shared<struct km_options>(km_options{}));
 }
@@ -694,7 +698,7 @@ km_options_t dump_cli(std::shared_ptr<bc::Parser<1>> cli, dump_options_t options
 {
   bc::cmd_t dump_cmd = cli->add_command("dump", "Dump kmtricks's files in human readable format.");
 
-  dump_cmd->add_param("--run-dir", "kmtricks runtime directory")
+  dump_cmd->add_param("--run-dir", "kmtricks runtime directory.")
     ->meta("DIR")
     ->checker(bc::check::is_dir)
     ->setter(options->dir);
@@ -710,6 +714,39 @@ km_options_t dump_cli(std::shared_ptr<bc::Parser<1>> cli, dump_options_t options
     ->setter(options->output);
 
   add_common(dump_cmd, options);
+  return options;
+}
+
+km_options_t combine_cli(std::shared_ptr<bc::Parser<1>> cli, combine_options_t options)
+{
+  bc::cmd_t combine_cmd = cli->add_command(
+      "combine", "Combine kmtricks's matrices (support kmer/hash matrices).");
+
+  auto fof_set = [options](const std::string& v) {
+    std::ifstream inf(v, std::ios::in);
+
+    for (std::string line; std::getline(inf, line);)
+    {
+      if (!bc::utils::trim(line).empty())
+        options->runs.push_back(line);
+    }
+    options->dir = options->runs[0];
+  };
+
+  combine_cmd->add_param("--fof", "input fof, one kmtricks run per line.")
+    ->meta("FILE")
+    ->checker(bc::check::is_file)
+    ->setter_c(fof_set);
+
+  combine_cmd->add_param("--output", "output directory.")
+    ->meta("FILE")
+    ->setter(options->output);
+
+  combine_cmd->add_param("--cpr", "compress output.")
+    ->as_flag()
+    ->setter(options->cpr);
+
+  add_common(combine_cmd, options);
   return options;
 }
 

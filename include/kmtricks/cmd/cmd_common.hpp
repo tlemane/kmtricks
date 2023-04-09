@@ -45,6 +45,7 @@ enum class COMMAND
   INFOS,
   SOCKS_BUILD,
   SOCKS_LOOKUP,
+  COMBINE,
   UNKNOWN
 };
 
@@ -74,6 +75,8 @@ inline COMMAND str_to_cmd(const std::string& s)
     return COMMAND::SOCKS_BUILD;
   else if (s == "lookup-kmer")
     return COMMAND::SOCKS_LOOKUP;
+  else if (s == "combine")
+    return COMMAND::COMBINE;
   else
     return COMMAND::ALL;
 }
@@ -104,6 +107,8 @@ inline std::string cmd_to_str(COMMAND cmd)
     return "socks-build";
   else if (cmd == COMMAND::SOCKS_LOOKUP)
     return "socks-lookup";
+  else if (cmd == COMMAND::COMBINE)
+    return "combine";
   else
     return "all";
 }

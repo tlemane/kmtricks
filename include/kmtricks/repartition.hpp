@@ -91,6 +91,11 @@ public:
       outs[m_repart_table[i]] << Mmer(i, size).to_string() << "\n";
   }
 
+  const std::vector<uint16_t>& table() const
+  {
+    return m_repart_table;
+  }
+
 private:
   std::string m_path;
   std::string m_fpath;
