@@ -216,9 +216,13 @@ public:
     SuperKStorageWriter* superk_storage = new SuperKStorageWriter(
       KmDir::get().get_superk_path(m_sample_id), "skp", config._nb_partitions, m_lz4, pset);
 
+#ifdef NONCANONICAL
+    typedef typename ::Kmer<span>::ModelDirect ModelDirect;
+    typedef typename ::Kmer<span>::template ModelMinimizer <ModelDirect> Model;
+#else
     typedef typename ::Kmer<span>::ModelCanonical ModelCanonical;
     typedef typename ::Kmer<span>::template ModelMinimizer <ModelCanonical> Model;
-
+#endif
     uint32_t* freq_order = nullptr;
     Model model(config._kmerSize, config._minim_size,
                 typename ::Kmer<span>::ComparatorMinimizerFrequencyOrLex(), freq_order);
@@ -277,7 +281,7 @@ public:
             parti_info_t pinfo,
             uint32_t part_id, uint32_t sample_id,
             uint32_t kmer_size, uint32_t abundance_min, bool lz4,
-            hist_t hist = nullptr, bool clear = false)
+            hist_t hist = nullptr, bool clear = false, bool no_canonical = false)
     : ITask(3, clear),
       m_path(path),
       m_config(config),
@@ -288,7 +292,8 @@ public:
       m_kmer_size(kmer_size),
       m_ab_min(abundance_min),
       m_lz4(lz4),
-      m_hist(hist)
+      m_hist(hist),
+      m_no_cano(no_canonical)
    {
    }
 
@@ -324,7 +329,7 @@ public:
                                                                                     m_hist));
 
     KmerPartCounter<Storage, span> partition_counter(processor, m_pinfo.get(), m_part_id,
-                                                     m_kmer_size, pool, m_superk_storage.get());
+                                                     m_kmer_size, pool, m_superk_storage.get(), m_no_cano);
 
     partition_counter.execute();
     pool.free_all();
@@ -344,6 +349,7 @@ private:
   uint32_t m_ab_min;
   bool m_lz4;
   hist_t m_hist;
+  bool m_no_cano;
 };
 
 template<size_t span, size_t MAX_C, typename Storage>

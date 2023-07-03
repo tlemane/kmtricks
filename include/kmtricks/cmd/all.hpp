@@ -67,6 +67,8 @@ struct all_options : km_options
 
   std::string from;
 
+  bool no_canonical {false};
+
   MODE mode;
   FORMAT format;
   OUT_FORMAT out_format;

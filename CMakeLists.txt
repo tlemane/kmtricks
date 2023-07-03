@@ -61,6 +61,8 @@ if (DEV_MODE)
     add_compile_definitions(KM_DEV_MODE)
 endif()
 
+add_compile_definitions(NONCANONICAL)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_library(build_type_flags INTERFACE)

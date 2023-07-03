@@ -17,13 +17,13 @@
  *****************************************************************************/
 
 #pragma once
-#define NONCANONICAL
 #include <gatb/gatb_core.hpp>
 
 #include <gatb/kmer/impl/Sequence2SuperKmer.hpp>
 #include <kmtricks/io/superk_storage.hpp>
 #include <kmtricks/kmer.hpp>
 namespace km {
+
 
 template<size_t span>
 class KmFillPartitions : public gatb::core::kmer::impl::Sequence2SuperKmer<span>

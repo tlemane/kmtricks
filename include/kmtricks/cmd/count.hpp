@@ -40,6 +40,7 @@ struct count_options : km_options
   bool lz4;
   bool kff;
   bool hist;
+  bool no_canonical;
 
   std::string format;
 

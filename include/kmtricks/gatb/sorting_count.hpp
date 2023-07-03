@@ -140,8 +140,9 @@ public:
     m_shift_radix = ((m_kmer_size - 4) * 2);
   }
 
-  void execute()
+  void execute(bool non_canonical = false)
   {
+    non_canonical = true;
     uint nbbreak = 0;
     unsigned int nb_bytes_read;
     while (m_superk_storage->readBlock(&m_buffer, &m_buffer_size, &nb_bytes_read, m_file_id))
@@ -199,8 +200,11 @@ public:
         prev_mink.setVal(0);
         uint64_t idx;
 
+#ifdef NONCANONICAL
+        bool prev_which = true;
+#else
         bool prev_which = (temp < rev_temp);
-
+#endif
         int kx_size = -1; //next loop start at ii=0, first kmer will put it at 0
         Type radix_kxmer_forward = (temp & m_mask_radix) >> ((m_kmer_size - 4) * 2);
         Type first_revk, kinsert, radix_kxmer;
@@ -213,8 +217,14 @@ public:
 
         for (int ii = 0; ii < nbK; ii++, rem--)
         {
-          bool which = (temp < rev_temp);
-          mink = which ? temp : rev_temp;
+          bool which;
+#ifdef NONCANONICAL
+            which = true;
+            mink = temp;
+#else
+            which = (temp < rev_temp);
+            mink = which ? temp : rev_temp;
+#endif
 
           nbbreak++;
           if (which != prev_which || kx_size >= m_kx) // kxmer_size = 1
@@ -240,7 +250,6 @@ public:
             idx = __sync_fetch_and_add(m_r_idx + IX(kx_size, rid), 1); // si le sync fetch est couteux, faire un mini buffer par thread
 
             m_radix_kmers[IX(kx_size, rid)][idx] = kinsert << ((4 - kx_size) * 2); //[kx_size][rid]
-
             radix_kxmer_forward = (mink & m_mask_radix) >> m_shift_radix;
             kx_size = 0;
 
@@ -646,13 +655,14 @@ public:
                   int parti,
                   size_t kmer_size,
                   MemAllocator &pool,
-                  Storage *superk_storage)
+                  Storage *superk_storage,
+                  bool non_canonical = false)
       : IPartitionCounter<CountProcessor, Storage, span>(processor,
                                                 kmer_size,
                                                 pinfo, pool,
                                                 superk_storage,
                                                 parti),
-        radix_kmers(0), radix_sizes(0), r_idx(0)
+        radix_kmers(0), radix_sizes(0), r_idx(0), non_canonical(non_canonical)
   {
   }
 
@@ -699,7 +709,7 @@ private:
 
       ReadSuperk<Storage, span> read_cmd(this->m_superk_storage, this->m_part, this->m_kmer_size,
                                 r_idx, radix_kmers, radix_sizes);
-      read_cmd.execute();
+      read_cmd.execute(non_canonical);
     }
     this->m_superk_storage->closeFile(this->m_part);
   }
@@ -856,7 +866,6 @@ private:
       best_p = pq.top().first;
       pq.pop();
       previous_kmer = vec_pointer[best_p]->value();
-      //solidCounter.init(vec_pointer[best_p]->getBankId());
       count = 1;
       while (1)
       {
@@ -876,26 +885,20 @@ private:
 
           if (vec_pointer[best_p]->value() != previous_kmer)
           {
-            //this->insert(previous_kmer, solidCounter);
             this->insert(previous_kmer, count);
-            //solidCounter.init(vec_pointer[best_p]->getBankId());
             count = 1;
             previous_kmer = vec_pointer[best_p]->value();
           }
           else
           {
-            //solidCounter.increase(vec_pointer[best_p]->getBankId());
             count++;
           }
         }
         else
         {
-          //solidCounter.increase(vec_pointer[best_p]->getBankId());
           count++;
-          //solidCounter.increase(vec_pointer[best_p]->getBankId());
         }
       }
-      //this->insert(previous_kmer, solidCounter);
       this->insert(previous_kmer, count);
     }
 
@@ -910,6 +913,7 @@ private:
   uint64_t *radix_sizes;
   uint64_t *r_idx;
   std::vector<size_t> nb_items_per_bank_per_part;
+  bool non_canonical;
 };
 
 //template <size_t span>

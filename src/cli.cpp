@@ -218,6 +218,10 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(mode_checker)
     ->setter_c(mode_setter);
 
+  all_cmd->add_param("--no-canonical", "turn off canonical transformation.")
+    ->as_flag()
+    ->setter(options->no_canonical);
+
   all_cmd->add_param("--hist", "compute k-mer histograms.")
     ->as_flag()
     ->setter(options->hist);

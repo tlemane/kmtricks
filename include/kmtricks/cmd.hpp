@@ -181,7 +181,7 @@ struct main_count
           spdlog::debug("[push] - CountTask - S={}, P={}", opt->id, i);
           pool.add_task(std::make_shared<CountTask<MAX_K, DMAX_C, SuperKStorageReader>>(
             path, config, superk_storage, pinfo, i, KmDir::get().m_fof.get_i(opt->id),
-            config._kmerSize, opt->c_ab_min, opt->lz4, get_hist_clone(hist), opt->clear));
+            config._kmerSize, opt->c_ab_min, opt->lz4, get_hist_clone(hist), opt->clear, opt->no_canonical));
         }
         else if (opt->format == "kff")
         {

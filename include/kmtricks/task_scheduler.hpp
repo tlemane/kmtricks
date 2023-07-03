@@ -202,7 +202,7 @@ public:
               sid, p, m_opt->lz4, KM_FILE::KMER);
             task = std::make_shared<CountTask<MAX_K, MAX_C, SuperKStorageReader>>(
               path, m_config, sk_storage, pinfos, p, iid, m_config._kmerSize,
-              a_min, m_opt->lz4, get_hist_clone(m_hists[iid]), !m_opt->keep_tmp);
+              a_min, m_opt->lz4, get_hist_clone(m_hists[iid]), !m_opt->keep_tmp, m_opt->no_canonical);
           }
           else if (m_opt->kff)
           {
