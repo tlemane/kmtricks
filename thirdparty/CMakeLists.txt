@@ -103,8 +103,8 @@ ExternalProject_Add(TURBOP
   LOG_CONFIGURE ON
   LOG_BUILD ON
 )
-target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/TurboPFor-Integer-Compression)
-target_link_directories(links INTERFACE ${THIRD_BINDIR}/TURBOP)
+target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/TurboPFor-Integer-Compression/include)
+target_link_directories(links INTERFACE ${THIRD_BINDIR}/TURBOP/)
 target_link_libraries(links INTERFACE ic)
 add_dependencies(deps TURBOP)
 
