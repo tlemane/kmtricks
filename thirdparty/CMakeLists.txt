@@ -97,7 +97,7 @@ ExternalProject_Add(TURBOP
   BUILD_IN_SOURCE 1
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ${CMAKE_COMMAND} -E env
-  make
+  make libic.a
   COMMAND ${CMAKE_COMMAND} -E copy "<SOURCE_DIR>/libic.a" ${PROJECT_BINARY_DIR}/thirdparty/TURBOP
   INSTALL_COMMAND make clean
   LOG_CONFIGURE ON
