@@ -66,8 +66,18 @@ struct main_all
     all_options_t opt = std::static_pointer_cast<struct all_options>(options);
     spdlog::debug(opt->display());
     opt->sanity_check();
-    KmDir::get().init(opt->dir, opt->fof, true);
-    opt->dump(KmDir::get().m_options);
+
+    if (fs::exists(opt->dir))
+    {
+      KmDir::get().init(opt->dir, opt->fof);
+      state::get().init_f(KmDir::get().state_path(), KmDir::get().m_fof.size(), opt->nb_parts);
+    }
+    else
+    {
+      KmDir::get().init(opt->dir, opt->fof, true);
+      opt->dump(KmDir::get().m_options);
+      state::get().init(KmDir::get().state_path(), KmDir::get().m_fof.size(), opt->nb_parts);
+    }
 
 #ifdef WITH_PLUGIN
     if (opt->use_plugin)
@@ -76,6 +86,8 @@ struct main_all
 
     TaskScheduler<MAX_K, DMAX_C> scheduler(opt);
     scheduler.execute();
+
+    state::get().write();
   }
 };
 

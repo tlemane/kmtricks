@@ -34,6 +34,7 @@
 #include <spdlog/spdlog.h>
 #include <kmtricks/config.hpp>
 #include <kmtricks/io/io_common.hpp>
+#include <kmtricks/state.hpp>
 
 namespace km
 {
@@ -80,15 +81,24 @@ class SignalHandler
     std::signal(SIGABRT, c ? c : default_callback);
     std::signal(SIGFPE, c ? c : default_callback);
     std::signal(SIGILL, c ? c : default_callback);
-    std::signal(SIGINT, c ? c : default_callback);
     std::signal(SIGSEGV, c ? c : default_callback);
     std::signal(SIGTERM, c ? c : default_callback);
+
+    std::signal(SIGINT, c ? c : state_callback);
   }
 
   template <typename Callback = void (*)(int)>
   void set(int signal, Callback c)
   {
     std::signal(signal, c);
+  }
+
+  static void state_callback(int signal)
+  {
+    state::get().write();
+    spdlog::info("Killed after {}. The run can be resumed by running the same command again.",
+                 signal_to_string(signal));
+    exit(signal);
   }
 
   static void default_callback(int signal)

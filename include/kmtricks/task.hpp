@@ -38,6 +38,7 @@
 #include <kmtricks/gatb/gatb_utils.hpp>
 #include <kmtricks/itask.hpp>
 #include <kmtricks/repartition.hpp>
+#include <kmtricks/state.hpp>
 
 #ifdef WITH_PLUGIN
 #include <kmtricks/plugin_manager.hpp>
@@ -177,6 +178,29 @@ private:
   uint32_t m_minim_size {0};
 };
 
+class DummyTask : public ITask
+{
+public:
+  DummyTask(std::size_t p)
+    : ITask(p) {}
+
+  void preprocess() {}
+
+  void postprocess()
+  {
+    this->exec_callback();
+    this->m_finish = true;
+    this->m_running = false;
+  }
+
+  void exec()
+  {
+  }
+
+private:
+};
+
+
 template<size_t span>
 class SuperKTask : public ITask
 {
@@ -191,11 +215,14 @@ public:
     this->exec_callback();
     this->m_finish = true;
     this->m_running = false;
+
+    state::get().superk_done(KmDir::get().m_fof.get_i(m_sample_id));
   }
 
   void exec()
   {
     spdlog::debug("[exec] - SuperKTask - S={}", m_sample_id);
+
     this->m_running = true;
 
     IBank* bank = Bank::open(KmDir::get().m_fof.get_files(m_sample_id)); LOCAL(bank);
@@ -382,6 +409,7 @@ public:
       Eraser::get().erase(m_superk_storage->getFileName(m_part_id));
     }
     this->m_finish = true;
+    state::get().count_done(m_sample_id, m_part_id);
     this->exec_callback();
   }
 
@@ -722,6 +750,7 @@ public:
       }
     }
     this->m_finish = true;
+    state::get().merge_done(m_part_id);
     this->exec_callback();
   }
 

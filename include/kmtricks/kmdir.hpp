@@ -185,6 +185,11 @@ public:
     return fmt::format("{}/merge_amin.txt", m_root);
   }
 
+  std::string state_path() const
+  {
+    return fmt::format("{}/state.bin", m_root);
+  }
+
   std::vector<std::string> get_minim_paths(uint32_t nb_parts)
   {
     fs::create_directory(m_minimizer_storage);

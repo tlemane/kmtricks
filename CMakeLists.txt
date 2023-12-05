@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.13.0)
 project(kmtricks VERSION 1.4.0 LANGUAGES C CXX)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
+                      "${CMAKE_SOURCE_DIR}/thirdparty/gatb-core-stripped/thirdparty/bxzstr/cmake")
 
 option(WITH_MODULES "Build all modules." OFF)
 option(WITH_HOWDE "Build km_howdesbt." OFF)
@@ -74,15 +75,19 @@ if (NATIVE)
   target_compile_options(build_type_flags INTERFACE "-march=native")
 endif()
 
+find_package(BZip2 REQUIRED)
+find_package(Zstd REQUIRED)
+
 add_library(headers INTERFACE)
 target_include_directories(headers INTERFACE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_BINARY_DIR}/include
   ${CMAKE_SOURCE_DIR}/km_howdesbt
+  ${BZIP2_INCLUDE_DIR}
 )
 
 add_library(links INTERFACE)
-target_link_libraries(links INTERFACE pthread dl)
+target_link_libraries(links INTERFACE pthread dl ${BZIP2_LIBRARIES} Zstd::Zstd)
 
 add_library(deps INTERFACE)
 

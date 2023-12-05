@@ -29,7 +29,7 @@
 #include <kmtricks/timer.hpp>
 #include <indicators/progress_bar.hpp>
 #include <indicators/cursor_control.hpp>
-
+#include <kmtricks/state.hpp>
 
 using namespace indicators;
 
@@ -83,6 +83,9 @@ public:
   void exec_config()
   {
     spdlog::info("Compute configuration...");
+
+    if (!state::get().config())
+    {
     IProperties* props = get_config_properties(m_opt->kmer_size,
                                                m_opt->minim_size,
                                                m_opt->minim_type,
@@ -92,6 +95,8 @@ public:
                                                m_opt->max_memory);
     ConfigTask<MAX_K> config_task(m_opt->fof, props, m_opt->bloom_size, m_opt->nb_parts);
     config_task.exec();
+    state::get().config_done();
+    }
     Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
     LOCAL(config_storage);
     m_config.load(config_storage->getGroup("gatb"));
@@ -104,9 +109,12 @@ public:
 
   void exec_repart()
   {
-    spdlog::info("Compute minimizer repartition...");
-    RepartTask<MAX_K> repart_task(m_opt->fof, m_opt->from);
-    repart_task.exec(); repart_task.postprocess();
+    if (!state::get().repart())
+    {
+      spdlog::info("Compute minimizer repartition...");
+      RepartTask<MAX_K> repart_task(m_opt->fof, m_opt->from);
+      repart_task.exec(); repart_task.postprocess();
+    }
     m_opt->m_ab_min_vec.resize(KmDir::get().m_fof.size());
     m_hw = HashWindow(KmDir::get().m_hash_win);
 
@@ -266,9 +274,20 @@ public:
 
     for (auto id : KmDir::get().m_fof)
     {
-      task_t task = std::make_shared<SuperKTask<MAX_K>>(std::get<0>(id),
+      task_t task;
+
+      if (state::get().superk(KmDir::get().m_fof.get_i(std::get<0>(id))))
+      {
+        task = std::make_shared<DummyTask>(2);
+      }
+      else
+      {
+
+        task = std::make_shared<SuperKTask<MAX_K>>(std::get<0>(id),
                                                         m_opt->lz4,
                                                         m_opt->restrict_to_list);
+      spdlog::debug("[push] - SuperKTask - S={}", std::get<0>(id));
+      }
       task->set_callback([this, id, &pool](){
         if (this->m_is_info)
           this->m_dyn[0].tick();
@@ -283,30 +302,18 @@ public:
           task_t task = nullptr;
           if (m_opt->count_format == COUNT_FORMAT::KMER)
           {
-            if (!m_opt->kff)
-            {
-              spdlog::debug("[push] - CountTask - S={}, P={}", sid, p);
-              path = KmDir::get().get_count_part_path(
-                sid, p, this->m_opt->lz4, KM_FILE::KMER);
-              task = std::make_shared<CountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-                path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_config._kmerSize, a_min, m_opt->lz4, get_hist_clone(this->m_hists[iid]),
-                !this->m_opt->keep_tmp);
-            }
-            else if (m_opt->kff)
-            {
-              spdlog::debug("[push] - KffCountTask - S={}, P={}", sid, p);
-              path = KmDir::get().get_count_part_path(
-                sid, p, this->m_opt->lz4, KM_FILE::KFF);
-              task = std::make_shared<KffCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-                path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_config._kmerSize, a_min, get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
-            }
           }
           else
           {
             if (!m_opt->skip_merge)
             {
+              if (state::get().count(iid, p))
+              {
+                if (m_is_info)
+                  this->m_dyn[1].tick();
+                continue;
+              }
+
               path = KmDir::get().get_count_part_path(
                 sid, p, this->m_opt->lz4, KM_FILE::HASH);
               spdlog::debug("[push] - HashCountTask - S={}, P={}", sid, p);
@@ -314,24 +321,15 @@ public:
                 path, m_config, sk_storage, pinfos, p, iid,
                 m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
                 get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
-            }
-            else
-            {
-              spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
-              path = KmDir::get().get_count_part_path(
-                sid, p, false, KM_FILE::VECTOR);
-              task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-                path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_hw.get_window_size_bits(), this->m_config._kmerSize, a_min, false,
-                get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
+
+              if (m_is_info)
+              {
+                ProgressBar* ptr = &this->m_dyn[1];
+                task->set_callback([ptr](){ ptr->tick(); });
+              }
             }
           }
-          if (m_is_info)
-          {
-            ProgressBar* ptr = &this->m_dyn[1];
-            task->set_callback([ptr](){ ptr->tick(); });
-          }
-          pool.add_task(task);
+         pool.add_task(task);
         }
       });
 
@@ -346,7 +344,6 @@ public:
       }
       task->set_level(5);
       m_superk.push_back(task);
-      spdlog::debug("[push] - SuperKTask - S={}", std::get<0>(id));
       pool.add_task(task);
     }
     while (superk_finish() != m_nb_samples)
@@ -411,6 +408,13 @@ public:
     TaskPool pool(m_opt->nb_threads);
     for (auto& p : m_opt->restrict_to_list)
     {
+      if (state::get().merge(p))
+      {
+        if (m_is_info)
+          this->m_dyn[2].tick();
+        continue;
+      }
+
       task_t task = nullptr;
       if (m_opt->count_format == COUNT_FORMAT::KMER)
       {

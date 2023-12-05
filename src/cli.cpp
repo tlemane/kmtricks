@@ -139,7 +139,6 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
 
   all_cmd->add_param("--run-dir", "kmtricks runtime directory.")
     ->meta("DIR")
-    ->checker(dir_already_exists)
     ->setter(options->dir);
 
   all_cmd->add_param("--kmer-size", fmt::format("size of a k-mer. [8, {}].", KL[KMER_N-1]-1))
