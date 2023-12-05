@@ -87,11 +87,13 @@ target_include_directories(headers INTERFACE
 )
 
 add_library(links INTERFACE)
-target_link_libraries(links INTERFACE pthread dl ${BZIP2_LIBRARIES} Zstd::Zstd)
+target_link_libraries(links INTERFACE pthread dl)
 
 add_library(deps INTERFACE)
 
 add_subdirectory(thirdparty)
+
+target_link_libraries(links INTERFACE ${BZIP2_LIBRARIES} Zstd::Zstd)
 
 set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/thirdparty)
 
