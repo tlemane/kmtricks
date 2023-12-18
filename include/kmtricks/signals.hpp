@@ -66,6 +66,8 @@ inline std::string signal_to_string(int signal)
   }
 }
 
+static std::mutex SigLock;
+
 class SignalHandler
 {
  public:
@@ -95,10 +97,11 @@ class SignalHandler
 
   static void state_callback(int signal)
   {
-    state::get().write();
-    spdlog::info("Killed after {}. The run can be resumed by running the same command again.",
-                 signal_to_string(signal));
-    exit(signal);
+    std::unique_lock<std::mutex> _(SigLock);
+
+    state::get().write(
+      fmt::format(
+        "Killed after {}. The run can be resumed by running the same command again.", signal_to_string(signal)));
   }
 
   static void default_callback(int signal)

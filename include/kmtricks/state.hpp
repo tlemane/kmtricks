@@ -48,7 +48,7 @@ namespace km {
         inf.read(reinterpret_cast<char*>(m_merge.data()), sizeof(std::uint8_t) * p);
       }
 
-      void write()
+      void write(const std::string& msg = "")
       {
         std::unique_lock<spinlock> _1(m_lock_1);
         std::unique_lock<spinlock> _2(m_lock_2);
@@ -59,6 +59,12 @@ namespace km {
         inf.write(reinterpret_cast<char*>(m_superk.data()), sizeof(std::uint8_t) * m_nb);
         inf.write(reinterpret_cast<char*>(m_count.data()), sizeof(std::uint8_t) * (m_nb*m_part));
         inf.write(reinterpret_cast<char*>(m_merge.data()), sizeof(std::uint8_t) * m_part);
+
+        if (!msg.empty())
+        {
+          spdlog::info(msg);
+          std::quick_exit(1);
+        }
       }
 
     public:

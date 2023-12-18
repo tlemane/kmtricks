@@ -403,13 +403,13 @@ public:
   void preprocess() {}
   void postprocess()
   {
+    state::get().count_done(m_sample_id, m_part_id);
     if (this->m_clear)
     {
       m_superk_storage->closeFile(m_part_id);
       Eraser::get().erase(m_superk_storage->getFileName(m_part_id));
     }
     this->m_finish = true;
-    state::get().count_done(m_sample_id, m_part_id);
     this->exec_callback();
   }
 
