@@ -742,6 +742,8 @@ public:
   void preprocess() {}
   void postprocess()
   {
+    state::get().merge_done(m_part_id);
+
     if (this->m_clear)
     {
       for (auto& f : KmDir::get().get_files_to_merge(m_part_id, m_lz4, KM_FILE::HASH))
@@ -750,7 +752,6 @@ public:
       }
     }
     this->m_finish = true;
-    state::get().merge_done(m_part_id);
     this->exec_callback();
   }
 

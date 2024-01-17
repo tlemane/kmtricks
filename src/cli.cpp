@@ -238,6 +238,10 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
 
   all_cmd->add_group("merge options", "");
 
+  all_cmd->add_param("--end-flag", "write an empty file at the end of the run.")
+         ->meta("STR")
+         ->setter(options->end_flag);
+
   auto a_min_setter = [options](const std::string& v) {
     auto [f, _] = bc::check::is_file("", v);
     if (f)

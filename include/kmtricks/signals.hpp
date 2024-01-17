@@ -67,6 +67,7 @@ inline std::string signal_to_string(int signal)
 }
 
 static std::mutex SigLock;
+static bool sig_done = false;
 
 class SignalHandler
 {
@@ -80,11 +81,11 @@ class SignalHandler
   template <typename Callback = void (*)(int)>
   void init(Callback c = nullptr)
   {
-    std::signal(SIGABRT, c ? c : default_callback);
-    std::signal(SIGFPE, c ? c : default_callback);
-    std::signal(SIGILL, c ? c : default_callback);
-    std::signal(SIGSEGV, c ? c : default_callback);
-    std::signal(SIGTERM, c ? c : default_callback);
+    //std::signal(SIGABRT, c ? c : default_callback);
+    //std::signal(SIGFPE, c ? c : default_callback);
+    //std::signal(SIGILL, c ? c : default_callback);
+    //std::signal(SIGSEGV, c ? c : default_callback);
+    //std::signal(SIGTERM, c ? c : default_callback);
 
     std::signal(SIGINT, c ? c : state_callback);
   }
@@ -99,9 +100,15 @@ class SignalHandler
   {
     std::unique_lock<std::mutex> _(SigLock);
 
+    if (!sig_done)
+    {
+
     state::get().write(
       fmt::format(
         "Killed after {}. The run can be resumed by running the same command again.", signal_to_string(signal)));
+
+      sig_done = true;
+    }
   }
 
   static void default_callback(int signal)

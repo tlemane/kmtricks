@@ -88,6 +88,9 @@ struct main_all
     scheduler.execute();
 
     state::get().write();
+    {
+      std::ofstream endf(opt->end_flag, std::ios::out);
+    }
   }
 };
 

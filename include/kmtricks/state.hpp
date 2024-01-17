@@ -29,12 +29,14 @@ namespace km {
         m_superk.resize(f, 0);
         m_count.resize(f * p, 0);
         m_merge.resize(p, 0);
+
       }
 
       void init_f(const std::string& f, std::size_t n, std::size_t p)
       {
         m_nb = n;
         m_part = p;
+        m_path = f;
         std::ifstream inf(f, std::ios::in | std::ios::binary);
 
         m_superk.resize(m_nb, 0);
@@ -46,20 +48,22 @@ namespace km {
         inf.read(reinterpret_cast<char*>(m_superk.data()), sizeof(std::uint8_t) * n);
         inf.read(reinterpret_cast<char*>(m_count.data()), sizeof(std::uint8_t) * (n*p));
         inf.read(reinterpret_cast<char*>(m_merge.data()), sizeof(std::uint8_t) * p);
+
       }
 
       void write(const std::string& msg = "")
       {
         std::unique_lock<spinlock> _1(m_lock_1);
         std::unique_lock<spinlock> _2(m_lock_2);
-        std::ofstream inf(m_path, std::ios::out | std::ios::binary);
 
-        inf.write(reinterpret_cast<char*>(&m_config), sizeof(m_config));
-        inf.write(reinterpret_cast<char*>(&m_repart), sizeof(m_repart));
-        inf.write(reinterpret_cast<char*>(m_superk.data()), sizeof(std::uint8_t) * m_nb);
-        inf.write(reinterpret_cast<char*>(m_count.data()), sizeof(std::uint8_t) * (m_nb*m_part));
-        inf.write(reinterpret_cast<char*>(m_merge.data()), sizeof(std::uint8_t) * m_part);
-
+        {
+          std::ofstream inf(m_path, std::ios::out | std::ios::binary);
+          inf.write(reinterpret_cast<char*>(&m_config), sizeof(m_config));
+          inf.write(reinterpret_cast<char*>(&m_repart), sizeof(m_repart));
+          inf.write(reinterpret_cast<char*>(m_superk.data()), sizeof(std::uint8_t) * m_nb);
+          inf.write(reinterpret_cast<char*>(m_count.data()), sizeof(std::uint8_t) * (m_nb*m_part));
+          inf.write(reinterpret_cast<char*>(m_merge.data()), sizeof(std::uint8_t) * m_part);
+        }
         if (!msg.empty())
         {
           spdlog::info(msg);
