@@ -152,17 +152,19 @@ public:
     }
     else
     {
-      Storage* fc_store = StorageFactory(STORAGE_FILE).load(
-        fmt::format("{}/{}", m_from, "config"));
-      LOCAL(fc_store);
-      Configuration fc_config;
-      fc_config.load(fc_store->getGroup("gatb"));
+      //Storage* fc_store = StorageFactory(STORAGE_FILE).load(
+      //  fmt::format("{}/{}", m_from, "config"));
+      //LOCAL(fc_store);
+      //Configuration fc_config;
+      //fc_config.load(fc_store->getGroup("gatb"));
 
-      check_repart_compatibility(config, fc_config, m_from);
+      //check_repart_compatibility(config, fc_config, m_from);
 
+      fs::create_directory(fmt::format("{}/{}", KmDir::get().m_root, "repartition_gatb"));
       fs::copy(
-        fmt::format("{}/{}", m_from, "repartition_gatb"),
-        fmt::format("{}/{}", KmDir::get().m_root, "repartition_gatb"),
+        m_from,
+        //fmt::format("{}/{}", m_from, "repartition_gatb"),
+        fmt::format("{}/{}/{}", KmDir::get().m_root, "repartition_gatb", "repartition.minimRepart"),
         fs::copy_options::recursive | fs::copy_options::overwrite_existing);
     }
 

@@ -17,7 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-#include <gatb/bank/impl/BankFasta.hpp>
+#include <gatb/bank/impl/BankFastaZstd.hpp>
 #include <gatb/bank/impl/BankComposite.hpp>
 
 #include <gatb/system/impl/System.hpp>
@@ -28,7 +28,8 @@
 #include <algorithm>
 #include <string.h>
 #include <errno.h>
-#include <zlib.h>
+
+#include <bxzstr.hpp>
 
 using namespace std;
 using namespace gatb::core::tools::dp;
@@ -50,21 +51,82 @@ using namespace gatb::core::tools::misc;
 namespace gatb {  namespace core {  namespace bank {  namespace impl {
 /********************************************************************************/
 
-size_t BankFasta::_dataLineSize = 70;
+size_t BankFastaZstd_dataLineSize = 70;
 
+//struct ZSTD_Stream
+//{
+//  ZSTD_Stream(const std::string& path, char* obuf, std::size_t obufsize)
+//    : path(path), obuf(obuf), obufsize(obufsize)
+//  {
+//    init();
+//  }
+//
+//  void init()
+//  {
+//    f = fopen(path.c_str());
+//    ibuf = new char[ibufsize];
+//    dctx = ZSTD_createDstream();
+//  }
+//
+//  void rewind()
+//  {
+//    close();
+//    init();
+//  }
+//
+//  ~ZSTD_Stream()
+//  {
+//    close();
+//  }
+//
+//  void close()
+//  {
+//    ZSTD_freeDStream(dctx);
+//    fclose(f);
+//    delete[] ibuf;
+//  }
+//
+//  std::size_t read(std::size_t size)
+//  {
+//    while (output < size)
+//    {
+//      std::size_t in = fread(f, ibuf, ibufsize);
+//
+//      input = { ibuf, in, 0};
+//
+//      output = { obuf, size, 0 };
+//
+//      ZSTD_decompressStream(dctx, &input, &output);
+//    }
+//  }
+//
+//  FILE* f;
+//  std::string path;
+//  char* obuf;
+//  char* ibuf;
+//  std::size_t obufsize;
+//  std::size_t ibufsize = ZSTD_DStreamInSize();
+//  std::size_t read {0};
+//  ZSTD_DCtx* dctx;
+//  ZSTD_inBuffer input;
+//  ZSTD_outBuffer output;
+//};
 /********************************************************************************/
 // heavily inspired by kseq.h from Heng Li (https://github.com/attractivechaos/klib)
 typedef struct
 {
-    gzFile stream;
     unsigned char *buffer;
     uint64_t buffer_start, buffer_end;
     bool eof;
     char last_char;
 
+    bxz::ifstream* stream;
+    std::string path;
+
     void rewind ()
     {
-        gzrewind (stream);
+        delete stream;
+        stream = new bxz::ifstream(path);
         last_char    = 0;
         eof          = 0;
         buffer_start = 0;
@@ -106,8 +168,8 @@ struct buffered_strings_t
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-BankFasta::BankFasta (const std::string& filename, bool output_fastq, bool output_gz)
-    : filesizes(0), nb_files(0), _insertHandle(0), _gz_insertHandle(0)
+BankFastaZstd::BankFastaZstd (const std::string& filename, bool output_fastq, bool output_gz)
+    : filesizes(0), nb_files(0), _insertHandle(0)
 {
     _output_fastq = output_fastq;
     _output_gz= output_gz;
@@ -123,10 +185,10 @@ BankFasta::BankFasta (const std::string& filename, bool output_fastq, bool outpu
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-BankFasta::~BankFasta ()
+BankFastaZstd::~BankFastaZstd ()
 {
-    if (_insertHandle    != 0)  { fclose  (_insertHandle);    }
-    if (_gz_insertHandle != 0)  { gzclose (_gz_insertHandle); }
+    //if (_insertHandle    != 0)  { fclose  (_insertHandle);    }
+    //if (_gz_insertHandle != 0)  { gzclose (_gz_insertHandle); }
 }
 
 /*********************************************************************
@@ -137,10 +199,10 @@ BankFasta::~BankFasta ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::finalize ()
+void BankFastaZstd::finalize ()
 {
-    if (_insertHandle    != 0)  { fclose  (_insertHandle);    _insertHandle    = 0; }
-    if (_gz_insertHandle != 0)  { gzclose (_gz_insertHandle); _gz_insertHandle = 0; }
+    //if (_insertHandle    != 0)  { fclose  (_insertHandle);    _insertHandle    = 0; }
+    //if (_gz_insertHandle != 0)  { gzclose (_gz_insertHandle); _gz_insertHandle = 0; }
 }
 
 /*********************************************************************
@@ -151,7 +213,7 @@ void BankFasta::finalize ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::init ()
+void BankFastaZstd::init ()
 {
     /** We check that we don't exceed the number of allowed files. */
     if (_filenames.empty() || _filenames.size() > getMaxNbFiles())
@@ -173,7 +235,7 @@ void BankFasta::init ()
         bool compressed = false;
         u_int64_t estimated_filesize;
 
-        if (strstr (fname, "gz") == (fname + strlen (fname) - 2))
+        if (strstr (fname, "zst") == (fname + strlen (fname) - 3))
             compressed = true;
 
         if (compressed)
@@ -196,10 +258,10 @@ void BankFasta::init ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize)
+void BankFastaZstd::estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize)
 {
     /** We create an iterator for the bank. */
-    BankFasta::Iterator it (*this, Iterator::NONE);
+  BankFastaZstd::Iterator it (*this, Iterator::NONE);
 
     /** We delegate the computation to the iterator. */
     it.estimate (number, totalSize, maxSize);
@@ -213,10 +275,10 @@ void BankFasta::estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& ma
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::flush ()
+void BankFastaZstd::flush ()
 {
-    if (_insertHandle    != 0)  { fflush  (_insertHandle);              }
-    if (_gz_insertHandle != 0)  { gzflush (_gz_insertHandle, Z_FINISH); }
+    //if (_insertHandle    != 0)  { fflush  (_insertHandle);              }
+    //if (_gz_insertHandle != 0)  { gzflush (_gz_insertHandle, Z_FINISH); }
 }
 
 /*********************************************************************
@@ -227,46 +289,46 @@ void BankFasta::flush ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::insert (const Sequence& item)
+void BankFastaZstd::insert (const Sequence& item)
 {
     /** We open the last file if needed. */
-    if (_insertHandle == 0  &&  _filenames.empty()==false)
-    {
-        _insertHandle = fopen (_filenames[_filenames.size()-1].c_str(), "w");
-    }
+    //if (_insertHandle == 0  &&  _filenames.empty()==false)
+    //{
+    //    _insertHandle = fopen (_filenames[_filenames.size()-1].c_str(), "w");
+    //}
 
-    if (_output_gz && _gz_insertHandle == 0  &&  _filenames.empty()==false)
-    {
-        _gz_insertHandle =  gzopen (_filenames[_filenames.size()-1].c_str(), "w");
-    }
+    //if (_output_gz && _gz_insertHandle == 0  &&  _filenames.empty()==false)
+    //{
+    //    _gz_insertHandle =  gzopen (_filenames[_filenames.size()-1].c_str(), "w");
+    //}
 
-    if (_insertHandle != 0)
-    {
-        if(_output_fastq)
-        {
-            if(_output_gz)
-            {
-                gzprintf (_gz_insertHandle, "@%s\n", item.getComment().c_str());
-                gzprintf (_gz_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
-                gzprintf (_gz_insertHandle, "+\n");
-                gzprintf (_gz_insertHandle, "%s\n", item.getQuality().c_str());
-            }
-            else
-            {
-                fprintf (_insertHandle, "@%s\n", item.getComment().c_str());
-                fprintf (_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
-                fprintf (_insertHandle, "+\n");
-                fprintf (_insertHandle, "%s\n", item.getQuality().c_str());
-            }
+    //if (_insertHandle != 0)
+    //{
+    //    if(_output_fastq)
+    //    {
+    //        if(_output_gz)
+    //        {
+    //            //gzprintf (_gz_insertHandle, "@%s\n", item.getComment().c_str());
+    //            //gzprintf (_gz_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
+    //            //gzprintf (_gz_insertHandle, "+\n");
+    //            //gzprintf (_gz_insertHandle, "%s\n", item.getQuality().c_str());
+    //        }
+    //        else
+    //        {
+    //            fprintf (_insertHandle, "@%s\n", item.getComment().c_str());
+    //            fprintf (_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
+    //            fprintf (_insertHandle, "+\n");
+    //            fprintf (_insertHandle, "%s\n", item.getQuality().c_str());
+    //        }
 
-        }
-        else
-        {
-        /** We add the sequence into the bag. */
-        fprintf (_insertHandle, ">%s\n", item.getComment().c_str());
+    //    }
+    //    else
+    //    {
+    //    /** We add the sequence into the bag. */
+    //    fprintf (_insertHandle, ">%s\n", item.getComment().c_str());
 
 #if 1
-        fprintf (_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
+    //    fprintf (_insertHandle, "%.*s\n",(int)item.getDataSize(),  item.getDataBuffer());
 #else
         // We dump the data with fixed sized columns
         char line[4*1024];
@@ -289,8 +351,8 @@ void BankFasta::insert (const Sequence& item)
             *(loop++) = 0;    fprintf (_insertHandle, "%s\n", line);    loop = line;
         }
 #endif
-        }
-    }
+        //}
+    //}
 }
 
 /*********************************************************************
@@ -301,14 +363,15 @@ void BankFasta::insert (const Sequence& item)
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-BankFasta::Iterator::Iterator (BankFasta& ref, CommentMode_e commentMode)
+BankFastaZstd::Iterator::Iterator (BankFastaZstd& ref, CommentMode_e commentMode)
     : _ref(ref), _commentsMode(commentMode), _isDone(true), _isInitialized(false), _nIters(0),
       index_file(0), buffered_file(0), buffered_strings(0), _index(0)
 {
     DEBUG (("Bank::Iterator::Iterator\n"));
 
     /** We check that the file can be opened. */
-    if (gzFile stream = gzopen (_ref._filenames[0].c_str(), "r"))  {  gzclose (stream);  }
+    bxz::ifstream ss(_ref._filenames[0].c_str());
+    if (ss.good())  {  }
     else  {
         throw gatb::core::system::ExceptionErrno (STR_BANK_unable_open_file, _ref._filenames[0].c_str());  }
 }
@@ -321,7 +384,7 @@ BankFasta::Iterator::Iterator (BankFasta& ref, CommentMode_e commentMode)
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-BankFasta::Iterator::~Iterator ()
+BankFastaZstd::Iterator::~Iterator ()
 {
     DEBUG (("Bank::Iterator::~Iterator\n"));
     finalize ();
@@ -335,7 +398,7 @@ BankFasta::Iterator::~Iterator ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::Iterator::first()
+void BankFastaZstd::Iterator::first()
 {
     /** We may have to initialize the instance. */
     init  ();
@@ -363,7 +426,7 @@ void BankFasta::Iterator::first()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::Iterator::next()
+void BankFastaZstd::Iterator::next()
 {
     if (_isDone)  { return; }
 
@@ -392,7 +455,8 @@ inline bool rebuffer (buffered_file_t *bf)
 {
     if (bf->eof) return false;
     bf->buffer_start = 0;
-    bf->buffer_end = gzread (bf->stream, bf->buffer, BUFFER_SIZE);
+    bf->stream->read(reinterpret_cast<char*>(bf->buffer), BUFFER_SIZE);
+    bf->buffer_end = bf->stream->gcount();
     if (bf->buffer_end < BUFFER_SIZE) bf->eof = 1;
     if (bf->buffer_end == 0) return false;
     return true;
@@ -408,7 +472,9 @@ inline bool rebuffer (buffered_file_t *bf)
 *********************************************************************/
 inline signed char buffered_getc (buffered_file_t *bf)
 {
-    if (bf->buffer_start >= bf->buffer_end) if (!rebuffer (bf)) return -1;
+    if (bf->buffer_start >= bf->buffer_end)
+      if (!rebuffer (bf))
+        return -1;
     return (signed char) (bf->buffer[bf->buffer_start++]);
 }
 
@@ -482,11 +548,12 @@ inline signed int buffered_gets (
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-bool BankFasta::Iterator::get_next_seq_from_file (Vector<char>& data, string& comment, string& quality, int file_id, CommentMode_e mode)
+bool BankFastaZstd::Iterator::get_next_seq_from_file (Vector<char>& data, string& comment, string& quality, int file_id, CommentMode_e mode)
 {
 
     buffered_strings_t* bs = (buffered_strings_t*) buffered_strings;
    // printf("%i -\n",bs->header->length);
+
 
     signed char c;
     buffered_file_t *bf = (buffered_file_t *) buffered_file[file_id];
@@ -579,7 +646,7 @@ bool BankFasta::Iterator::get_next_seq_from_file (Vector<char>& data, string& co
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-bool BankFasta::Iterator::get_next_seq_from_file (Vector<char>& data, int file_id)
+bool BankFastaZstd::Iterator::get_next_seq_from_file (Vector<char>& data, int file_id)
 {
     string dummy;
     return get_next_seq_from_file (data, dummy,dummy, file_id, NONE);
@@ -593,7 +660,7 @@ bool BankFasta::Iterator::get_next_seq_from_file (Vector<char>& data, int file_i
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-bool BankFasta::Iterator::get_next_seq (Vector<char>& data, string& comment,string& quality, CommentMode_e mode)
+bool BankFastaZstd::Iterator::get_next_seq (Vector<char>& data, string& comment,string& quality, CommentMode_e mode)
 
 {
     bool success = get_next_seq_from_file (data, comment,quality, index_file, mode);
@@ -616,7 +683,7 @@ bool BankFasta::Iterator::get_next_seq (Vector<char>& data, string& comment,stri
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-bool BankFasta::Iterator::get_next_seq (Vector<char>& data)
+bool BankFastaZstd::Iterator::get_next_seq (Vector<char>& data)
 {
     string  dummy;
     return get_next_seq (data, dummy,dummy, NONE);
@@ -630,7 +697,7 @@ bool BankFasta::Iterator::get_next_seq (Vector<char>& data)
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::Iterator::init ()
+void BankFastaZstd::Iterator::init ()
 {
 
     if (_isInitialized == true)  { return ;}
@@ -650,8 +717,9 @@ void BankFasta::Iterator::init ()
         buffered_file_t** bf = (buffered_file_t **) buffered_file + i;
         *bf = (buffered_file_t *)  CALLOC (1, sizeof(buffered_file_t));
         (*bf)->buffer = (unsigned char*)  MALLOC (BUFFER_SIZE);
-        (*bf)->stream = gzopen (fname, "r");
-        gzbuffer((*bf)->stream,2*1024*1024);
+        (*bf)->path = fname;
+        (*bf)->stream = new bxz::ifstream(fname);
+//gzbuffer((*bf)->stream,2*1024*1024);
 
         /** We check that we can open the file. */
         if ((*bf)->stream == NULL)
@@ -685,7 +753,7 @@ void BankFasta::Iterator::init ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::Iterator::finalize ()
+void BankFastaZstd::Iterator::finalize ()
 {
     if (_isInitialized == false)  { return; }
 
@@ -700,7 +768,9 @@ void BankFasta::Iterator::finalize ()
         if (bf != 0)
         {
             /** We close the handle of the file. */
-            if (bf->stream != NULL)  {  gzclose (bf->stream);  bf->stream = 0; }
+            if (bf->stream != NULL)  {
+              delete bf->stream;
+              bf->stream = 0; }
 
             /** We delete the buffer. */
             FREE (bf->buffer);
@@ -725,50 +795,55 @@ void BankFasta::Iterator::finalize ()
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-void BankFasta::Iterator::estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize)
+void BankFastaZstd::Iterator::estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize)
 {
     /** We may have to initialize the instance. */
     init  ();
 
-    Vector<char> data;
+    number = 2;
+    totalSize = 2;
+    maxSize = 2;
+    return;
 
-    /** We rewind the files. */
-    for (u_int64_t i = 0; i < _ref.nb_files; i++)
-    {
-        buffered_file_t* bf = (buffered_file_t *) buffered_file[i];
-        if (bf != 0)  { bf->rewind(); }
-    }
+    //Vector<char> data;
 
-    /** We initialize the provided arguments. */
-    number    = 0;
-    totalSize = 0;
-    maxSize   = 0;
+    ///** We rewind the files. */
+    //for (u_int64_t i = 0; i < _ref.nb_files; i++)
+    //{
+    //    buffered_file_t* bf = (buffered_file_t *) buffered_file[i];
+    //    if (bf != 0)  { bf->rewind(); }
+    //}
 
-    number = 0;
-    while (get_next_seq (data)  &&  number <= _ref.getEstimateThreshold())
-    {
-        number ++;
-        if (data.size() > maxSize)  { maxSize = data.size(); }
-        totalSize += data.size ();
-    }
+    ///** We initialize the provided arguments. */
+    //number    = 0;
+    //totalSize = 0;
+    //maxSize   = 0;
 
-    u_int64_t actualPosition = 0;
+    //number = 0;
+    //while (get_next_seq (data)  &&  number <= _ref.getEstimateThreshold())
+    //{
+    //    number ++;
+    //    if (data.size() > maxSize)  { maxSize = data.size(); }
+    //    totalSize += data.size ();
+    //}
 
-    /** We compute the aggregated size from the files having been read until we
-     * reached our limit number of sequences. */
-    for (int i=0; i<=index_file; i++)
-    {
-        buffered_file_t* current = (buffered_file_t *) buffered_file[i];
+    //u_int64_t actualPosition = 0;
 
-        actualPosition += gztell (current->stream);
-    }
+    ///** We compute the aggregated size from the files having been read until we
+    // * reached our limit number of sequences. */
+    //for (int i=0; i<=index_file; i++)
+    //{
+    //    buffered_file_t* current = (buffered_file_t *) buffered_file[i];
 
-    if (actualPosition > 0)
-    {
-        // linear extrapolation
-        number    = (number    * _ref.getSize()) / actualPosition;
-        totalSize = totalSize * ( (float)_ref.getSize() / (float)actualPosition) ;
-    }
+    //    actualPosition += gztell (current->stream);
+    //}
+
+    //if (actualPosition > 0)
+    //{
+    //    // linear extrapolation
+    //    number    = (number    * _ref.getSize()) / actualPosition;
+    //    totalSize = totalSize * ( (float)_ref.getSize() / (float)actualPosition) ;
+    //}
 }
 
 /*********************************************************************
@@ -779,20 +854,18 @@ void BankFasta::Iterator::estimate (u_int64_t& number, u_int64_t& totalSize, u_i
 ** RETURN  :
 ** REMARKS :
 *********************************************************************/
-IBank* BankFastaFactory::createBank (const std::string& uri)
+IBank* BankFastaZstdFactory::createBank (const std::string& uri)
 {
     bool isFASTA = false;
 
     /** We check whether the uri looks like a FASTA bank. */
-    gzFile file = gzopen (uri.c_str(), "r");
+    bxz::ifstream ss(uri);
 
-    if (uri.find(".zst") != std::string::npos)
-      return NULL;
-
-    if (file != 0)
+    if (ss.good())
     {
         char buffer[256];
-        int res = gzread (file, buffer, sizeof(buffer));
+        ss.read(buffer, 256);
+        int res = ss.gcount();
         if (res > 0)
         {
             int i=0;
@@ -815,11 +888,9 @@ IBank* BankFastaFactory::createBank (const std::string& uri)
                 isFASTA = foundSpace;
             }
         }
-
-        gzclose (file);
     }
 
-    return (isFASTA ? new BankFasta (uri) : NULL);
+    return (isFASTA ? new BankFastaZstd (uri) : NULL);
 }
 
 /********************************************************************************/

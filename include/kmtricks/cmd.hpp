@@ -76,6 +76,11 @@ struct main_all
 
     TaskScheduler<MAX_K, DMAX_C> scheduler(opt);
     scheduler.execute();
+
+    {
+      if (!opt->end_flag.empty())
+        std::ofstream endf(opt->end_flag, std::ios::out);
+    }
   }
 };
 

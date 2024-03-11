@@ -42,7 +42,7 @@ set (gatb-core-date "xxxx-xx-xx")
 ################################################################################
 # Define cmake modules directory
 ################################################################################
-set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_SOURCE_DIR}/thirdparty/bxzstr/cmake)
 
 ################################################################################
 # Include external cmake files
@@ -65,7 +65,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     IF(NOT CMAKE_CXX_COMPILER_VERSION) #for old cmakes
         include(CheckCompiler)
     ENDIF()
-    if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 4.7) 
+    if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 4.7)
         message(FATAL_ERROR "Insufficient gcc version (gcc>=4.7 needed)")
     endif()
 
@@ -84,7 +84,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         endif()
 
     else()
-        if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 3.2) 
+        if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 3.2)
             message(FATAL_ERROR "Insufficient clang version (clang>=3.2 needed)")
         endif()
     endif()
@@ -124,7 +124,7 @@ if (NONCANONICAL)
 endif()
 
 
-# detect SSE for popcount 
+# detect SSE for popcount
 # this was for emphf, maybe it's for something else also? otherwise this part can be removed.
 #
 # from https://github.com/rurban/smhasher/blob/master/CMakeLists.txt
@@ -163,30 +163,30 @@ IF(SSE4_2_FOUND AND (NOT NO_SSE))
 ENDIF()
 
 # WARNING !!! For the moment, we need to remove some warnings (on Macos) due to use of offsetof macro on non Plain Old Data
-set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -Wno-invalid-offsetof") 
+set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -Wno-invalid-offsetof")
 
 # We may have some custom compilation flags.
 if (use_allocator)
-    set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -DGATB_USE_CUSTOM_ALLOCATOR") 
+    set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -DGATB_USE_CUSTOM_ALLOCATOR")
 endif()
 
 message("-- Options: ${LIBRARY_COMPILE_DEFINITIONS}")
 
 ################################################################################
-#  DIRECTORIES MANAGEMENT 
+#  DIRECTORIES MANAGEMENT
 ################################################################################
 
 set (LIBRARY_OUTPUT_PATH       ${PROJECT_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE})
 set (EXECUTABLE_OUTPUT_PATH    ${PROJECT_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE})
 
 ################################################################################
-#  EXPORT FOR THIRD PARTIES 
+#  EXPORT FOR THIRD PARTIES
 ################################################################################
 
 # In case you need to use external libraries, you can use the following variables:
 #   EXTRALIBS      : names of the libraries to be used
 #   EXTRALIBS_PATH : directory where the libraries are
-#   EXTRALIBS_INC  : directory of the include files for the libraries 
+#   EXTRALIBS_INC  : directory of the include files for the libraries
 # For instance, you can do the following:
 #       cmake -DEXTRALIBS="somelib"  -DEXTRALIBS_PATH="/somewhere/libs"  -DEXTRALIBS_INC="/somewhere/inc" ..
 
@@ -206,14 +206,17 @@ ENDIF()
 # We define the compilation flags used for compiling binary based on gatb core
 set (gatb-core-flags ${LIBRARY_COMPILE_DEFINITIONS})
 
-find_package(ZLIB)
+find_package(ZLIB REQUIRED)
+find_package(BZip2 REQUIRED)
+find_package(Zstd REQUIRED)
 
+link_libraries(Zstd::Zstd)
 # We define the include directories used for linking binary based on gatb core
 # Note that we need to add boost include dependency (not working otherwise with clang)
-set (gatb-core-includes ${ZLIB_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/include ${PROJECT_BINARY_DIR}/thirdparty/LZ4/src/LZ4/lib ${PROJECT_BINARY_DIR}/include/${CMAKE_BUILD_TYPE} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/thirdparty ${gatb-core-extra-libraries-inc})
+set (gatb-core-includes ${ZLIB_INCLUDE_DIR} ${BZIP2_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/include ${PROJECT_BINARY_DIR}/thirdparty/LZ4/src/LZ4/lib ${PROJECT_BINARY_DIR}/include/${CMAKE_BUILD_TYPE} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/thirdparty ${gatb-core-extra-libraries-inc} ${PROJECT_SOURCE_DIR}/thirdparty/bxzstr/include)
 
 # We define the libraries used for linking binary based on gatb core
-set (gatb-core-libraries   gatbcore-static  dl  pthread  z ${gatb-core-extra-libraries})
+set (gatb-core-libraries   gatbcore-static  dl  pthread  z ${BZIP2_LIBRARIES} ${gatb-core-extra-libraries})
 
 # We define the directory where to find cmake helpers
 set (gatb-core-cmake  ${CMAKE_MODULE_PATH})
@@ -225,7 +228,7 @@ set (gatb-core-libraries      ${gatb-core-libraries}      PARENT_SCOPE)
 set (gatb-core-cmake          ${gatb-core-cmake}          PARENT_SCOPE)
 
 ################################################################################
-#  LIBRARY GENERATION 
+#  LIBRARY GENERATION
 ################################################################################
 ADD_SUBDIRECTORY(src)
 
@@ -238,7 +241,7 @@ set (gatb-core-klist   ${gatb-core-klist}  PARENT_SCOPE)
 ADD_SUBDIRECTORY(thirdparty)
 
 ################################################################################
-#  INSTALL 
+#  INSTALL
 ################################################################################
 
 IF (NOT DEFINED GATB_CORE_INSTALL_EXCLUDE)
@@ -248,19 +251,19 @@ IF (NOT DEFINED GATB_CORE_INSTALL_EXCLUDE)
 ENDIF()
 
 ################################################################################
-#  DELIVERY 
+#  DELIVERY
 ################################################################################
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY  "gatb-core project")
 SET (CPACK_PACKAGE_VENDOR               "Genscale team (INRIA)")
 SET (CPACK_PACKAGE_VERSION_MAJOR        "${gatb-core_VERSION_MAJOR}")
 SET (CPACK_PACKAGE_VERSION_MINOR        "${gatb-core_VERSION_MINOR}")
 SET (CPACK_PACKAGE_VERSION_PATCH        "${gatb-core_VERSION_PATCH}")
-SET (CPACK_PACKAGE_VERSION              "${gatb-core-version}")  
+SET (CPACK_PACKAGE_VERSION              "${gatb-core-version}")
 SET (CPACK_PACKAGE_FILE_NAME            "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-bin-${CMAKE_SYSTEM_NAME}")
 SET (CPACK_GENERATOR                    "TGZ")
 SET (CPACK_SOURCE_GENERATOR             "TGZ")
-SET (CPACK_SOURCE_IGNORE_FILES          
-    "^${PROJECT_SOURCE_DIR}/build/"  
+SET (CPACK_SOURCE_IGNORE_FILES
+    "^${PROJECT_SOURCE_DIR}/build/"
     "^${PROJECT_SOURCE_DIR}/.project"
     "^${PROJECT_SOURCE_DIR}/.gitignore"
     "^${PROJECT_SOURCE_DIR}/doc/design"

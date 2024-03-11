@@ -23,11 +23,11 @@
  *  \brief FASTA bank format
  */
 
-#ifndef _GATB_CORE_BANK_IMPL_BANK_FASTA_HPP_
-#define _GATB_CORE_BANK_IMPL_BANK_FASTA_HPP_
+#ifndef _GATB_CORE_BANK_IMPL_BANK_FASTA_BZ_HPP_
+#define _GATB_CORE_BANK_IMPL_BANK_FASTA_BZ_HPP_
 
 /********************************************************************************/
-#include <zlib.h>
+#include <bzlib.h>
 
 #include <gatb/bank/impl/AbstractBank.hpp>
 
@@ -62,7 +62,7 @@ namespace impl      {
  * Sample of use (note however that it is better to use Bank::open for opening a bank):
  * \snippet bank1.cpp  snippet1_bank
  */
-class BankFasta : public AbstractBank
+class BankFastaBz : public AbstractBank
 {
 public:
 
@@ -74,10 +74,10 @@ public:
      * \param[in] output_fastq : tells whether the file is in fastq or not.
      * \param[in] output_gz: tells whether the file is gzipped or not
      */
-    BankFasta (const std::string& filename, bool output_fastq = false, bool output_gz = false);
+    BankFastaBz (const std::string& filename, bool output_fastq = false, bool output_gz = false);
 
     /** Destructor. */
-    ~BankFasta ();
+    ~BankFastaBz ();
 
     /** \copydoc IBank::getId. */
     std::string getId ()  { return _filenames[0]; }
@@ -149,7 +149,7 @@ public:
          * \param[in] ref : the associated iterable instance.
          * \param[in] commentMode : kind of comments we want to retrieve
          */
-        Iterator (BankFasta& ref, CommentMode_e commentMode = FULL);
+        Iterator (BankFastaBz& ref, CommentMode_e commentMode = FULL);
 
         /** Destructor */
         ~Iterator ();
@@ -172,7 +172,7 @@ public:
     private:
 
         /** Reference to the underlying Iterable instance. */
-        BankFasta&    _ref;
+        BankFastaBz&    _ref;
 
         /** Tells what kind of comments we want as a client of the iterator. */
         CommentMode_e  _commentsMode;
@@ -225,8 +225,6 @@ protected:
     /** File handle for inserting sequences into the bank. */
     FILE* _insertHandle;
 
-    gzFile _gz_insertHandle;
-
     static size_t _dataLineSize;
 
     /** Initialization method (compute the file sizes). */
@@ -236,7 +234,7 @@ protected:
 /********************************************************************************/
 
 /* \brief Factory for the BankFasta class. */
-class BankFastaFactory : public IBankFactory
+class BankFastaBzFactory : public IBankFactory
 {
 public:
 
@@ -248,4 +246,4 @@ public:
 } } } } /* end of namespaces. */
 /********************************************************************************/
 
-#endif /* _GATB_CORE_BANK_IMPL_BANK_FASTA_HPP_ */
+#endif /* _GATB_CORE_BANK_IMPL_BANK_FASTA_BZ_HPP_ */

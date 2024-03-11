@@ -20,6 +20,8 @@
 #include <gatb/bank/impl/Bank.hpp>
 
 #include <gatb/bank/impl/BankFasta.hpp>
+#include <gatb/bank/impl/BankFastaBz.hpp>
+#include <gatb/bank/impl/BankFastaZstd.hpp>
 
 #include <gatb/bank/impl/BankBinary.hpp>
 #include <gatb/bank/impl/BankAlbum.hpp>
@@ -48,6 +50,8 @@ Bank::Bank ()
     _registerFactory_ ("album",  new BankAlbumFactory(),  false);
     _registerFactory_ ("fasta",  new BankFastaFactory(),  false);
     _registerFactory_ ("binary", new BankBinaryFactory(), false);
+    _registerFactory_ ("fastaBz", new BankFastaBzFactory(), false);
+    _registerFactory_ ("fastaZstd", new BankFastaZstdFactory(), false);
 
     DEBUG (("Bank::Bank,  found %ld factories\n", _factories.size()));
 }
@@ -190,7 +194,7 @@ std::string Bank::_getType_ (const std::string& uri)
 					}
 				}
 			}
-			
+
             delete bank;
             break;
         }
