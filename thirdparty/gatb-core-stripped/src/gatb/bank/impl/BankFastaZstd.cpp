@@ -455,8 +455,15 @@ inline bool rebuffer (buffered_file_t *bf)
 {
     if (bf->eof) return false;
     bf->buffer_start = 0;
-    bf->stream->read(reinterpret_cast<char*>(bf->buffer), BUFFER_SIZE);
-    bf->buffer_end = bf->stream->gcount();
+
+    try {
+      bf->stream->read(reinterpret_cast<char*>(bf->buffer), BUFFER_SIZE);
+      bf->buffer_end = bf->stream->gcount();
+    } catch (const bxz::zstdException& ex) {
+      bf->buffer_end = 0;
+      std::cerr << bf->path  << " " << ex.what() << std::endl;
+    }
+
     if (bf->buffer_end < BUFFER_SIZE) bf->eof = 1;
     if (bf->buffer_end == 0) return false;
     return true;
