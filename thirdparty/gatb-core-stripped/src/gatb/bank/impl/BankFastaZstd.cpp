@@ -895,6 +895,10 @@ IBank* BankFastaZstdFactory::createBank (const std::string& uri)
                 isFASTA = foundSpace;
             }
         }
+        else
+        {
+          return new BankFastaZstd(uri);
+        }
     }
 
     return (isFASTA ? new BankFastaZstd (uri) : NULL);
