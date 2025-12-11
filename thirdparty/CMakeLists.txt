@@ -8,6 +8,11 @@ target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/indicators/incl
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/cfrcat/include)
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/robin-hood-hashing/src/include)
 
+# Add sse2neon header path for ARM64 builds
+if(ARCH_ARM64)
+  target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/sse2neon)
+endif()
+
 ExternalProject_Add(FMT
   PREFIX FMT
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
