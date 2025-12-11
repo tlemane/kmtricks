@@ -21,7 +21,11 @@
 #include <exception>
 #include <fstream>
 #include <cstring>
-#include <emmintrin.h>
+#ifdef ARCH_ARM64
+  #include <sse2neon.h>
+#else
+  #include <emmintrin.h>
+#endif
 #include <iostream>
 #include <cassert>
 #include <iomanip>

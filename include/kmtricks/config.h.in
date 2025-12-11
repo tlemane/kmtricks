@@ -36,6 +36,9 @@
 #define CONDA_BUILD "@CONDA_BUILD@"
 #define STATIC_BUILD "@STATIC@"
 #define NATIVE_BUILD "@NATIVE@"
+#cmakedefine ARCH_X86_64
+#cmakedefine ARCH_ARM64
+#define ARCH_FLAGS "@ARCH_FLAGS@"
 #define MODULES_BUILD "@WITH_MODULES@"
 #define SOCKS_ON "@WITH_SOCKS@"
 #define HOWDE_BUILD "@WITH_HOWDE@"
