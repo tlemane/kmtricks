@@ -116,7 +116,7 @@ auto is_km_dir = [](const std::string& p, const std::string& v) -> bc::check::ch
 
 km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
 {
-  bc::cmd_t all_cmd = cli->add_command("pipeline", "kmtricks pipeline (run all the steps, repart -> superk -> count -> merge -> format)");
+  bc::cmd_t all_cmd = cli->add_command("pipeline", "kmtricks pipeline (run all the steps, repart -> superk -> count -> merge)");
 
   all_cmd->add_param("--file", "kmtricks input file, see README.md.")
     ->meta("FILE")
