@@ -17,113 +17,47 @@ on:
       - '.gitignore'
 
 jobs:
-  Linux:
-    runs-on: ubuntu-20.04
+  build:
+    name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Release, Debug]
-        compiler: [g++-8, g++-9, g++-10]
+        build_type: [Release]
+        os: [ubuntu-24.04, ubuntu-24.04-arm64, macos-14, macos-15-intel]
         include:
-          - compiler: g++-8
-            cxx: g++-8
-            cc: gcc-8
-          - compiler: g++-9
-            cxx: g++-9
-            cc: gcc-9
-          - compiler: g++-10
+          - os: ubuntu-24.04
+            arch: x86_64
+            compiler: g++-10
             cxx: g++-10
             cc: gcc-10
 
-    name: Linux - ${{ matrix.build_type }} - ${{ matrix.compiler }}
+          - os: ubuntu-24.04-arm64
+            arch: arm64
+            compiler: g++-10
+            cxx: g++-10
+            cc: gcc-10
+
+          - os: macos-14
+            arch: arm64
+
+          - os: macos-15-intel
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Dependencies
+      - name: Install Linux dependencies
+        if: contains(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get install ${{ matrix.compiler }}
-          sudo apt-get install zlib1g zlib1g-dev
+          sudo apt-get update
+          sudo apt-get install -y zlib1g zlib1g-dev ${{ matrix.compiler }}
 
-      - name: Configure
-        shell: bash
-        run: |
-          mkdir build
-          cd build
-          export CC=$(which ${{ matrix.cc }})
-          export CXX=$(which ${{ matrix.cxx }})
-          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DWITH_SOCKS=ON -DSTATIC=ON
-
-      - name: Build
-        shell: bash
-        run: |
-          cd build
-          export CC=$(which ${{ matrix.cc }})
-          export CXX=$(which ${{ matrix.cxx }})
-          make -j2
-
-      - name: Test
-        shell: bash
-        run: cd build && ctest --verbose
-
-      - name: Package
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        shell: bash
-        run: cd build && make package
-
-      - name: Get tag name
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        id: tag
-        run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
-
-      - name: Release archive
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          mkdir archive_files
-          bash scripts/git-archive-all.sh --format tar.gz ./archive_files/kmtricks-${{ steps.tag.outputs.TAG }}-sources.tar.gz
-          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files
-
-      - name: Changelog
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        id: changelog
-        shell: bash
-        run: |
-          r=$(cat doc/changelogs/${{ steps.tag.outputs.TAG }}.md)
-          r="${r//'%'/'%25'}"
-          r="${r//$'\n'/'%0A'}"
-          r="${r//$'\r'/'%0D'}"
-          echo "::set-output name=RELEASE_BODY::$r"
-
-      - name: Release
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        uses: svenstaro/upload-release-action@v2
-        with:
-          release_name: Release ${{ steps.tag.outputs.TAG }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: 'archive_files/*'
-          file_glob: true
-          tag: ${{ github.ref }}
-          body: |
-            ${{ steps.changelog.outputs.RELEASE_BODY }}
-          prerelease: true
-
-
-  MacOS:
-    runs-on: macos-10.15
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Release, Debug]
-
-    name: MacOS - ${{ matrix.build_type }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Dependencies
+      - name: Install macOS dependencies
+        if: contains(matrix.os, 'macos')
         run: brew install zlib
 
       - name: Configure
@@ -131,11 +65,19 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DWITH_SOCKS=ON
+          if [[ "${{ matrix.os }}" == ubuntu* ]]; then
+            export CC=$(which ${{ matrix.cc }})
+            export CXX=$(which ${{ matrix.cxx }})
+            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON -DSTATIC=ON
+          else
+            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON
+          fi
 
       - name: Build
         shell: bash
-        run: cd build && make -j2
+        run: |
+          cd build
+          make -j2
 
       - name: Test
         shell: bash
@@ -146,31 +88,23 @@ jobs:
         shell: bash
         run: cd build && make package
 
-      - name: Get tag name
+      - name: Get tag
         if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         id: tag
-        run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Release archive
+      - name: Collect files
         if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        shell: bash
         run: |
           mkdir archive_files
-          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Darwin.tar.gz archive_files
-
-      - name: Changelog
-        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
-        id: changelog
-        shell: bash
-        run: |
-          r=$(cat doc/changelogs/${{ steps.tag.outputs.TAG }}.md)
-          r="${r//'%'/'%25'}"
-          r="${r//$'\n'/'%0A'}"
-          r="${r//$'\r'/'%0D'}"
-          echo "::set-output name=RELEASE_BODY::$r"
+          if [[ "${{ matrix.os }}" == ubuntu* ]]; then
+            mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files/kmtricks-${{ steps.tag.outputs.TAG }}-Linux-${{ matrix.arch }}.tar.gz
+          else
+            mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Darwin.tar.gz archive_files/kmtricks-${{ steps.tag.outputs.TAG }}-macOS-${{ matrix.arch }}.tar.gz
+          fi
 
       - name: Release
-        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v2
         with:
           release_name: Release ${{ steps.tag.outputs.TAG }}
@@ -178,8 +112,8 @@ jobs:
           file: 'archive_files/*'
           file_glob: true
           tag: ${{ github.ref }}
-          body: |
-            ${{ steps.changelog.outputs.RELEASE_BODY }}
+          body: ""
           prerelease: true
+
 
 
