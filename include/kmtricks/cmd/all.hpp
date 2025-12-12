@@ -126,7 +126,7 @@ struct all_options : km_options
     {
       throw PipelineError("--kff-output/--kff-sk-output available only in k-mer mode.");
     }
-    if ((mode == MODE::BF))
+    if (mode == MODE::BF)
     {
       if ((restrict_to != 1.0) || !restrict_to_list.empty())
       {
