@@ -131,3 +131,9 @@ target_link_libraries(links INTERFACE ZLIB::ZLIB)
 add_library(bitpack INTERFACE)
 target_include_directories(headers INTERFACE ${THIRD_DIR}/span-lite/include)
 target_include_directories(headers INTERFACE ${THIRD_DIR}/bitpacker/include)
+
+if(ARCH_ARM64)
+  target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/sse2neon)
+endif()
+
+

@@ -14,6 +14,7 @@ option(NATIVE "Build with -march=native" ON)
 set(DEV_MODE OFF)
 
 include(CheckFilesystem)
+include(DetectArchitecture)
 
 if (STATIC AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -70,6 +71,10 @@ target_compile_options(build_type_flags INTERFACE
 )
 if (NATIVE)
   target_compile_options(build_type_flags INTERFACE "-march=native")
+else()
+  if (ARCH_FLAGS)
+    target_compile_options(build_type_flags INTERFACE "${ARCH_FLAGS}")
+  endif()
 endif()
 
 add_library(headers INTERFACE)
