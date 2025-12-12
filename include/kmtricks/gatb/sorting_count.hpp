@@ -26,8 +26,6 @@
 #include <kmtricks/gatb/count_processor.hpp>
 #include <kmtricks/superk.hpp>
 
-#include <sabuhash.h>
-
 #include <spdlog/spdlog.h>
 
 #include <xxhash.h>
@@ -344,26 +342,6 @@ struct IHasher
 
 template<size_t span>
 using hasher_t = std::unique_ptr<IHasher<span>>;
-
-template <size_t span>
-struct KmSabuhash : public IHasher<span>
-{
-public:
-  KmSabuhash(size_t kmer_size, uint64_t win, uint64_t p)
-    : m_kmer_size(kmer_size), m_win(win), m_p(p), m_hasher(SabuHash(m_kmer_size))
-  {}
-
-  typedef typename ::Kmer<span>::Type Type;
-  uint64_t operator()(Type &kmer)
-  {
-    return (m_hasher.hash(kmer.toString(m_kmer_size)) % m_win) + (m_win * m_p);
-  }
-private:
-  size_t m_kmer_size;
-  SabuHash m_hasher;
-  uint64_t m_win;
-  uint64_t m_p;
-};
 
 template <size_t span>
 struct KmXXHash : public IHasher<span>

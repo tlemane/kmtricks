@@ -79,18 +79,6 @@ target_link_directories(links INTERFACE
 target_link_libraries(links INTERFACE gatbcore)
 add_dependencies(deps GATB)
 
-ExternalProject_Add(SDSL
-  PREFIX SDSL
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/sdsl-lite
-  INSTALL_COMMAND ""
-  LOG_CONFIGURE ON
-  LOG_BUILD ON
-)
-target_include_directories(headers SYSTEM INTERFACE ${THIRD_BINDIR}/SDSL/src/SDSL-build/include)
-target_link_directories(links INTERFACE ${THIRD_BINDIR}/SDSL/src/SDSL-build/lib)
-target_link_libraries(links INTERFACE sdsl)
-add_dependencies(deps SDSL)
-
 ExternalProject_Add(TURBOP
   PREFIX TURBOP
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/TurboPFor-Integer-Compression
@@ -121,20 +109,6 @@ if (COMPILE_TESTS)
   target_link_libraries(links INTERFACE gtest gtest_main pthread)
   add_dependencies(deps GTEST)
 
-endif()
-
-if (WITH_HOWDE)
-  ExternalProject_add(CROAR
-    PREFIX CROAR
-    SOURCE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CRoaring
-    CMAKE_ARGS -DROARING_BUILD_STATIC=ON
-    INSTALL_COMMAND ""
-    LOG_CONFIGURE ON
-    LOG_BUILD ON
-  )
-  target_include_directories(headers INTERFACE ${THIRD_DIR}/CRoaring/include)
-  target_link_directories(links INTERFACE ${THIRD_BINDIR}/CROAR/src/CROAR-build/src)
-  add_dependencies(deps CROAR)
 endif()
 
 ExternalProject_Add(XXHASH

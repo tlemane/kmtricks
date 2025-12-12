@@ -53,7 +53,6 @@ struct all_options : km_options
   bool keep_tmp {false};
   bool lz4 {false};
   bool kff {false};
-  bool skip_merge {false};
   bool hist {false};
 
   uint32_t bwidth {0};
@@ -100,7 +99,6 @@ struct all_options : km_options
     RECORD(ss, keep_tmp);
     RECORD(ss, lz4);
     RECORD(ss, kff);
-    RECORD(ss, skip_merge);
     RECORD(ss, hist);
     RECORD(ss, focus);
     RECORD(ss, restrict_to);
@@ -128,14 +126,7 @@ struct all_options : km_options
     {
       throw PipelineError("--kff-output/--kff-sk-output available only in k-mer mode.");
     }
-    if (skip_merge)
-    {
-      if ((mode != MODE::BFT) || (count_format != COUNT_FORMAT::HASH))
-      {
-        throw PipelineError("--skip-merge available only with --mode hash:bft:bin");
-      }
-    }
-    if ((mode == MODE::BFT || mode == MODE::BF))
+    if ((mode == MODE::BF))
     {
       if ((restrict_to != 1.0) || !restrict_to_list.empty())
       {

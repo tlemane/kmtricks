@@ -29,8 +29,6 @@
 #include <kmtricks/cmd/infos.hpp>
 #include <kmtricks/cmd/aggregate.hpp>
 #include <kmtricks/cmd/filter.hpp>
-#include <kmtricks/cmd/index.hpp>
-#include <kmtricks/cmd/query.hpp>
 #include <kmtricks/cmd/combine.hpp>
 
 #include <kmtricks/io.hpp>
@@ -47,12 +45,6 @@
 #ifdef WITH_PLUGIN
 #include <kmtricks/plugin_manager.hpp>
 #include <kmtricks/plugin.hpp>
-#endif
-
-#ifdef WITH_HOWDE
-#include <cmd_cluster.h>
-#include <cmd_build_sbt.h>
-#include <cmd_query.h>
 #endif
 
 namespace km {
@@ -273,62 +265,6 @@ struct main_merge
       }
     }
     pool.join_all();
-  }
-};
-
-template<size_t MAX_K>
-struct main_format
-{
-  void operator()(km_options_t options)
-  {
-    spdlog::info("Run with {} implementation", Kmer<MAX_K>::name());
-    format_options_t opt = std::static_pointer_cast<struct format_options>(options);
-    spdlog::debug(opt->display());
-    KmDir::get().init(opt->dir, "", false);
-
-    HashWindow hw(KmDir::get().m_hash_win);
-
-    Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
-    LOCAL(config_storage);
-    Configuration config = Configuration();
-    config.load(config_storage->getGroup("gatb"));
-
-    if (opt->from_hash)
-    {
-      std::vector<vmr_t<8192>> files;
-      std::vector<int> fds;
-      std::vector<std::mutex> mutex(config._nb_partitions);
-      for (size_t p=0; p<config._nb_partitions; p++)
-      {
-        fds.push_back(open(KmDir::get().get_matrix_path(p, MODE::BFT, FORMAT::BIN, COUNT_FORMAT::HASH, false).c_str(), O_RDONLY));
-      }
-      TaskPool pool(opt->nb_threads);
-
-      if (opt->id == "all")
-      {
-        for (auto& id : KmDir::get().m_fof)
-        {
-          std::string sid = std::get<0>(id);
-          uint32_t file_id = KmDir::get().m_fof.get_i(sid);
-          pool.add_task(std::make_shared<FormatTask>(
-            fds, mutex, opt->out_format, hw.bloom_size(), file_id, config._nb_partitions,
-            config._kmerSize, opt->clear));
-        }
-      }
-      pool.join_all();
-    }
-    else if (opt->from_vec)
-    {
-      TaskPool pool(opt->nb_threads);
-      for (auto& id : KmDir::get().m_fof)
-      {
-        spdlog::debug("[push] - FormatVectorTask - S={}", std::get<0>(id));
-        pool.add_task(std::make_shared<FormatVectorTask>(
-          std::get<0>(id), opt->out_format, hw.bloom_size(), config._nb_partitions, opt->lz4,
-          config._kmerSize, opt->clear));
-      }
-      pool.join_all();
-    }
   }
 };
 
@@ -784,158 +720,4 @@ struct main_filter
   }
 };
 
-#ifdef WITH_HOWDE
-template<size_t MAX_K>
-struct main_index
-{
-  void operator()(km_options_t options)
-  {
-    spdlog::info("Run with {} implementation", Kmer<MAX_K>::name());
-    index_options_t opt = std::static_pointer_cast<struct index_options>(options);
-    spdlog::debug(opt->display());
-    KmDir::get().init(opt->dir, "", false);
-    spdlog::info("Compute tree topology...");
-    std::string bf_list = KmDir::get().get_bf_list_path();
-    {
-      std::ofstream out(bf_list, std::ios::out); check_fstream_good(bf_list, out);
-      for (auto id: KmDir::get().m_fof)
-        out << fs::absolute(fs::path(
-          KmDir::get().get_filter_path(std::get<0>(id), OUT_FORMAT::HOWDE))).string() << "\n";
-    }
-
-    std::string index = KmDir::get().get_index_path();
-    std::string howde_index_str = fmt::format("cluster --list={} --out={}",
-                                              bf_list, index);
-
-    if (opt->upper != 0)
-      howde_index_str += fmt::format(" {}..{}", opt->lower, opt->upper);
-    else
-      howde_index_str += fmt::format(" --bits={}", opt->bits);
-
-    if (opt->cull > 0)
-      howde_index_str += fmt::format(" --cull={}", opt->cull);
-
-    if (opt->cull2)
-      howde_index_str += " --cull";
-
-    if (opt->cullsd > 0)
-      howde_index_str += fmt::format(" --cull={}sd", opt->cullsd);
-    std::vector<std::string> howde_index = bc::utils::split(howde_index_str, ' ');
-
-    char** arr = new char*[howde_index.size()+1];
-    arr[howde_index.size()] = nullptr;
-    for (size_t i=0; i<howde_index.size(); i++)
-      arr[i] = strdup(howde_index.at(i).c_str());
-
-    ClusterCommand cluster_cmd("cluster");
-    cluster_cmd.parse(howde_index.size(), arr);
-    cluster_cmd.execute();
-
-    for (size_t i=0; i<howde_index.size(); i++)
-      free(arr[i]);
-
-    delete[] arr;
-
-    spdlog::info("Build index...");
-    std::stringstream ss;
-    ss << "build ";
-    ss << KmDir::get().get_index_path() << " ";
-    if (opt->howde) ss << "--howde ";
-    if (opt->allsome) ss << "--allsome ";
-    if (opt->determined) ss << "--determined ";
-    if (opt->brief) ss << "--determined,brief ";
-    if (opt->uncompressed) ss << "--uncompressed ";
-    if (opt->rrr) ss << "--rrr ";
-    if (opt->roar) ss << "--roar ";
-    std::string howde_build_str = ss.str();
-    std::vector<std::string> howde_build = bc::utils::split(howde_build_str, ' ');
-
-    char** arr2 = new char*[howde_build.size()+1];
-    arr2[howde_build.size()] = nullptr;
-    for (size_t i=0; i<howde_build.size(); i++)
-      arr2[i] = strdup(howde_build.at(i).c_str());
-
-    BuildSBTCommand build_cmd("build");
-    build_cmd.parse(howde_build.size(), arr2);
-    auto path = fs::current_path();
-
-    fs::current_path(KmDir::get().m_index_storage);
-    build_cmd.execute();
-
-    fs::current_path(path);
-    for (size_t i=0; i<howde_build.size(); i++)
-      free(arr2[i]);
-    delete[] arr2;
-  }
-};
-
-template<size_t MAX_K>
-struct main_query
-{
-  void operator()(km_options_t options)
-  {
-    spdlog::info("Run with {} implementation", Kmer<MAX_K>::name());
-    query_options_t opt = std::static_pointer_cast<struct query_options>(options);
-    spdlog::debug(opt->display());
-
-    KmDir::get().init(opt->dir, "", false);
-    Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
-    LOCAL(config_storage);
-    Configuration config = Configuration();
-    config.load(config_storage->getGroup("gatb"));
-
-    std::string index_path;
-    for (auto& p : fs::directory_iterator(KmDir::get().m_index_storage))
-    {
-      if (p.path().string().find(".sbt") != std::string::npos)
-      {
-        index_path = p.path().string();
-        break;
-      }
-    }
-
-    if (index_path.empty())
-      throw IOError("Index not found.");
-
-    if (opt->output != "stdout")
-      opt->output = fs::absolute(fs::path(opt->output));
-
-    opt->query = fs::absolute(fs::path(opt->query));
-
-    std::stringstream ss;
-    ss << "queryKm ";
-    ss << "--tree=" << index_path << " ";
-    ss << opt->query << " ";
-    ss << "--repart=" << fmt::format("{}_gatb/repartition.minimRepart", KmDir::get().m_repart_storage) << " ";
-    ss << "--win=" << KmDir::get().m_hash_win << " ";
-    ss << "--z=" << opt->z << " ";
-    ss << "--threshold=" << opt->threshold << " ";
-    ss << "--threshold-shared-positions=" << opt->threshold_shared_positions << " ";
-    if (opt->check) ss << "--consistencycheck ";
-    if (opt->nodetail) ss << "--no-detail ";
-    if (opt->output != "stdout") ss << "--out=" << opt->output;
-
-    std::string howde_query_str = ss.str();
-    std::vector<std::string> howde_query = bc::utils::split(howde_query_str, ' ');
-
-    char** arr = new char*[howde_query.size()+1];
-    arr[howde_query.size()] = nullptr;
-    for (size_t i=0; i<howde_query.size(); i++)
-      arr[i] = strdup(howde_query.at(i).c_str());
-
-    QueryCommand query_cmd("queryKm");
-    query_cmd.parse(howde_query.size(), arr);
-    auto path = fs::current_path();
-
-    fs::current_path(KmDir::get().m_index_storage);
-    query_cmd.execute();
-
-    fs::current_path(path);
-    for (size_t i=0; i<howde_query.size(); i++)
-      free(arr[i]);
-    delete[] arr;
-  }
-};
-
-#endif
 };

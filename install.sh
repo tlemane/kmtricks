@@ -18,8 +18,6 @@ function kmtricks_build ()
 
   cmake .. -DCMAKE_BUILD_TYPE=${1} \
            -DWITH_MODULES=${2} \
-           -DWITH_SOCKS=${3} \
-           -DWITH_HOWDE=${4} \
            -DCOMPILE_TESTS=${5} \
            -DSTATIC=${6} \
            -DKMER_LIST="${7}" \
@@ -58,8 +56,6 @@ function kmtricks_conda_build ()
 
   cmake .. -DCMAKE_BUILD_TYPE=${1} \
            -DWITH_MODULES=${2} \
-           -DWITH_SOCKS=${3} \
-           -DWITH_HOWDE=${4} \
            -DCOMPILE_TESTS=${5} \
            -DSTATIC=${6} \
            -DKMER_LIST="${7}" \
@@ -85,7 +81,7 @@ function usage ()
 {
   echo "kmtricks build script - v1.2.0."
   echo "Usage: "
-  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-w] [-o] [-m] [-s] [-n]
+  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-m] [-s] [-n]
   [-e] [-p] [-q] [-h]"
   echo "Options: "
   echo "  -r <Release|Debug> -> build type {Release}."
@@ -93,8 +89,6 @@ function usage ()
   echo "  -t <0|1|2>         -> tests: 0 = disabled, 1 = compile, 2 = compile and run {2}."
   echo "  -c <1|2|4>         -> byte per count {4}."
   echo "  -j <INT>           -> nb threads {8}."
-  echo "  -o                 -> build socks interface {disabled}."
-  echo "  -w                 -> build with howdesbt support {disabled}."
   echo "  -m                 -> build all modules {disabled}."
   echo "  -s                 -> static build {disabled}."
   echo "  -n                 -> disable -march=native {enabled}."
@@ -125,7 +119,7 @@ conda=0
 plugin="OFF"
 plugin_only=0
 
-while getopts "r:k:t:c:j:onwmspqeh" option; do
+while getopts "r:k:t:c:j:nmspqeh" option; do
   case "$option" in
     r)
       mode=${OPTARG}
@@ -147,12 +141,6 @@ while getopts "r:k:t:c:j:onwmspqeh" option; do
       ;;
     j)
       jopt=${OPTARG}
-      ;;
-    o)
-      socks="ON"
-      ;;
-    w)
-      howde="ON"
       ;;
     m)
       modules="ON"

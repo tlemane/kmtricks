@@ -40,15 +40,12 @@ inline void main_infos(std::ostream& stream)
   stream << "static: " << STATIC_BUILD << "\n";
   stream << "native: " << NATIVE_BUILD << "\n";
   stream << "modules: " << MODULES_BUILD << "\n";
-  stream << "socks: " << SOCKS_ON << "\n";
-  stream << "howde: " << HOWDE_BUILD << "\n";
   stream << "dev: " << DEV_BUILD << "\n";
   stream << "kmer: " << KMER_LIST_STR << "\n";
   stream << "max_c: " << std::to_string(std::numeric_limits<selectC<DMAX_C>::type>::max()) << "\n";
   stream << "\n";
   stream << "- GIT SHA1 / VERSION -" << "\n";
   stream << "kmtricks: " << GIT_SHA1 << "\n";
-  stream << "sdsl: " << SDSL_SHA1 << "\n";
   stream << "bcli: " << BCLI_SHA1 << "\n";
   stream << "fmt: " << FMT_SHA1 << "\n";
   stream << "kff: " << KFF_SHA1 << "\n";
@@ -56,7 +53,6 @@ inline void main_infos(std::ostream& stream)
   stream << "spdlog: " << SPDLOG_SHA1 << "\n";
   stream << "xxhash: " << XXHASH_SHA1 << "\n";
   stream << "gtest: " << GTEST_SHA1 << "\n";
-  stream << "croaring: " << CROAR_SHA1 << "\n";
   stream << "robin-hood-hasing: " << ROBIN_SHA1 << "\n";
   stream << "turbop: " << TURBOP_SHA1 << "\n";
   stream << "cfrcat: " << CFR_SHA1 << "\n";

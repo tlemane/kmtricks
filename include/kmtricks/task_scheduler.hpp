@@ -216,26 +216,13 @@ public:
         }
         else
         {
-          if (!m_opt->skip_merge)
-          {
-            spdlog::debug("[push] - HashCountTask - S={}, P={}", sid, p);
-            path = KmDir::get().get_count_part_path(
-              sid, p, m_opt->lz4, KM_FILE::HASH);
-            task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-              path, m_config, sk_storage, pinfos, p, iid,
-              m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-              get_hist_clone(m_hists[iid]), !m_opt->keep_tmp);
-          }
-          else
-          {
-            spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
-            path = KmDir::get().get_count_part_path(
-              sid, p, m_opt->lz4, KM_FILE::VECTOR);
-            task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-              path, m_config, sk_storage, pinfos, p, iid,
-              m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-              get_hist_clone(m_hists[iid]), !m_opt->keep_tmp);
-          }
+          spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
+          path = KmDir::get().get_count_part_path(
+            sid, p, m_opt->lz4, KM_FILE::VECTOR);
+          task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
+            path, m_config, sk_storage, pinfos, p, iid,
+            m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
+            get_hist_clone(m_hists[iid]), !m_opt->keep_tmp);
         }
         if (m_is_info) task->set_callback([this](){ this->m_dyn[1].tick(); });
 
@@ -305,26 +292,13 @@ public:
           }
           else
           {
-            if (!m_opt->skip_merge)
-            {
-              path = KmDir::get().get_count_part_path(
-                sid, p, this->m_opt->lz4, KM_FILE::HASH);
-              spdlog::debug("[push] - HashCountTask - S={}, P={}", sid, p);
-              task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-                path, m_config, sk_storage, pinfos, p, iid,
-                m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-                get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
-            }
-            else
-            {
-              spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
-              path = KmDir::get().get_count_part_path(
-                sid, p, false, KM_FILE::VECTOR);
-              task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-                path, this->m_config, sk_storage, pinfos, p, iid,
-                this->m_hw.get_window_size_bits(), this->m_config._kmerSize, a_min, false,
-                get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
-            }
+            spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
+            path = KmDir::get().get_count_part_path(
+              sid, p, false, KM_FILE::VECTOR);
+            task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
+              path, this->m_config, sk_storage, pinfos, p, iid,
+              this->m_hw.get_window_size_bits(), this->m_config._kmerSize, a_min, false,
+              get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
           }
           if (m_is_info)
           {
@@ -434,70 +408,6 @@ public:
       m_dyn[2].mark_as_completed();
   }
 
-  void exec_format()
-  {
-    TaskPool pool(m_opt->nb_threads);
-    if (m_is_info)
-    {
-      m_dyn.push_back(*m_progress[5]);
-      if (m_opt->skip_merge) m_dyn[2].set_progress(0);
-      else m_dyn[3].set_progress(0);
-    }
-
-    if (m_opt->skip_merge)
-    {
-      for (auto id : KmDir::get().m_fof)
-      {
-        spdlog::debug("[push] - FormatVectorTask - S={}", std::get<0>(id));
-        task_t task = std::make_shared<FormatVectorTask>(
-          std::get<0>(id), m_opt->out_format, m_hw.bloom_size(), m_config._nb_partitions, false, m_config._kmerSize, !m_opt->keep_tmp);
-        if (m_is_info)
-          task->set_callback([this](){ this->m_dyn[2].tick(); });
-        pool.add_task(task);
-      }
-      pool.join_all();
-
-      if (m_is_info)
-        m_dyn[2].mark_as_completed();
-    }
-    else
-    {
-      std::vector<vmr_t<8192>> matrix_files; matrix_files.reserve(m_config._nb_partitions);
-      std::vector<int> fds; fds.reserve(m_config._nb_partitions);
-      std::vector<std::mutex> mutex(m_config._nb_partitions);
-      for (size_t p=0; p<m_config._nb_partitions; p++)
-      {
-        fds.push_back(open(KmDir::get().get_matrix_path(p, MODE::BFT, FORMAT::BIN, COUNT_FORMAT::HASH, false).c_str(), O_RDONLY));
-      }
-
-      for (auto id : KmDir::get().m_fof)
-      {
-        spdlog::debug("[push] - FormatTask - S={}", std::get<0>(id));
-        std::string sid = std::get<0>(id);
-        uint32_t file_id = KmDir::get().m_fof.get_i(sid);
-        task_t task = std::make_shared<FormatTask>(
-          fds, mutex, m_opt->out_format, m_hw.bloom_size(), file_id, m_config._nb_partitions,
-          m_config._kmerSize, !m_opt->keep_tmp);
-        if (m_is_info)
-          task->set_callback([this](){ this->m_dyn[3].tick(); });
-        pool.add_task(task);
-      }
-      pool.join_all();
-
-      if (!m_opt->keep_tmp)
-      {
-        for (auto s: KmDir::get().get_matrix_paths(m_opt->restrict_to_list.size(), MODE::BFT, FORMAT::BIN,
-                                                    COUNT_FORMAT::HASH, false))
-        {
-          Eraser::get().erase(s);
-        }
-      }
-
-      if (m_is_info)
-        m_dyn[3].mark_as_completed();
-    }
-  }
-
   void execute()
   {
     Timer whole_time;
@@ -519,16 +429,13 @@ public:
     if (m_opt->until == COMMAND::COUNT)
       goto end;
 
-    if (!m_opt->skip_merge && !m_opt->kff)
+    if (!m_opt->kff)
     {
       exec_merge();
 
       if (m_opt->until == COMMAND::MERGE)
         goto end;
     }
-
-    if (m_opt->mode == MODE::BFT)
-      exec_format();
 
     end:
       spdlog::info("Done in {} - Peak RSS -> {:.2f} MB.",
