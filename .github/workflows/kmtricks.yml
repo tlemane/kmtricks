@@ -31,7 +31,7 @@ jobs:
             cxx: g++-13
             cc: gcc-13
 
-          - os: ubuntu-24.04-arm64
+          - os: ubuntu-24.04-arm
             arch: arm64
             compiler: g++-13
             cxx: g++-13
