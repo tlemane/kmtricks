@@ -73,7 +73,7 @@ if (NATIVE)
   target_compile_options(build_type_flags INTERFACE "-march=native")
 else()
   if (ARCH_FLAGS)
-    target_compile_options(build_type_flags INTERFACE "${ARCH_FLAGS}")
+    target_compile_options(build_type_flags INTERFACE ${ARCH_FLAGS})
   endif()
 endif()
 

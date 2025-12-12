@@ -23,7 +23,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64|x64)")
     add_compile_definitions(ARCH_X86_64=1)
 
     # Portable x86_64 flags
-    set(ARCH_FLAGS "-march=x86-64 -msse2" CACHE STRING "Portable x86_64 architecture flags")
+    set(ARCH_FLAGS "-msse2 -march=x86-64" CACHE STRING "Portable x86_64 architecture flags")
 
     message(STATUS "Detected x86_64 architecture (${CMAKE_SYSTEM_PROCESSOR})")
     message(STATUS "SSE2 support: YES (guaranteed by x86-64)")
