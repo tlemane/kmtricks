@@ -36,15 +36,10 @@ enum class COMMAND
   SUPERK,
   COUNT,
   MERGE,
-  FORMAT,
   DUMP,
   AGGREGATE,
   FILTER,
-  INDEX,
-  QUERY,
   INFOS,
-  SOCKS_BUILD,
-  SOCKS_LOOKUP,
   COMBINE,
   UNKNOWN
 };
@@ -59,22 +54,12 @@ inline COMMAND str_to_cmd(const std::string& s)
     return COMMAND::COUNT;
   else if (s == "merge")
     return COMMAND::MERGE;
-  else if (s == "format")
-    return COMMAND::FORMAT;
   else if (s == "dump")
     return COMMAND::DUMP;
   else if (s == "aggregate")
     return COMMAND::AGGREGATE;
   else if (s == "filter")
     return COMMAND::FILTER;
-  else if (s == "index")
-    return COMMAND::INDEX;
-  else if (s == "query")
-    return COMMAND::QUERY;
-  else if (s == "build")
-    return COMMAND::SOCKS_BUILD;
-  else if (s == "lookup-kmer")
-    return COMMAND::SOCKS_LOOKUP;
   else if (s == "combine")
     return COMMAND::COMBINE;
   else
@@ -91,22 +76,12 @@ inline std::string cmd_to_str(COMMAND cmd)
     return "count";
   else if (cmd == COMMAND::MERGE)
     return "merge";
-  else if (cmd == COMMAND::FORMAT)
-    return "format";
   else if (cmd == COMMAND::DUMP)
     return "dump";
   else if (cmd == COMMAND::AGGREGATE)
     return "aggregate";
   else if (cmd == COMMAND::FILTER)
     return "filter";
-  else if (cmd == COMMAND::INDEX)
-    return "index";
-  else if (cmd == COMMAND::QUERY)
-    return "query";
-  else if (cmd == COMMAND::SOCKS_BUILD)
-    return "socks-build";
-  else if (cmd == COMMAND::SOCKS_LOOKUP)
-    return "socks-lookup";
   else if (cmd == COMMAND::COMBINE)
     return "combine";
   else
@@ -120,7 +95,6 @@ enum class MODE
   BIN,
   PA,
   BF,
-  BFT,
   BFC,
   UNKNOWN,
 };
@@ -137,8 +111,6 @@ inline MODE str_to_mode(const std::string& s)
     return MODE::PA;
   else if (s == "bf")
     return MODE::BF;
-  else if (s == "bft")
-    return MODE::BFT;
   else if (s == "bfc")
     return MODE::BFC;
   else
@@ -157,8 +129,6 @@ inline std::string mode_to_str(MODE mode)
     return "pa";
   else if (mode == MODE::BF)
     return "bf";
-  else if (mode == MODE::BFT)
-    return "bft";
   else if (mode == MODE::BFC)
     return "bfc";
   else
@@ -169,7 +139,6 @@ enum class HASHER
 {
   XOR,
   XXHASH,
-  SABUHASH,
   UNKNOWN
 };
 
@@ -179,8 +148,6 @@ inline HASHER str_to_hasher(const std::string& s)
     return HASHER::XOR;
   else if (s == "XXHASH")
     return HASHER::XXHASH;
-  else if (s == "SABUHASH")
-    return HASHER::SABUHASH;
   else
     return HASHER::UNKNOWN;
 }

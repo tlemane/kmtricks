@@ -121,15 +121,13 @@ public:
       ext = cformat == COUNT_FORMAT::KMER ? "pa" : "pa_hash";
     else if (MODE::BF == mode)
       ext = "cmbf";
-    else if (MODE::BFT == mode)
-      ext = "rmbf";
     else if (MODE::BFC == mode)
       ext = "cmbf";
 
     if (FORMAT::TEXT == format)
       ext += ".txt";
 
-    if (compressed && (mode != MODE::BFT) && format != FORMAT::TEXT)
+    if (compressed && format != FORMAT::TEXT)
       ext += ".lz4";
 
     return fmt::format(m_matrix_template, m_matrix_storage, part_id, ext);

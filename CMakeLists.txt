@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmtricks VERSION 1.4.0 LANGUAGES C CXX)
+project(kmtricks VERSION 1.5.0 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 option(WITH_MODULES "Build all modules." OFF)
-option(WITH_HOWDE "Build km_howdesbt." OFF)
-option(WITH_SOCKS "Build socks interface." OFF)
 option(WITH_PLUGIN "Build plugins" OFF)
 option(COMPILE_TESTS "Compile tests." OFF)
 option(MAKE_PACKAGE "Build package." OFF)
@@ -16,6 +14,7 @@ option(NATIVE "Build with -march=native" ON)
 set(DEV_MODE OFF)
 
 include(CheckFilesystem)
+include(DetectArchitecture)
 
 if (STATIC AND NOT APPLE)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -53,7 +52,7 @@ if (CONDA_BUILD)
 endif()
 
 set(PROJECT_DESCRIPTION "kmtricks - k-mer matrices and Bloom filters construction.")
-set(CONTACT "teo.lemane@inria.fr")
+set(CONTACT "teo.lemane@genoscope.cns.fr")
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -72,13 +71,16 @@ target_compile_options(build_type_flags INTERFACE
 )
 if (NATIVE)
   target_compile_options(build_type_flags INTERFACE "-march=native")
+else()
+  if (ARCH_FLAGS)
+    target_compile_options(build_type_flags INTERFACE ${ARCH_FLAGS})
+  endif()
 endif()
 
 add_library(headers INTERFACE)
 target_include_directories(headers INTERFACE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_BINARY_DIR}/include
-  ${CMAKE_SOURCE_DIR}/km_howdesbt
 )
 
 add_library(links INTERFACE)
@@ -98,20 +100,14 @@ get_sha1(${THIRDPARTY_DIR}/kff-cpp-api KFF_SHA1)
 get_sha1(${THIRDPARTY_DIR}/lz4 LZ4_SHA1)
 get_sha1(${THIRDPARTY_DIR}/spdlog SPDLOG_SHA1)
 get_sha1(${PROJECT_SOURCE_DIR}/gatb-core-stripped GATB_SHA1)
-get_sha1(${THIRDPARTY_DIR}/sdsl-lite SDSL_SHA1)
 get_sha1(${THIRDPARTY_DIR}/xxHash XXHASH_SHA1)
 get_sha1(${THIRDPARTY_DIR}/googletest GTEST_SHA1)
-get_sha1(${THIRDPARTY_DIR}/CRoaring CROAR_SHA1)
 get_sha1(${THIRDPARTY_DIR}/indicators IND_SHA1)
 get_sha1(${THIRDPARTY_DIR}/robin-hood-hashing ROBIN_SHA1)
 get_sha1(${THIRDPARTY_DIR}/TurboPFor-Integer-Compression TURBOP_SHA1)
 get_sha1(${THIRDPARTY_DIR}/cfrcat CFR_SHA1)
 
 configure_file("${PROJECT_SOURCE_DIR}/include/kmtricks/config.h.in" ${PROJECT_BINARY_DIR}/include/kmtricks/config.hpp)
-
-if (WITH_HOWDE)
-  add_subdirectory(km_howdesbt)
-endif()
 
 add_subdirectory(src)
 
@@ -135,14 +131,6 @@ add_custom_target(end ALL
         "Binaries: ${PROJECT_SOURCE_DIR}/bin"
         COMMENT "" )
 
-
-if (WITH_SOCKS)
-  add_dependencies(end ${PROJECT_NAME}-socks)
-endif()
-
-if (WITH_HOWDE)
-  add_dependencies(end howdesbt)
-endif()
 
 if (COMPILE_TESTS)
   add_dependencies(end ${PROJECT_NAME} ${PROJECT_NAME}-tests ${PROJECT_NAME}-task-tests)

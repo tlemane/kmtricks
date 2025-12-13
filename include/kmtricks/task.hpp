@@ -34,7 +34,6 @@
 #include <kmtricks/gatb/fill_partitions.hpp>
 #include <kmtricks/merge.hpp>
 #include <kmtricks/hash.hpp>
-#include <kmtricks/howde_utils.hpp>
 #include <kmtricks/gatb/gatb_utils.hpp>
 #include <kmtricks/itask.hpp>
 #include <kmtricks/repartition.hpp>
@@ -769,11 +768,6 @@ public:
         merger.write_as_bf(out_path, m_win.get_lower(m_part_id),
                            m_win.get_upper(m_part_id), false);
     }
-    else if (m_mode == MODE::BFT)
-    {
-        merger.write_as_bft(out_path, m_win.get_lower(m_part_id),
-                            m_win.get_upper(m_part_id), false);
-    }
     else if (m_mode == MODE::BFC)
     {
         merger.write_as_bfc(out_path, m_win.get_lower(m_part_id),
@@ -792,7 +786,7 @@ public:
 #endif
     merger.get_infos()->serialize(KmDir::get().get_merge_info_path(m_part_id));
 
-    if (m_mode == MODE::BF || m_mode == MODE::BFT)
+    if (m_mode == MODE::BF)
     {
       std::string fpr_path = fmt::format("{}/{}", KmDir::get().m_fpr_storage, fmt::format("partition_{}.txt", m_part_id));
       std::ofstream fp(fpr_path, std::ios::out); check_fstream_good(fpr_path, fp);
@@ -821,80 +815,80 @@ private:
 };
 
 
-class FormatVectorTask : public ITask
-{
-public:
-  FormatVectorTask(std::string id, OUT_FORMAT bf_type, uint64_t bloom,
-                   uint32_t nb_parts, bool lz4, uint32_t kmer_size, bool clear = false)
-    : ITask(5, clear),
-      m_id(id), m_bf_type(bf_type), m_nb_parts(nb_parts), m_lz4(lz4), m_bloom(bloom),
-      m_kmer_size(kmer_size)
-  {}
-
-  void preprocess() {}
-  void postprocess()
-  {
-    if (this->m_clear)
-    {
-      for (size_t p=0; p<m_nb_parts; p++)
-      {
-        std::string s = KmDir::get().get_count_part_path(m_id, p, this->m_lz4, KM_FILE::VECTOR);
-        Eraser::get().erase(s);
-      }
-    }
-    this->m_finish = true;
-    this->exec_callback();
-  }
-
-  void exec()
-  {
-    spdlog::debug("[exec] - FormatVectorTask - S={}", m_id);
-    BloomBuilderFromVec(KmDir::get().m_fof.get_i(m_id), m_bf_type, m_bloom, m_nb_parts, m_kmer_size, m_lz4).build();
-    spdlog::debug("[done] - FormatVectorTask - S={}", m_id);
-  }
-
-private:
-  std::string m_id;
-  OUT_FORMAT m_bf_type;
-  uint32_t m_nb_parts;
-  bool m_lz4;
-  uint64_t m_bloom;
-  uint32_t m_kmer_size;
-};
-
-class FormatTask : public ITask
-{
-public:
-  FormatTask(std::vector<int>& files, std::vector<std::mutex>& file_mutex,
-              OUT_FORMAT bf_type, uint64_t bloom, uint32_t file_id, uint32_t nb_parts,
-              uint32_t kmer_size, bool clear = false)
-    : ITask(5, clear), m_fds(files), m_mutex(file_mutex),
-      m_bf_type(bf_type), m_file_id(file_id), m_nb_parts(nb_parts), m_bloom(bloom),
-      m_kmer_size(kmer_size)
-  {}
-
-  void preprocess() {}
-  void postprocess()
-  {
-    this->m_finish = true;
-    this->exec_callback();
-  }
-
-  void exec()
-  {
-    spdlog::debug("[exec] - FormatTask - S={}", KmDir::get().m_fof.get_id(m_file_id));
-    BloomBuilderFromHash(m_fds, m_mutex, m_bf_type, m_bloom, m_file_id, m_nb_parts, m_kmer_size).build();
-    spdlog::debug("[done] - FormatTask - S={}", KmDir::get().m_fof.get_id(m_file_id));
-  }
-
-private:
-  OUT_FORMAT m_bf_type;
-  uint32_t m_nb_parts;
-  uint32_t m_file_id;
-  uint64_t m_bloom;
-  uint32_t m_kmer_size;
-  std::vector<int> m_fds;
-  std::vector<std::mutex>& m_mutex;
-};
+//class FormatVectorTask : public ITask
+//{
+//public:
+//  FormatVectorTask(std::string id, OUT_FORMAT bf_type, uint64_t bloom,
+//                   uint32_t nb_parts, bool lz4, uint32_t kmer_size, bool clear = false)
+//    : ITask(5, clear),
+//      m_id(id), m_bf_type(bf_type), m_nb_parts(nb_parts), m_lz4(lz4), m_bloom(bloom),
+//      m_kmer_size(kmer_size)
+//  {}
+//
+//  void preprocess() {}
+//  void postprocess()
+//  {
+//    if (this->m_clear)
+//    {
+//      for (size_t p=0; p<m_nb_parts; p++)
+//      {
+//        std::string s = KmDir::get().get_count_part_path(m_id, p, this->m_lz4, KM_FILE::VECTOR);
+//        Eraser::get().erase(s);
+//      }
+//    }
+//    this->m_finish = true;
+//    this->exec_callback();
+//  }
+//
+//  void exec()
+//  {
+//    spdlog::debug("[exec] - FormatVectorTask - S={}", m_id);
+//    BloomBuilderFromVec(KmDir::get().m_fof.get_i(m_id), m_bf_type, m_bloom, m_nb_parts, m_kmer_size, m_lz4).build();
+//    spdlog::debug("[done] - FormatVectorTask - S={}", m_id);
+//  }
+//
+//private:
+//  std::string m_id;
+//  OUT_FORMAT m_bf_type;
+//  uint32_t m_nb_parts;
+//  bool m_lz4;
+//  uint64_t m_bloom;
+//  uint32_t m_kmer_size;
+//};
+//
+//class FormatTask : public ITask
+//{
+//public:
+//  FormatTask(std::vector<int>& files, std::vector<std::mutex>& file_mutex,
+//              OUT_FORMAT bf_type, uint64_t bloom, uint32_t file_id, uint32_t nb_parts,
+//              uint32_t kmer_size, bool clear = false)
+//    : ITask(5, clear), m_fds(files), m_mutex(file_mutex),
+//      m_bf_type(bf_type), m_file_id(file_id), m_nb_parts(nb_parts), m_bloom(bloom),
+//      m_kmer_size(kmer_size)
+//  {}
+//
+//  void preprocess() {}
+//  void postprocess()
+//  {
+//    this->m_finish = true;
+//    this->exec_callback();
+//  }
+//
+//  void exec()
+//  {
+//    spdlog::debug("[exec] - FormatTask - S={}", KmDir::get().m_fof.get_id(m_file_id));
+//    BloomBuilderFromHash(m_fds, m_mutex, m_bf_type, m_bloom, m_file_id, m_nb_parts, m_kmer_size).build();
+//    spdlog::debug("[done] - FormatTask - S={}", KmDir::get().m_fof.get_id(m_file_id));
+//  }
+//
+//private:
+//  OUT_FORMAT m_bf_type;
+//  uint32_t m_nb_parts;
+//  uint32_t m_file_id;
+//  uint64_t m_bloom;
+//  uint32_t m_kmer_size;
+//  std::vector<int> m_fds;
+//  std::vector<std::mutex>& m_mutex;
+//};
 
 };

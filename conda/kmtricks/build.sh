@@ -22,25 +22,9 @@ mkdir -p $PREFIX/bin
 
 mkdir build-conda
 cd build-conda
-cmake .. -DNATIVE=OFF -DCONDA_BUILD=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DKMER_LIST="32 64 96 128 160 192 224 256" -DWITH_SOCKS=ON
+cmake .. -DNATIVE=OFF -DCONDA_BUILD=ON -DWITH_MODULES=ON -DKMER_LIST="32 64 96 128 160 192 224 256"
 make -j8
 cd ..
 
 cp -r ./bin/kmtricks $PREFIX/bin
-cp -r ./bin/kmtricks-socks $PREFIX/bin
 
-mkdir build-conda-debug
-cd build-conda-debug
-cmake .. -DNATIVE=OFF -DCMAKE_BUILD_TYPE=Debug -DCONDA_BUILD=ON -DWITH_MODULES=ON -DWITH_HOWDE=ON -DKMER_LIST="32 64 96 128 160 192 224 256" -DWITH_SOCKS=ON
-make -j8
-cd ..
-
-cp -r ./bin/kmtricks $PREFIX/bin/kmtricks-debug
-
-mkdir build-conda-plugin
-cd build-conda-plugin
-cmake .. -DNATIVE=OFF -DWITH_PLUGIN=ON -DCONDA_BUILD=ON -DWITH_MODULES=ON -DKMER_LIST="32 64 96 128 160 192 224 256"
-make -j8
-cd ..
-
-cp -r ./bin/kmtricks $PREFIX/bin/kmtricksp

@@ -84,10 +84,6 @@ int main(int argc, char* argv[])
     {
       const_loop_executor<0, KMER_N>::exec<main_merge>(kmer_size, options);
     }
-    else if (cmd == COMMAND::FORMAT)
-    {
-      const_loop_executor<0, KMER_N>::exec<main_format>(kmer_size, options);
-    }
     else if (cmd == COMMAND::DUMP)
     {
       const_loop_executor<0, KMER_N>::exec<main_dump>(kmer_size, options);
@@ -104,16 +100,6 @@ int main(int argc, char* argv[])
     {
       const_loop_executor<0, KMER_N>::exec<main_combine>(kmer_size, options);
     }
-#ifdef WITH_HOWDE
-    else if (cmd == COMMAND::INDEX)
-    {
-      const_loop_executor<0, KMER_N>::exec<main_index>(kmer_size, options);
-    }
-    else if (cmd == COMMAND::QUERY)
-    {
-      const_loop_executor<0, KMER_N>::exec<main_query>(kmer_size, options);
-    }
-#endif
     else if (cmd == COMMAND::INFOS)
     {
       main_infos(std::cerr);

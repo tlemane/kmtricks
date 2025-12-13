@@ -65,7 +65,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     IF(NOT CMAKE_CXX_COMPILER_VERSION) #for old cmakes
         include(CheckCompiler)
     ENDIF()
-    if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 4.7) 
+    if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 4.7)
         message(FATAL_ERROR "Insufficient gcc version (gcc>=4.7 needed)")
     endif()
 
@@ -84,7 +84,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         endif()
 
     else()
-        if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 3.2) 
+        if (CMAKE_CXX_COMPILER_VERSION  VERSION_LESS 3.2)
             message(FATAL_ERROR "Insufficient clang version (clang>=3.2 needed)")
         endif()
     endif()
@@ -124,7 +124,7 @@ if (NONCANONICAL)
 endif()
 
 
-# detect SSE for popcount 
+# detect SSE for popcount
 # this was for emphf, maybe it's for something else also? otherwise this part can be removed.
 #
 # from https://github.com/rurban/smhasher/blob/master/CMakeLists.txt
@@ -132,29 +132,55 @@ endif()
 # list of performance gain observed:
 # popcount in Graph::countNeighbors
 IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    EXEC_PROGRAM(cat ARGS "/proc/cpuinfo" OUTPUT_VARIABLE CPUINFO)
-    STRING(REGEX REPLACE "^.*(sse2).*$" "\\1" SSE_THERE ${CPUINFO})
-    STRING(COMPARE EQUAL "sse2" "${SSE_THERE}" SSE2_TRUE)
-    STRING(REGEX REPLACE "^.*(sse4_2).*$" "\\1" SSE_THERE ${CPUINFO})
-    STRING(COMPARE EQUAL "sse4_2" "${SSE_THERE}" SSE42_TRUE)
+    # Check if ARM64 - skip SSE detection
+    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+        message("-- ARM64 architecture detected - skipping SSE detection")
+        set(SSE2_FOUND false CACHE BOOL "SSE2 not available on ARM64")
+        set(SSE4_2_FOUND false CACHE BOOL "SSE4.2 not available on ARM64")
+    ELSE()
+        # x86_64 - detect SSE support
+        EXEC_PROGRAM(cat ARGS "/proc/cpuinfo" OUTPUT_VARIABLE CPUINFO)
+        STRING(REGEX REPLACE "^.*(sse2).*$" "\\1" SSE_THERE ${CPUINFO})
+        STRING(COMPARE EQUAL "sse2" "${SSE_THERE}" SSE2_TRUE)
+        STRING(REGEX REPLACE "^.*(sse4_2).*$" "\\1" SSE_THERE ${CPUINFO})
+        STRING(COMPARE EQUAL "sse4_2" "${SSE_THERE}" SSE42_TRUE)
+        IF (SSE2_TRUE)
+            set(SSE2_FOUND true CACHE BOOL "SSE2 available")
+        ELSE (SSE2_TRUE)
+            set(SSE2_FOUND false CACHE BOOL "SSE2 not available")
+        ENDIF (SSE2_TRUE)
+        IF (SSE42_TRUE)
+            set(SSE4_2_FOUND true CACHE BOOL "SSE4.2 available")
+        ELSE (SSE42_TRUE)
+            set(SSE4_2_FOUND false CACHE BOOL "SSE4.2 not available")
+        ENDIF (SSE42_TRUE)
+    ENDIF()
 ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    EXEC_PROGRAM("/usr/sbin/sysctl -n machdep.cpu.features" OUTPUT_VARIABLE
-        CPUINFO)
-    STRING(REGEX REPLACE "^.*[^S](SSE2).*$" "\\1" SSE_THERE ${CPUINFO})
-    STRING(COMPARE EQUAL "SSE2" "${SSE_THERE}" SSE2_TRUE)
-    STRING(REGEX REPLACE "^.*(SSE4.2).*$" "\\1" SSE_THERE ${CPUINFO})
-    STRING(COMPARE EQUAL "SSE4.2" "${SSE_THERE}" SSE42_TRUE)
+    # Check if Apple Silicon (ARM64) or Intel (x86_64)
+    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+        message("-- Apple Silicon (ARM64) detected - skipping SSE detection")
+        set(SSE2_FOUND false CACHE BOOL "SSE2 not available on ARM64")
+        set(SSE4_2_FOUND false CACHE BOOL "SSE4.2 not available on ARM64")
+    ELSE()
+        # Intel Mac - detect SSE support
+        EXEC_PROGRAM("/usr/sbin/sysctl -n machdep.cpu.features" OUTPUT_VARIABLE
+            CPUINFO)
+        STRING(REGEX REPLACE "^.*[^S](SSE2).*$" "\\1" SSE_THERE ${CPUINFO})
+        STRING(COMPARE EQUAL "SSE2" "${SSE_THERE}" SSE2_TRUE)
+        STRING(REGEX REPLACE "^.*(SSE4.2).*$" "\\1" SSE_THERE ${CPUINFO})
+        STRING(COMPARE EQUAL "SSE4.2" "${SSE_THERE}" SSE42_TRUE)
+        IF (SSE2_TRUE)
+            set(SSE2_FOUND true CACHE BOOL "SSE2 available")
+        ELSE (SSE2_TRUE)
+            set(SSE2_FOUND false CACHE BOOL "SSE2 not available")
+        ENDIF (SSE2_TRUE)
+        IF (SSE42_TRUE)
+            set(SSE4_2_FOUND true CACHE BOOL "SSE4.2 available")
+        ELSE (SSE42_TRUE)
+            set(SSE4_2_FOUND false CACHE BOOL "SSE4.2 not available")
+        ENDIF (SSE42_TRUE)
+    ENDIF()
 ENDIF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-IF (SSE2_TRUE)
-    set(SSE2_FOUND true CACHE BOOL "SSE2 available")
-ELSE (SSE2_TRUE)
-    set(SSE2_FOUND false CACHE BOOL "SSE2 not available")
-ENDIF (SSE2_TRUE)
-IF (SSE42_TRUE)
-    set(SSE4_2_FOUND true CACHE BOOL "SSE4.2 available")
-ELSE (SSE42_TRUE)
-    set(SSE4_2_FOUND false CACHE BOOL "SSE4.2 not available")
-ENDIF (SSE42_TRUE)
 # I could use LIBRARY_COMPILE_DEFINITIONS, but it's actually passed to "add_definitions", which isn't made for passing compilation flags, only -D ones.
 IF(SSE4_2_FOUND AND (NOT NO_SSE))
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse2 -msse4.2 -mpopcnt")
@@ -163,30 +189,30 @@ IF(SSE4_2_FOUND AND (NOT NO_SSE))
 ENDIF()
 
 # WARNING !!! For the moment, we need to remove some warnings (on Macos) due to use of offsetof macro on non Plain Old Data
-set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -Wno-invalid-offsetof") 
+set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -Wno-invalid-offsetof")
 
 # We may have some custom compilation flags.
 if (use_allocator)
-    set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -DGATB_USE_CUSTOM_ALLOCATOR") 
+    set (LIBRARY_COMPILE_DEFINITIONS "${LIBRARY_COMPILE_DEFINITIONS} -DGATB_USE_CUSTOM_ALLOCATOR")
 endif()
 
 message("-- Options: ${LIBRARY_COMPILE_DEFINITIONS}")
 
 ################################################################################
-#  DIRECTORIES MANAGEMENT 
+#  DIRECTORIES MANAGEMENT
 ################################################################################
 
 set (LIBRARY_OUTPUT_PATH       ${PROJECT_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE})
 set (EXECUTABLE_OUTPUT_PATH    ${PROJECT_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE})
 
 ################################################################################
-#  EXPORT FOR THIRD PARTIES 
+#  EXPORT FOR THIRD PARTIES
 ################################################################################
 
 # In case you need to use external libraries, you can use the following variables:
 #   EXTRALIBS      : names of the libraries to be used
 #   EXTRALIBS_PATH : directory where the libraries are
-#   EXTRALIBS_INC  : directory of the include files for the libraries 
+#   EXTRALIBS_INC  : directory of the include files for the libraries
 # For instance, you can do the following:
 #       cmake -DEXTRALIBS="somelib"  -DEXTRALIBS_PATH="/somewhere/libs"  -DEXTRALIBS_INC="/somewhere/inc" ..
 
@@ -225,7 +251,7 @@ set (gatb-core-libraries      ${gatb-core-libraries}      PARENT_SCOPE)
 set (gatb-core-cmake          ${gatb-core-cmake}          PARENT_SCOPE)
 
 ################################################################################
-#  LIBRARY GENERATION 
+#  LIBRARY GENERATION
 ################################################################################
 ADD_SUBDIRECTORY(src)
 
@@ -238,7 +264,7 @@ set (gatb-core-klist   ${gatb-core-klist}  PARENT_SCOPE)
 ADD_SUBDIRECTORY(thirdparty)
 
 ################################################################################
-#  INSTALL 
+#  INSTALL
 ################################################################################
 
 IF (NOT DEFINED GATB_CORE_INSTALL_EXCLUDE)
@@ -248,19 +274,19 @@ IF (NOT DEFINED GATB_CORE_INSTALL_EXCLUDE)
 ENDIF()
 
 ################################################################################
-#  DELIVERY 
+#  DELIVERY
 ################################################################################
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY  "gatb-core project")
 SET (CPACK_PACKAGE_VENDOR               "Genscale team (INRIA)")
 SET (CPACK_PACKAGE_VERSION_MAJOR        "${gatb-core_VERSION_MAJOR}")
 SET (CPACK_PACKAGE_VERSION_MINOR        "${gatb-core_VERSION_MINOR}")
 SET (CPACK_PACKAGE_VERSION_PATCH        "${gatb-core_VERSION_PATCH}")
-SET (CPACK_PACKAGE_VERSION              "${gatb-core-version}")  
+SET (CPACK_PACKAGE_VERSION              "${gatb-core-version}")
 SET (CPACK_PACKAGE_FILE_NAME            "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-bin-${CMAKE_SYSTEM_NAME}")
 SET (CPACK_GENERATOR                    "TGZ")
 SET (CPACK_SOURCE_GENERATOR             "TGZ")
-SET (CPACK_SOURCE_IGNORE_FILES          
-    "^${PROJECT_SOURCE_DIR}/build/"  
+SET (CPACK_SOURCE_IGNORE_FILES
+    "^${PROJECT_SOURCE_DIR}/build/"
     "^${PROJECT_SOURCE_DIR}/.project"
     "^${PROJECT_SOURCE_DIR}/.gitignore"
     "^${PROJECT_SOURCE_DIR}/doc/design"
@@ -273,3 +299,4 @@ IF (NOT DEFINED GATB_CORE_INSTALL_EXCLUDE)
     # We include the module and get all the delivery targets
     include (Delivery)
 ENDIF ()
+
