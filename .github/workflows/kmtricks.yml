@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Release
-        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v2
         with:
           release_name: Release ${{ steps.tag.outputs.TAG }}
