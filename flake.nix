@@ -10,8 +10,6 @@
   outputs = { self, nixpkgs, flake-utils, ... }: flake-utils.lib.eachSystem [
     "x86_64-linux"
     "aarch64-linux"
-    "x86_64-darwin"
-    "aarch64-darwin"
   ] (system:
     let
       pkgs = import nixpkgs {
@@ -24,12 +22,12 @@
         pkgs.cmake
       ];
 
-      kmtricks = (with pkgs; stdenvNoCC.mkDerivation {
+      kmtricks = (with pkgs; stdenv.mkDerivation {
         pname = "kmtricks";
         version = "1.5.0";
         src = builtins.fetchGit {
           url = "https://github.com/tlemane/kmtricks";
-          rev = "d1d37dd03beef497c143c8ed711980cd4c07b9b4";
+          rev = "561554f34e08a448e4f4a85ff3b0188ae938c9ae";
           submodules = true;
         };
 
