@@ -218,11 +218,11 @@ public:
         {
           spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
           path = KmDir::get().get_count_part_path(
-            sid, p, m_opt->lz4, KM_FILE::VECTOR);
-          task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-            path, m_config, sk_storage, pinfos, p, iid,
-            m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
-            get_hist_clone(m_hists[iid]), !m_opt->keep_tmp);
+            sid, p, this->m_opt->lz4, KM_FILE::HASH);
+          task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
+              path, m_config, sk_storage, pinfos, p, iid,
+              m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
+              get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
         }
         if (m_is_info) task->set_callback([this](){ this->m_dyn[1].tick(); });
 
@@ -294,11 +294,11 @@ public:
           {
             spdlog::debug("[push] - HashVecCountTask - S={}, P={}", sid, p);
             path = KmDir::get().get_count_part_path(
-              sid, p, false, KM_FILE::VECTOR);
-            task = std::make_shared<HashVecCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
-              path, this->m_config, sk_storage, pinfos, p, iid,
-              this->m_hw.get_window_size_bits(), this->m_config._kmerSize, a_min, false,
-              get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
+              sid, p, this->m_opt->lz4, KM_FILE::HASH);
+            task = std::make_shared<HashCountTask<MAX_K, MAX_C, SuperKStorageReader>>(
+                path, m_config, sk_storage, pinfos, p, iid,
+                m_hw.get_window_size_bits(), m_config._kmerSize, a_min, m_opt->lz4,
+                get_hist_clone(this->m_hists[iid]), !this->m_opt->keep_tmp);
           }
           if (m_is_info)
           {
