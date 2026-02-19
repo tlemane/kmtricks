@@ -86,9 +86,11 @@ struct main_repart
                                           opt->repart_type,
                                           1,
                                           opt->nb_parts);
-    ConfigTask<MAX_K> config_task(opt->fof, props, opt->bloom_size, opt->nb_parts);
+    ConfigTask<MAX_K> config_task(opt->fof, props, opt->bloom_size, opt->nb_parts,
+                                   opt->bam_exclude_refs, opt->bam_include_flags, opt->bam_exclude_flags);
     config_task.exec();
-    RepartTask<MAX_K> repart_task(opt->fof); repart_task.exec(); repart_task.postprocess();
+    RepartTask<MAX_K> repart_task(opt->fof, opt->bam_exclude_refs, opt->bam_include_flags, opt->bam_exclude_flags);
+    repart_task.exec(); repart_task.postprocess();
 
     Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
     LOCAL(config_storage);

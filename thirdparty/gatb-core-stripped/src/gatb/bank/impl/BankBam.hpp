@@ -98,6 +98,27 @@ public:
     /** \copydoc IBank::estimate */
     void estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize);
 
+    /** Set reference sequences to exclude (e.g., chrM, chrMT)
+     * \param[in] refs : set of reference names to exclude
+     */
+    void setExcludedReferences(const std::set<std::string>& refs) {
+        _excluded_refs = refs;
+    }
+
+    /** Set BAM flags to require (samtools -f style)
+     * \param[in] flags : bitwise flags that must be set
+     */
+    void setRequireFlags(uint16_t flags) {
+        _require_flags = flags;
+    }
+
+    /** Set BAM flags to exclude (samtools -F style)
+     * \param[in] flags : bitwise flags that must not be set
+     */
+    void setExcludeFlags(uint16_t flags) {
+        _exclude_flags = flags;
+    }
+
     /************************************************************/
 
     /** \brief Iterator for BAM files
@@ -161,6 +182,9 @@ public:
 
         /** Current sequence index */
         size_t _index;
+
+        /** Reference sequence names (indexed by refID) */
+        std::vector<std::string> _ref_names;
     };
 
 protected:
@@ -172,6 +196,15 @@ protected:
 
     /** Estimated file size */
     u_int64_t _filesize;
+
+    /** Set of reference names to exclude (e.g., chrM, chrMT) */
+    std::set<std::string> _excluded_refs;
+
+    /** BAM flags that must be set (samtools -f style) */
+    uint16_t _require_flags = 0;
+
+    /** BAM flags that must not be set (samtools -F style) */
+    uint16_t _exclude_flags = 0;
 
     /** Initialization method (compute the file size). */
     void init ();

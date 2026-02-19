@@ -42,7 +42,41 @@
 #include <kmtricks/plugin_manager.hpp>
 #endif
 
+#include <gatb/bank/impl/BankBam.hpp>
+
 namespace km {
+
+inline void apply_bam_filtering(IBank* bank, const std::string& bam_exclude_refs,
+                                uint32_t bam_include_flags = 0, uint32_t bam_exclude_flags = 0) {
+  BankBam* bam_bank = dynamic_cast<BankBam*>(bank);
+  if (!bam_bank) return;
+
+  // Apply reference filtering
+  if (!bam_exclude_refs.empty()) {
+    std::set<std::string> excluded_refs;
+    std::istringstream ss(bam_exclude_refs);
+    std::string ref;
+    while (std::getline(ss, ref, ',')) {
+      // Trim whitespace
+      ref.erase(0, ref.find_first_not_of(" \t"));
+      ref.erase(ref.find_last_not_of(" \t") + 1);
+      if (!ref.empty()) {
+        excluded_refs.insert(ref);
+      }
+    }
+    if (!excluded_refs.empty()) {
+      bam_bank->setExcludedReferences(excluded_refs);
+    }
+  }
+
+  // Apply flag filtering (samtools -f/-F style)
+  if (bam_include_flags != 0) {
+    bam_bank->setRequireFlags(static_cast<uint16_t>(bam_include_flags));
+  }
+  if (bam_exclude_flags != 0) {
+    bam_bank->setExcludeFlags(static_cast<uint16_t>(bam_exclude_flags));
+  }
+}
 
 namespace fs = std::filesystem;
 using parti_info_t = std::shared_ptr<PartiInfo<5>>;
@@ -52,8 +86,11 @@ class ConfigTask : public ITask
 {
 public:
   ConfigTask(const std::string& path, IProperties* props, uint64_t bloom_size,
-             uint32_t partitions)
-    : ITask(0), m_path(path), m_props(props), m_bloom_size(bloom_size), m_nb_partitions(partitions)
+             uint32_t partitions, const std::string& bam_exclude_refs = "",
+             uint32_t bam_include_flags = 0, uint32_t bam_exclude_flags = 0)
+    : ITask(0), m_path(path), m_props(props), m_bloom_size(bloom_size), m_nb_partitions(partitions),
+      m_bam_exclude_refs(bam_exclude_refs), m_bam_include_flags(bam_include_flags),
+      m_bam_exclude_flags(bam_exclude_flags)
   {}
 
   void preprocess() {}
@@ -63,6 +100,7 @@ public:
     spdlog::debug("[exec] - ConfigTask");
     spdlog::info("{} samples found ({} read files).", KmDir::get().m_fof.size(), KmDir::get().m_fof.total());
     IBank* bank = Bank::open(KmDir::get().m_fof.get_all()); LOCAL(bank);
+    apply_bam_filtering(bank, m_bam_exclude_refs, m_bam_include_flags, m_bam_exclude_flags);
     Storage* config_storage =
       StorageFactory(STORAGE_FILE).create(KmDir::get().m_config_storage, true, false);
     LOCAL(config_storage);
@@ -90,6 +128,9 @@ private:
   IProperties* m_props;
   uint64_t m_bloom_size;
   uint32_t m_nb_partitions;
+  std::string m_bam_exclude_refs;
+  uint32_t m_bam_include_flags;
+  uint32_t m_bam_exclude_flags;
 };
 
 void check_repart_compatibility(Configuration& c1, Configuration& c2,
@@ -109,8 +150,10 @@ template<size_t span>
 class RepartTask : public ITask
 {
 public:
-  RepartTask(const std::string& path, const std::string& from = "")
-    : ITask(1), m_path(path), m_from(from) {}
+  RepartTask(const std::string& path, const std::string& bam_exclude_refs = "",
+             uint32_t bam_include_flags = 0, uint32_t bam_exclude_flags = 0, const std::string& from = "")
+    : ITask(1), m_path(path), m_bam_exclude_refs(bam_exclude_refs),
+      m_bam_include_flags(bam_include_flags), m_bam_exclude_flags(bam_exclude_flags), m_from(from) {}
 
   void preprocess() {}
   void postprocess()
@@ -140,6 +183,7 @@ public:
     {
       Fof fof(m_path);
       IBank* bank = Bank::open(fof.get_all()); LOCAL(bank);
+      apply_bam_filtering(bank, m_bam_exclude_refs, m_bam_include_flags, m_bam_exclude_flags);
       Storage* rep_store =
         StorageFactory(STORAGE_FILE).create(KmDir::get().m_repart_storage, true, false);
 
@@ -170,6 +214,9 @@ public:
 
 private:
   std::string m_path;
+  std::string m_bam_exclude_refs;
+  uint32_t m_bam_include_flags;
+  uint32_t m_bam_exclude_flags;
   std::string m_from;
   int m_cores;
   uint32_t m_nb_parts {0};
