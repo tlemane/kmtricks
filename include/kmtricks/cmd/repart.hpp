@@ -39,6 +39,8 @@ struct repart_options : km_options
   uint32_t nb_parts;
   uint64_t bloom_size;
 
+  bool static_repart {false};
+
   std::string display()
   {
     std::stringstream ss;
@@ -49,6 +51,7 @@ struct repart_options : km_options
     RECORD(ss, minim_type);
     RECORD(ss, repart_type);
     RECORD(ss, nb_parts);
+    RECORD(ss, static_repart);
     std::string ret = ss.str(); ret.pop_back(); ret.pop_back();
     return ret;
   }
