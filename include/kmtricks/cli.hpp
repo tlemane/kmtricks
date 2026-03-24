@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 
+#include <algorithm>
 // ext
 #include <bcli/bcli.hpp>
 
