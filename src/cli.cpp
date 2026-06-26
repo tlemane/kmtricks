@@ -349,6 +349,8 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(bc::check::is_number)
     ->setter(options->bwidth);
 
+  add_bam_options(all_cmd, options);
+
 #ifdef WITH_PLUGIN
   auto plugin_setter = [options](const std::string& v) {
     options->plugin = v;
@@ -427,6 +429,8 @@ km_options_t repart_cli(std::shared_ptr<bc::Parser<1>> cli, repart_options_t opt
     ->def("10000000")
     ->checker(bc::check::is_number)
     ->setter(options->bloom_size);
+
+  add_bam_options(repart_cmd, options);
 
   add_common(repart_cmd, options);
 
