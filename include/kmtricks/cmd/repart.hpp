@@ -42,6 +42,8 @@ struct repart_options : km_options
   uint32_t bam_include_flags {0};
   uint32_t bam_exclude_flags {0};
 
+  bool static_repart {false};
+
   std::string display()
   {
     std::stringstream ss;
@@ -52,6 +54,7 @@ struct repart_options : km_options
     RECORD(ss, minim_type);
     RECORD(ss, repart_type);
     RECORD(ss, nb_parts);
+    RECORD(ss, static_repart);
     RECORD(ss, bam_exclude_refs);
     RECORD(ss, bam_include_flags);
     RECORD(ss, bam_exclude_flags);

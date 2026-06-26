@@ -304,6 +304,10 @@ km_options_t all_cli(std::shared_ptr<bc::Parser<1>> cli, all_options_t options)
     ->checker(bc::check::f::range(0.05, 1.0))
     ->setter(options->restrict_to);
 
+  all_cmd->add_param("--static-repart", "Do not estimate repartition by sampling")
+    ->as_flag()
+    ->setter(options->static_repart);
+
   auto rtl_setter = [options](const std::string& v) {
     auto partitions = bc::utils::split(v, ',');
     for (auto& p : partitions)
@@ -423,6 +427,10 @@ km_options_t repart_cli(std::shared_ptr<bc::Parser<1>> cli, repart_options_t opt
     ->def("0")
     ->checker(bc::check::is_number)
     ->setter(options->nb_parts);
+
+  repart_cmd->add_param("--static-repart", "Do not estimate repartition by sampling")
+    ->as_flag()
+    ->setter(options->static_repart);
 
   repart_cmd->add_param("--bloom-size", "bloom filter size")
     ->meta("INT")

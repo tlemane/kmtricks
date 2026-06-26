@@ -22,16 +22,48 @@
 #include <kmtricks/minimizer.hpp>
 #include <kmtricks/utils.hpp>
 
+#include <xxhash.h>
+
 namespace km {
 
 class Repartition
 {
-  static const uint32_t s_gatb_magic = 0x12345678;
+  inline static const uint32_t s_gatb_magic = 0x12345678;
+  Repartition(std::size_t nb_parts, std::size_t nb_minims)
+    : m_nb_part(nb_parts), m_nb_minims(nb_minims), m_nb_pass(1), m_has_freq(false)
+  {
+    m_repart_table.resize(m_nb_minims);
+  }
+
 public:
   Repartition(const std::string& path, const std::string& fpath = "")
     : m_path(path), m_fpath(fpath)
   {
     load();
+  }
+
+  static Repartition from_xxh(std::size_t nb_partitions, std::size_t minim_size)
+  {
+    std::size_t nb_minims = std::pow(4, minim_size);
+    Repartition repart(nb_partitions, nb_minims);
+
+    for (std::uint32_t m = 0; m < nb_minims; ++m)
+    {
+      repart.m_repart_table[m] = XXH64(&m, sizeof(m), 0) % nb_partitions;
+    }
+
+    return repart;
+  }
+
+  void save(const std::string& path) const
+  {
+    std::ofstream out(path, std::ios::binary | std::ios::out); check_fstream_good(path, out);
+    out.write((const char*)&m_nb_part, sizeof(m_nb_part));
+    out.write((const char*)&m_nb_minims, sizeof(m_nb_minims));
+    out.write((const char*)&m_nb_pass, sizeof(m_nb_pass));
+    out.write((const char*)m_repart_table.data(), sizeof(uint16_t)*m_nb_minims);
+    out.write((const char*)&m_has_freq, sizeof(m_has_freq));
+    out.write((const char*)&s_gatb_magic, sizeof(s_gatb_magic));
   }
 
   void load()

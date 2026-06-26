@@ -86,6 +86,7 @@ ExternalProject_Add(TURBOP
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ${CMAKE_COMMAND} -E env
   make libic.a
+  #make OPT="-fstrict-aliasing -fPIC -Wno-incompatible-pointer-types" libic.a
   COMMAND ${CMAKE_COMMAND} -E copy "<SOURCE_DIR>/libic.a" ${PROJECT_BINARY_DIR}/thirdparty/TURBOP
   INSTALL_COMMAND make clean
   LOG_CONFIGURE ON

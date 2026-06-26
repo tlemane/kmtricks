@@ -150,10 +150,11 @@ template<size_t span>
 class RepartTask : public ITask
 {
 public:
+
   RepartTask(const std::string& path, const std::string& bam_exclude_refs = "",
-             uint32_t bam_include_flags = 0, uint32_t bam_exclude_flags = 0, const std::string& from = "")
+             uint32_t bam_include_flags = 0, uint32_t bam_exclude_flags = 0, const std::string& from = "", bool static_repart = false)
     : ITask(1), m_path(path), m_bam_exclude_refs(bam_exclude_refs),
-      m_bam_include_flags(bam_include_flags), m_bam_exclude_flags(bam_exclude_flags), m_from(from) {}
+      m_bam_include_flags(bam_include_flags), m_bam_exclude_flags(bam_exclude_flags), m_from(from), m_static_repart(static_repart) {}
 
   void preprocess() {}
   void postprocess()
@@ -181,17 +182,28 @@ public:
 
     if (m_from.empty())
     {
-      Fof fof(m_path);
-      IBank* bank = Bank::open(fof.get_all()); LOCAL(bank);
-      apply_bam_filtering(bank, m_bam_exclude_refs, m_bam_include_flags, m_bam_exclude_flags);
-      Storage* rep_store =
-        StorageFactory(STORAGE_FILE).create(KmDir::get().m_repart_storage, true, false);
+      if (!m_static_repart)
+      {
+        Fof fof(m_path);
+        IBank* bank = Bank::open(fof.get_all()); LOCAL(bank);
+        apply_bam_filtering(bank, m_bam_exclude_refs, m_bam_include_flags, m_bam_exclude_flags);
+        Storage* rep_store =
+          StorageFactory(STORAGE_FILE).create(KmDir::get().m_repart_storage, true, false);
 
-      LOCAL(rep_store);
 
-      RepartitorAlgorithm<span> repartition(
-        bank, rep_store->getGroup("repartition"), config, 1);
-      repartition.execute();
+        LOCAL(rep_store);
+
+        RepartitorAlgorithm<span> repartition(
+          bank, rep_store->getGroup("repartition"), config, 1);
+        repartition.execute();
+      }
+      else
+      {
+        auto repart = Repartition::from_xxh(m_nb_parts, m_minim_size);
+        auto repart_directory = fmt::format("{}/repartition_gatb", KmDir::get().m_root);
+        fs::create_directories(repart_directory);
+        repart.save(fmt::format("{}/repartition.minimRepart", repart_directory));
+      }
     }
     else
     {
@@ -221,6 +233,7 @@ private:
   int m_cores;
   uint32_t m_nb_parts {0};
   uint32_t m_minim_size {0};
+  bool m_static_repart {false};
 };
 
 template<size_t span>

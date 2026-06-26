@@ -54,7 +54,7 @@ struct all_options : km_options
   bool lz4 {false};
   bool kff {false};
   bool hist {false};
-
+  bool static_repart {false};
   uint32_t bwidth {0};
 
   uint32_t max_memory {8000};
@@ -104,6 +104,7 @@ struct all_options : km_options
     RECORD(ss, lz4);
     RECORD(ss, kff);
     RECORD(ss, hist);
+    RECORD(ss, static_repart);
     RECORD(ss, focus);
     RECORD(ss, restrict_to);
     RECORD(ss, bwidth);
