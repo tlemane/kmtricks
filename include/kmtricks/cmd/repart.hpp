@@ -38,6 +38,9 @@ struct repart_options : km_options
   uint32_t repart_type;
   uint32_t nb_parts;
   uint64_t bloom_size;
+  std::string bam_exclude_refs;
+  uint32_t bam_include_flags {0};
+  uint32_t bam_exclude_flags {0};
 
   bool static_repart {false};
 
@@ -52,6 +55,9 @@ struct repart_options : km_options
     RECORD(ss, repart_type);
     RECORD(ss, nb_parts);
     RECORD(ss, static_repart);
+    RECORD(ss, bam_exclude_refs);
+    RECORD(ss, bam_include_flags);
+    RECORD(ss, bam_exclude_flags);
     std::string ret = ss.str(); ret.pop_back(); ret.pop_back();
     return ret;
   }

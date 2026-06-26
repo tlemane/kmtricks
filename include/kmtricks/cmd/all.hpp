@@ -66,6 +66,10 @@ struct all_options : km_options
 
   std::string from;
 
+  std::string bam_exclude_refs;
+  uint32_t bam_include_flags {0};
+  uint32_t bam_exclude_flags {0};
+
   MODE mode;
   FORMAT format;
   OUT_FORMAT out_format;
@@ -104,6 +108,9 @@ struct all_options : km_options
     RECORD(ss, focus);
     RECORD(ss, restrict_to);
     RECORD(ss, bwidth);
+    RECORD(ss, bam_exclude_refs);
+    RECORD(ss, bam_include_flags);
+    RECORD(ss, bam_exclude_flags);
 #ifdef WITH_PLUGIN
     RECORD(ss, use_plugin);
     RECORD(ss, plugin);

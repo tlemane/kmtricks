@@ -51,4 +51,27 @@ inline void add_common(bc::cmd_t cmd, km_options_t options)
     ->setter(options->verbosity);
 }
 
+template <typename T>
+inline void add_bam_options(bc::cmd_t cmd, std::shared_ptr<T> options)
+{
+  cmd->add_group("bam filtering options", "");
+
+  cmd->add_param("--bam-exclude-refs", "exclude reads mapping to specified references (comma-separated, e.g., chrM,chrY)")
+    ->meta("STR")
+    ->def("")
+    ->setter(options->bam_exclude_refs);
+
+  cmd->add_param("-f/--bam-include-flags", "include reads with ALL these flags set (samtools -f style, decimal or hex with 0x prefix)")
+    ->meta("INT")
+    ->def("0")
+    ->checker(bc::check::is_number)
+    ->setter(options->bam_include_flags);
+
+  cmd->add_param("-F/--bam-exclude-flags", "exclude reads with ANY of these flags set (samtools -F style, decimal or hex with 0x prefix)")
+    ->meta("INT")
+    ->def("0")
+    ->checker(bc::check::is_number)
+    ->setter(options->bam_exclude_flags);
+}
+
 };  // namespace kmdiff

@@ -90,7 +90,8 @@ public:
                                                1,
                                                m_opt->nb_parts,
                                                m_opt->max_memory);
-    ConfigTask<MAX_K> config_task(m_opt->fof, props, m_opt->bloom_size, m_opt->nb_parts);
+    ConfigTask<MAX_K> config_task(m_opt->fof, props, m_opt->bloom_size, m_opt->nb_parts,
+                                   m_opt->bam_exclude_refs, m_opt->bam_include_flags, m_opt->bam_exclude_flags);
     config_task.exec();
     Storage* config_storage = StorageFactory(STORAGE_FILE).load(KmDir::get().m_config_storage);
     LOCAL(config_storage);
