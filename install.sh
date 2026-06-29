@@ -38,7 +38,7 @@ function kmtricks_build ()
 
 function kmtricks_conda_build ()
 {
-  conda create -p ./km_conda_build
+  conda create -p ./km_conda_build --yes
   conda activate ./km_conda_build
   if [ "$(uname)" == "Darwin" ]; then
     conda install -y clangxx_osx-64=11.1.0 cmake zlib -c conda-forge
