@@ -67,3 +67,22 @@ TEST(histogram, clones)
     EXPECT_EQ(rn[i], hist->get_vec(KHistType::TOTAL)[i]);
   }
 }
+
+TEST(histogram, merge_thresholds)
+{
+  hist_t h0 = std::make_shared<KHist>(0, 15, 1, 255);
+  hist_t h1 = std::make_shared<KHist>(1, 15, 1, 255);
+
+  h0->inc(2);
+  h0->inc(2);
+  h1->inc(2);
+  h1->inc(8);
+
+  std::vector<hist_t> histograms {h0, h1};
+  auto thresholds = compute_merge_thresholds(histograms, 0.5,
+                                             "./tests_tmp/merge_amin.txt");
+
+  ASSERT_EQ(thresholds.size(), 2);
+  EXPECT_EQ(thresholds[0], 3);
+  EXPECT_EQ(thresholds[1], 9);
+}

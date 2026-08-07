@@ -248,7 +248,7 @@ struct main_merge
 
     TaskPool pool(opt->nb_threads);
 
-    std::vector<uint32_t> ab_vec(KmDir::get().m_fof.size(), opt->m_ab_min);
+    std::vector<uint32_t>& ab_vec = opt->m_ab_min_vec;
     for (size_t i=0; i<config._nb_partitions; i++)
     {
       if (opt->partition_id != -1)
