@@ -219,7 +219,7 @@ inline std::vector<uint32_t> compute_merge_thresholds(std::vector<hist_t>& histo
                                                       double p,
                                                       const std::string& path)
 {
-  std::vector<uint32_t> thresholds(histograms.size());
+  std::vector<uint32_t> thresholds(histograms.size(), 0);
   for (size_t h=0; h<histograms.size(); h++)
   {
     uint32_t sum = 0;
@@ -229,7 +229,7 @@ inline std::vector<uint32_t> compute_merge_thresholds(std::vector<hist_t>& histo
     {
       if (sum > n)
       {
-        thresholds.push_back(i);
+        thresholds[h] = i;
         break;
       }
       sum += v[i];
