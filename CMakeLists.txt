@@ -22,6 +22,9 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
+find_path(ZSTD_INCLUDE_DIR zstd.h HINTS ${ZSTD_ROOT}/include REQUIRED)
+find_library(ZSTD_LIBRARY NAMES zstd HINTS ${ZSTD_ROOT}/lib REQUIRED)
+
 if (NOT KMER_LIST)
   set(KMER_LIST "32 64 96 128")
 endif()

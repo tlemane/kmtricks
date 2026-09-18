@@ -63,7 +63,7 @@ endif()
 ExternalProject_Add(GATB
   PREFIX GATB
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/gatb-core-stripped
-  CMAKE_ARGS ${GATB_DEBUG} -DKSIZE_LIST=${KMER_LIST_GATB}
+  CMAKE_ARGS ${GATB_DEBUG} -DKSIZE_LIST=${KMER_LIST_GATB} -DEXTRALIBS_INC=${ZSTD_INCLUDE_DIR}
   INSTALL_COMMAND ""
   LOG_CONFIGURE ON
   LOG_BUILD ON
@@ -128,6 +128,8 @@ add_dependencies(deps XXHASH)
 
 
 target_link_libraries(links INTERFACE ZLIB::ZLIB)
+target_include_directories(headers SYSTEM INTERFACE ${ZSTD_INCLUDE_DIR})
+target_link_libraries(links INTERFACE ${ZSTD_LIBRARY})
 
 add_library(bitpack INTERFACE)
 target_include_directories(headers INTERFACE ${THIRD_DIR}/span-lite/include)

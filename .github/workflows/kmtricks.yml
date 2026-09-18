@@ -54,11 +54,11 @@ jobs:
         if: contains(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y zlib1g zlib1g-dev ${{ matrix.compiler }}
+          sudo apt-get install -y zlib1g zlib1g-dev libzstd-dev ${{ matrix.compiler }}
 
       - name: Install macOS dependencies
         if: contains(matrix.os, 'macos')
-        run: brew install zlib
+        run: brew install zlib zstd
 
       - name: Configure
         shell: bash
@@ -70,7 +70,7 @@ jobs:
             export CXX=$(which ${{ matrix.cxx }})
             cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON -DSTATIC=ON
           else
-            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON
+            cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=ON -DMAKE_PACKAGE=ON -DWITH_MODULES=ON -DZSTD_ROOT=$(brew --prefix zstd)
           fi
 
       - name: Build

@@ -21,6 +21,7 @@
 
 #include <gatb/bank/impl/BankFasta.hpp>
 #include <gatb/bank/impl/BankBam.hpp>
+#include <gatb/bank/impl/BankZSTD.hpp>
 
 #include <gatb/bank/impl/BankBinary.hpp>
 #include <gatb/bank/impl/BankAlbum.hpp>
@@ -48,6 +49,7 @@ Bank::Bank ()
     /** We register most known factories. */
     _registerFactory_ ("album",  new BankAlbumFactory(),  false);
     _registerFactory_ ("bam",    new BankBamFactory(),    false);  // BAM before FASTA to prevent misdetection
+    _registerFactory_ ("zstd",   new BankZSTDFactory(),   false);  // idem: gzopen() happily returns the raw bytes of a .zst
     _registerFactory_ ("fasta",  new BankFastaFactory(),  false);
     _registerFactory_ ("binary", new BankBinaryFactory(), false);
 
